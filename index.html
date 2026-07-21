@@ -1,0 +1,1594 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="星みちTRPG用の試作キャラクターポイント入力ツール">
+  <title>星みちTRPG キャラクターポイント入力</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f4f8fc;
+      --surface: #ffffff;
+      --surface-soft: #eef6ff;
+      --line: #c8d7e8;
+      --line-strong: #8eabc8;
+      --text: #172331;
+      --muted: #526579;
+      --accent: #1769aa;
+      --accent-dark: #0d4f86;
+      --accent-soft: #dceeff;
+      --danger: #a11e2d;
+      --danger-soft: #fff0f2;
+      --success: #176b46;
+      --success-soft: #eaf8f1;
+      --focus: #ffbf47;
+      --shadow: 0 10px 28px rgba(27, 64, 102, 0.09);
+      --radius: 14px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      min-width: 320px;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Yu Gothic UI",
+        "Yu Gothic", Meiryo, sans-serif;
+      line-height: 1.65;
+    }
+
+    button,
+    input,
+    textarea,
+    select {
+      font: inherit;
+    }
+
+    button,
+    input,
+    textarea,
+    select {
+      border-radius: 9px;
+    }
+
+    button:focus-visible,
+    input:focus-visible,
+    textarea:focus-visible,
+    select:focus-visible {
+      outline: 3px solid var(--focus);
+      outline-offset: 2px;
+    }
+
+    button {
+      min-height: 44px;
+      border: 1px solid var(--accent);
+      background: var(--accent);
+      color: #ffffff;
+      font-weight: 700;
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+
+    button:hover:not(:disabled) {
+      background: var(--accent-dark);
+      border-color: var(--accent-dark);
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+      opacity: 0.48;
+    }
+
+    input,
+    textarea,
+    select {
+      width: 100%;
+      border: 1px solid var(--line-strong);
+      background: #ffffff;
+      color: var(--text);
+      padding: 0.7rem 0.8rem;
+    }
+
+    input[aria-invalid="true"] {
+      border-color: var(--danger);
+      box-shadow: 0 0 0 2px rgba(161, 30, 45, 0.12);
+    }
+
+    textarea {
+      min-height: 8rem;
+      resize: vertical;
+      line-height: 1.55;
+    }
+
+    .page-shell {
+      width: min(1180px, calc(100% - 2rem));
+      margin: 0 auto;
+      padding: 2rem 0 4rem;
+    }
+
+    .page-header {
+      margin-bottom: 1.25rem;
+    }
+
+    .eyebrow {
+      margin: 0 0 0.3rem;
+      color: var(--accent-dark);
+      font-size: 0.82rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+    }
+
+    h1,
+    h2,
+    h3,
+    p {
+      overflow-wrap: anywhere;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(1.7rem, 3vw, 2.45rem);
+      line-height: 1.3;
+      letter-spacing: 0.01em;
+    }
+
+    h2 {
+      margin: 0;
+      font-size: 1.22rem;
+      line-height: 1.4;
+    }
+
+    .lead {
+      max-width: 64rem;
+      margin: 0.65rem 0 0;
+      color: var(--muted);
+    }
+
+    .privacy-note {
+      display: inline-block;
+      margin-top: 0.7rem;
+      color: var(--muted);
+      font-size: 0.86rem;
+    }
+
+    .panel {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+
+    .section-panel {
+      padding: 1.25rem;
+      margin-bottom: 1rem;
+    }
+
+    .section-heading {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 1rem;
+      margin-bottom: 1rem;
+      padding-bottom: 0.65rem;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .section-note {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.85rem;
+      text-align: right;
+    }
+
+    .basic-grid {
+      display: grid;
+      grid-template-columns:
+        minmax(0, 1.3fr)
+        minmax(9rem, 0.75fr)
+        minmax(9rem, 0.7fr)
+        minmax(9rem, 0.7fr);
+      gap: 1rem;
+    }
+
+    .field {
+      min-width: 0;
+    }
+
+    .field label {
+      display: block;
+      margin-bottom: 0.35rem;
+      font-weight: 800;
+    }
+
+    .required {
+      margin-left: 0.35rem;
+      color: var(--danger);
+      font-size: 0.78rem;
+    }
+
+    .field-hint,
+    .field-error {
+      display: block;
+      min-height: 1.5em;
+      margin-top: 0.3rem;
+      font-size: 0.78rem;
+    }
+
+    .field-hint {
+      color: var(--muted);
+    }
+
+    .field-error {
+      color: var(--danger);
+      font-weight: 700;
+    }
+
+    .points-panel {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      margin-bottom: 1rem;
+      padding: 0.85rem 1rem;
+      border-color: var(--line-strong);
+      box-shadow: 0 7px 22px rgba(20, 66, 106, 0.14);
+    }
+
+    .points-layout {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .points-title {
+      min-width: 7rem;
+    }
+
+    .points-title h2 {
+      font-size: 1rem;
+    }
+
+    .points-title p {
+      margin: 0.05rem 0 0;
+      color: var(--muted);
+      font-size: 0.78rem;
+    }
+
+    .point-cards {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(5.5rem, 1fr));
+      gap: 0.5rem;
+    }
+
+    .point-card {
+      min-width: 0;
+      padding: 0.45rem 0.65rem;
+      border: 1px solid var(--line);
+      border-radius: 9px;
+      background: var(--surface-soft);
+      text-align: center;
+    }
+
+    .point-card span {
+      display: block;
+      color: var(--muted);
+      font-size: 0.72rem;
+      font-weight: 700;
+      line-height: 1.3;
+    }
+
+    .point-card strong {
+      display: block;
+      margin-top: 0.1rem;
+      color: var(--accent-dark);
+      font-size: 1.25rem;
+      line-height: 1.2;
+    }
+
+    .allocation-status {
+      min-width: 9.5rem;
+      margin: 0;
+      padding: 0.45rem 0.7rem;
+      border: 1px solid var(--line);
+      border-radius: 9px;
+      color: var(--accent-dark);
+      background: var(--surface-soft);
+      font-size: 0.88rem;
+      font-weight: 800;
+      text-align: center;
+    }
+
+    .allocation-status.is-complete {
+      border-color: #8dc9ad;
+      color: var(--success);
+      background: var(--success-soft);
+    }
+
+    .allocation-status.is-over {
+      border-color: #e0a7ad;
+      color: var(--danger);
+      background: var(--danger-soft);
+    }
+
+    .over-banner {
+      margin: 0.65rem 0 0;
+      padding: 0.55rem 0.75rem;
+      border: 1px solid #dc8993;
+      border-radius: 8px;
+      color: var(--danger);
+      background: var(--danger-soft);
+      font-size: 0.86rem;
+      font-weight: 800;
+      text-align: center;
+    }
+
+    .over-banner[hidden] {
+      display: none;
+    }
+
+    .editor-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.22fr) minmax(19rem, 0.78fr);
+      align-items: start;
+      gap: 1rem;
+    }
+
+    .metric-list {
+      display: grid;
+      gap: 0.7rem;
+    }
+
+    .metric-row {
+      display: grid;
+      grid-template-columns: minmax(6.5rem, 0.72fr) auto minmax(9.5rem, 1fr);
+      align-items: center;
+      gap: 0.8rem;
+      padding: 0.7rem;
+      border: 1px solid var(--line);
+      border-radius: 11px;
+      background: #fbfdff;
+    }
+
+    .metric-label {
+      min-width: 0;
+    }
+
+    .metric-label strong {
+      display: block;
+    }
+
+    .metric-limit {
+      display: block;
+      color: var(--muted);
+      font-size: 0.76rem;
+    }
+
+    .stepper {
+      display: grid;
+      grid-template-columns: 44px 68px 44px;
+      align-items: center;
+      gap: 0.35rem;
+    }
+
+    .stepper button {
+      width: 44px;
+      min-width: 44px;
+      padding: 0;
+      font-size: 1.25rem;
+      line-height: 1;
+    }
+
+    .stepper input {
+      min-height: 44px;
+      padding: 0.45rem 0.3rem;
+      text-align: center;
+      font-weight: 800;
+      appearance: textfield;
+    }
+
+    .stepper input::-webkit-inner-spin-button,
+    .stepper input::-webkit-outer-spin-button {
+      margin: 0;
+      appearance: none;
+    }
+
+    .metric-display {
+      min-width: 0;
+    }
+
+    .blocks {
+      display: block;
+      color: var(--accent-dark);
+      font-family: ui-monospace, "Cascadia Mono", "Yu Gothic UI", monospace;
+      font-size: 0.95rem;
+      font-weight: 800;
+      letter-spacing: 0.02em;
+      overflow-wrap: anywhere;
+    }
+
+    .stage-name {
+      display: inline-block;
+      margin-top: 0.2rem;
+      padding: 0.05rem 0.45rem;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      color: var(--muted);
+      background: #ffffff;
+      font-size: 0.72rem;
+      font-weight: 700;
+    }
+
+    .adventure-note {
+      margin: 0.85rem 0 0;
+      padding: 0.75rem 0.85rem;
+      border-left: 4px solid var(--accent);
+      background: var(--surface-soft);
+      color: var(--muted);
+      font-size: 0.84rem;
+    }
+
+    .free-fields {
+      display: grid;
+      gap: 1rem;
+    }
+
+    .preview-panel {
+      position: sticky;
+      top: 9.2rem;
+      padding: 1.25rem;
+    }
+
+    .preview-panel .section-heading {
+      margin-bottom: 0.75rem;
+    }
+
+    .preview {
+      max-height: calc(100vh - 13rem);
+      min-height: 28rem;
+      margin: 0;
+      overflow: auto;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #f8fbfe;
+      color: var(--text);
+      padding: 1rem;
+      font-family: ui-monospace, "Cascadia Mono", "Yu Gothic UI", monospace;
+      font-size: 0.82rem;
+      line-height: 1.65;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      tab-size: 2;
+    }
+
+    .actions-panel {
+      margin-top: 1rem;
+    }
+
+    .action-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.7rem;
+    }
+
+    .action-buttons button {
+      flex: 1 1 13rem;
+      padding: 0.7rem 1rem;
+    }
+
+    .secondary-button {
+      border-color: var(--accent);
+      background: #ffffff;
+      color: var(--accent-dark);
+    }
+
+    .secondary-button:hover:not(:disabled) {
+      background: var(--accent-soft);
+      color: var(--accent-dark);
+    }
+
+    .danger-button {
+      border-color: #c6707a;
+      background: #ffffff;
+      color: var(--danger);
+    }
+
+    .danger-button:hover:not(:disabled) {
+      border-color: var(--danger);
+      background: var(--danger-soft);
+      color: var(--danger);
+    }
+
+    .feedback {
+      min-height: 1.7rem;
+      margin: 0.7rem 0 0;
+      color: var(--muted);
+      font-size: 0.88rem;
+      font-weight: 700;
+      text-align: center;
+    }
+
+    .feedback.is-error {
+      color: var(--danger);
+    }
+
+    .feedback.is-success {
+      color: var(--success);
+    }
+
+    dialog {
+      width: min(42rem, calc(100% - 2rem));
+      border: 1px solid var(--line-strong);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 1.25rem;
+    }
+
+    dialog::backdrop {
+      background: rgba(15, 30, 46, 0.55);
+    }
+
+    dialog h2 {
+      margin-bottom: 0.4rem;
+    }
+
+    dialog p {
+      margin: 0 0 0.8rem;
+      color: var(--muted);
+    }
+
+    dialog textarea {
+      min-height: 15rem;
+      font-family: ui-monospace, "Cascadia Mono", monospace;
+      font-size: 0.82rem;
+    }
+
+    .dialog-actions {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 0.8rem;
+    }
+
+    .dialog-actions button {
+      min-width: 7rem;
+      padding: 0.55rem 1rem;
+    }
+
+    .visually-hidden {
+      position: absolute !important;
+      width: 1px !important;
+      height: 1px !important;
+      padding: 0 !important;
+      margin: -1px !important;
+      overflow: hidden !important;
+      clip: rect(0, 0, 0, 0) !important;
+      white-space: nowrap !important;
+      border: 0 !important;
+    }
+
+    @media (max-width: 900px) {
+      .basic-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .field-name {
+        grid-column: 1 / -1;
+      }
+
+      .editor-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .preview-panel {
+        position: static;
+      }
+
+      .preview {
+        max-height: none;
+      }
+    }
+
+    @media (max-width: 720px) {
+      .page-shell {
+        width: min(100% - 1rem, 1180px);
+        padding-top: 1rem;
+      }
+
+      .section-panel,
+      .preview-panel {
+        padding: 1rem;
+      }
+
+      .points-panel {
+        padding: 0.65rem;
+      }
+
+      .points-layout {
+        grid-template-columns: 1fr;
+        gap: 0.55rem;
+      }
+
+      .points-title {
+        display: none;
+      }
+
+      .allocation-status {
+        min-width: 0;
+        padding: 0.35rem 0.55rem;
+      }
+    }
+
+    @media (max-width: 560px) {
+      .basic-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .field-name {
+        grid-column: auto;
+      }
+
+      .section-heading {
+        display: block;
+      }
+
+      .section-note {
+        margin-top: 0.2rem;
+        text-align: left;
+      }
+
+      .metric-row {
+        grid-template-columns: 1fr;
+        gap: 0.55rem;
+      }
+
+      .stepper {
+        grid-template-columns: 48px minmax(0, 1fr) 48px;
+        width: 100%;
+      }
+
+      .stepper button {
+        width: 48px;
+      }
+
+      .metric-display {
+        min-height: 2.8rem;
+        padding: 0.45rem 0.55rem;
+        border-radius: 8px;
+        background: var(--surface-soft);
+      }
+
+      .point-card {
+        padding: 0.35rem;
+      }
+
+      .point-card strong {
+        font-size: 1.1rem;
+      }
+
+      .action-buttons {
+        display: grid;
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      html {
+        scroll-behavior: auto;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page-shell">
+    <header class="page-header">
+      <p class="eyebrow">試作ツール</p>
+      <h1>星みちTRPG キャラクターポイント入力</h1>
+      <p class="lead">
+        共通ポイントを基礎ステータス・潜在能力・実務技能へ配分し、
+        チャットへ貼り付けられるキャラクターシートを作成します。
+      </p>
+      <span class="privacy-note">入力内容はこのブラウザ内だけに保存され、外部へ送信されません。</span>
+    </header>
+
+    <section class="panel section-panel" aria-labelledby="basic-heading">
+      <div class="section-heading">
+        <h2 id="basic-heading">1. 基本情報</h2>
+        <p class="section-note">名前はコピー時に必須です</p>
+      </div>
+      <div class="basic-grid">
+        <div class="field field-name">
+          <label for="character-name">名前<span class="required">必須</span></label>
+          <input id="character-name" type="text" maxlength="100" autocomplete="off"
+            aria-describedby="name-error" placeholder="キャラクター名">
+          <span id="name-error" class="field-error" aria-live="polite"></span>
+        </div>
+        <div class="field">
+          <label for="creation-target">作成対象</label>
+          <select id="creation-target" aria-describedby="creation-target-hint">
+            <option value="character">キャラクター</option>
+            <option value="monster">モンスター</option>
+          </select>
+          <span id="creation-target-hint" class="field-hint">実務技能を表示・計算します</span>
+        </div>
+        <div class="field">
+          <label for="total-points">合計ポイント</label>
+          <input id="total-points" type="number" min="0" max="999" step="1"
+            inputmode="numeric" aria-describedby="total-points-hint">
+          <span id="total-points-hint" class="field-hint">0～999の整数</span>
+        </div>
+        <div class="field">
+          <label for="build">体格</label>
+          <input id="build" type="number" step="1" inputmode="numeric"
+            aria-describedby="build-hint">
+          <span id="build-hint" class="field-hint">クトゥルフのビルドと同義。人は1</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel points-panel" aria-labelledby="points-heading">
+      <div class="points-layout">
+        <div class="points-title">
+          <h2 id="points-heading">2. ポイント状況</h2>
+          <p>自動計算</p>
+        </div>
+        <div class="point-cards" aria-label="ポイント内訳">
+          <div class="point-card">
+            <span>合計ポイント</span>
+            <strong id="summary-total">40</strong>
+          </div>
+          <div class="point-card">
+            <span>使用ポイント</span>
+            <strong id="summary-used">0</strong>
+          </div>
+          <div class="point-card">
+            <span>残りポイント</span>
+            <strong id="summary-remaining">40</strong>
+          </div>
+        </div>
+        <p id="allocation-status" class="allocation-status" role="status">残り40ポイント</p>
+      </div>
+      <p id="over-banner" class="over-banner" role="alert" hidden></p>
+    </section>
+
+    <div class="editor-grid">
+      <div class="input-column">
+        <section class="panel section-panel" aria-labelledby="base-heading">
+          <div class="section-heading">
+            <h2 id="base-heading">3. 基礎ステータス</h2>
+            <p class="section-note">一般人基準 0 ／ 各最大15</p>
+          </div>
+          <div id="base-stats" class="metric-list"></div>
+        </section>
+
+        <section class="panel section-panel" aria-labelledby="potential-heading">
+          <div class="section-heading">
+            <h2 id="potential-heading">4. 潜在能力</h2>
+            <p class="section-note">各最大10</p>
+          </div>
+          <div id="potential-stats" class="metric-list"></div>
+        </section>
+
+        <section id="practical-section" class="panel section-panel" aria-labelledby="practical-heading">
+          <div class="section-heading">
+            <h2 id="practical-heading">5. 実務技能</h2>
+            <p class="section-note">通常技能は最大3 ／ 冒険は最大5</p>
+          </div>
+          <div id="practical-skills" class="metric-list"></div>
+          <p class="adventure-note">
+            冒険は描写の表現力や公開情報の整理密度に作用する特別技能です。
+            自動成功、秘密や敵数値の公開、未習得技能の付与は行いません。
+          </p>
+        </section>
+
+        <section class="panel section-panel" aria-labelledby="free-heading">
+          <div class="section-heading">
+            <h2 id="free-heading">6. 別枠入力</h2>
+            <p class="section-note">基本は入力不要／必要な場合のみ入力</p>
+          </div>
+          <div id="free-fields" class="free-fields"></div>
+        </section>
+      </div>
+
+      <aside class="panel preview-panel" aria-labelledby="preview-heading">
+        <div class="section-heading">
+          <h2 id="preview-heading">7. キャラクターシートプレビュー</h2>
+        </div>
+        <pre id="sheet-preview" class="preview" aria-live="polite"></pre>
+      </aside>
+    </div>
+
+    <section class="panel section-panel actions-panel" aria-labelledby="actions-heading">
+      <div class="section-heading">
+        <h2 id="actions-heading">8. コピー・リセット操作</h2>
+        <p class="section-note">ポイント超過中はコピーできません</p>
+      </div>
+      <div class="action-buttons">
+        <button id="copy-player" type="button">プレイヤー用Markdownをコピー</button>
+        <button id="copy-chappy" type="button" class="secondary-button">チャッピー用データをコピー</button>
+        <button id="reset-all" type="button" class="danger-button">すべてリセット</button>
+      </div>
+      <p id="feedback" class="feedback" aria-live="polite"></p>
+    </section>
+  </main>
+
+  <dialog id="manual-copy-dialog" aria-labelledby="manual-copy-heading">
+    <h2 id="manual-copy-heading">手動でコピー</h2>
+    <p>自動コピーを使用できませんでした。下の内容を選択してコピーしてください。</p>
+    <textarea id="manual-copy-text" readonly aria-label="コピーする内容"></textarea>
+    <div class="dialog-actions">
+      <button id="close-copy-dialog" type="button">閉じる</button>
+    </div>
+  </dialog>
+
+  <script>
+    (function () {
+      "use strict";
+
+      var STORAGE_KEY = "hoshimichi-character-sheet-builder";
+      var STORAGE_VERSION = 1;
+      var feedbackTimer = null;
+      var loadNotice = "";
+
+      var definitions = {
+        baseStats: [
+          { key: "robustness", label: "頑健", max: 15 },
+          { key: "endurance", label: "持久", max: 15 },
+          { key: "strength", label: "筋力", max: 15 },
+          { key: "skill", label: "技量", max: 15 },
+          { key: "agility", label: "敏捷", max: 15 },
+          { key: "sense", label: "感覚", max: 15 },
+          { key: "intellect", label: "知性", max: 15 },
+          { key: "spirit", label: "精神", max: 15 }
+        ],
+        potentialStats: [
+          { key: "willpower", label: "気力", max: 10 },
+          { key: "magic", label: "魔力", max: 10 },
+          { key: "holy", label: "聖力", max: 10 }
+        ],
+        practicalSkills: [
+          { key: "cooking", label: "料理", max: 3, staged: true },
+          { key: "maintenance", label: "整備", max: 3, staged: true },
+          { key: "firstAid", label: "手当", max: 3, staged: true },
+          { key: "plants", label: "植物", max: 3, staged: true },
+          { key: "minerals", label: "鉱物", max: 3, staged: true },
+          { key: "dismantling", label: "解体", max: 3, staged: true },
+          { key: "adventure", label: "冒険", max: 5, staged: false }
+        ]
+      };
+
+      var groupSettings = {
+        baseStats: {
+          containerId: "base-stats",
+          zeroLabel: "基準"
+        },
+        potentialStats: {
+          containerId: "potential-stats",
+          zeroLabel: "―"
+        },
+        practicalSkills: {
+          containerId: "practical-skills",
+          zeroLabel: "―"
+        }
+      };
+
+      var freeFieldDefinitions = [
+        {
+          key: "uniqueAbility",
+          label: "固有能力",
+          placeholder: "星結びの祝福\n特殊な種族能力\n生来の特性"
+        },
+        {
+          key: "skills",
+          label: "スキル",
+          placeholder: "戦闘技能、魔法、型、名前付き技能、特殊技法など\n例：粗雑な薬草調合／武器修繕"
+        },
+        {
+          key: "weapons",
+          label: "武器",
+          placeholder: "アステルブレード［25］\n軽大剣\n左手主導"
+        },
+        {
+          key: "equipment",
+          label: "装備",
+          placeholder: "防具、鞄、道具、衣服、アクセサリーなど"
+        }
+      ];
+
+      var stageNames = ["未習得", "心得あり", "得意", "熟練"];
+
+      function makeNumberMap(items) {
+        var result = {};
+        items.forEach(function (item) {
+          result[item.key] = 0;
+        });
+        return result;
+      }
+
+      function createInitialState() {
+        return {
+          version: STORAGE_VERSION,
+          name: "",
+          targetType: "character",
+          totalPoints: 40,
+          build: "1",
+          baseStats: makeNumberMap(definitions.baseStats),
+          potentialStats: makeNumberMap(definitions.potentialStats),
+          practicalSkills: makeNumberMap(definitions.practicalSkills),
+          uniqueAbility: "",
+          skills: "",
+          weapons: "",
+          equipment: ""
+        };
+      }
+
+      function clampInteger(value, minimum, maximum) {
+        var numeric = Number(value);
+        if (!Number.isFinite(numeric)) {
+          return minimum;
+        }
+        return Math.min(maximum, Math.max(minimum, Math.trunc(numeric)));
+      }
+
+      function sanitizeText(value) {
+        return typeof value === "string" ? value : "";
+      }
+
+      function sanitizeBuild(value) {
+        if (value === "" || value === null || value === undefined) {
+          return "1";
+        }
+        var numeric = Number(value);
+        return Number.isFinite(numeric) ? String(Math.trunc(numeric)) : "1";
+      }
+
+      function sanitizeState(raw) {
+        if (!raw || typeof raw !== "object" || raw.version !== STORAGE_VERSION) {
+          throw new Error("unsupported storage data");
+        }
+
+        var clean = createInitialState();
+        clean.name = sanitizeText(raw.name);
+        clean.targetType = raw.targetType === "monster" ? "monster" : "character";
+        clean.totalPoints = clampInteger(raw.totalPoints, 0, 999);
+        clean.build = sanitizeBuild(raw.build);
+
+        Object.keys(definitions).forEach(function (groupName) {
+          var sourceGroup = raw[groupName];
+          if (!sourceGroup || typeof sourceGroup !== "object") {
+            sourceGroup = {};
+          }
+          definitions[groupName].forEach(function (item) {
+            clean[groupName][item.key] = clampInteger(sourceGroup[item.key], 0, item.max);
+          });
+        });
+
+        freeFieldDefinitions.forEach(function (field) {
+          clean[field.key] = sanitizeText(raw[field.key]);
+        });
+
+        return clean;
+      }
+
+      function loadState() {
+        try {
+          var stored = window.localStorage.getItem(STORAGE_KEY);
+          if (!stored) {
+            return createInitialState();
+          }
+          return sanitizeState(JSON.parse(stored));
+        } catch (error) {
+          try {
+            window.localStorage.removeItem(STORAGE_KEY);
+          } catch (ignored) {
+            // localStorage自体を使用できない場合も画面は停止させない。
+          }
+          loadNotice = "保存データを読み込めなかったため、初期値で開始しました。";
+          return createInitialState();
+        }
+      }
+
+      var state = loadState();
+
+      function saveState() {
+        state.version = STORAGE_VERSION;
+        try {
+          window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        } catch (error) {
+          setFeedback("このブラウザでは入力内容を自動保存できません。", "error", false);
+        }
+      }
+
+      function getUsedPoints() {
+        var total = 0;
+        Object.keys(definitions).forEach(function (groupName) {
+          if (groupName === "practicalSkills" && state.targetType === "monster") {
+            return;
+          }
+          definitions[groupName].forEach(function (item) {
+            total += state[groupName][item.key];
+          });
+        });
+        return total;
+      }
+
+      function getTotals() {
+        var used = getUsedPoints();
+        return {
+          total: state.totalPoints,
+          used: used,
+          remaining: state.totalPoints - used,
+          excess: Math.max(0, used - state.totalPoints)
+        };
+      }
+
+      function marksFor(value, zeroLabel) {
+        if (value === 0) {
+          return zeroLabel;
+        }
+        var groups = [];
+        var remaining = value;
+        while (remaining > 0) {
+          groups.push("■".repeat(Math.min(5, remaining)));
+          remaining -= 5;
+        }
+        return groups.join(" ");
+      }
+
+      function createMetricRow(groupName, item) {
+        var row = document.createElement("div");
+        row.className = "metric-row";
+        row.dataset.group = groupName;
+        row.dataset.key = item.key;
+
+        var labelWrap = document.createElement("div");
+        labelWrap.className = "metric-label";
+
+        var label = document.createElement("strong");
+        label.id = groupName + "-" + item.key + "-label";
+        label.textContent = item.label;
+
+        var limit = document.createElement("span");
+        limit.className = "metric-limit";
+        limit.textContent = "0/" + item.max + " ～ " + item.max + "/" + item.max;
+
+        labelWrap.appendChild(label);
+        labelWrap.appendChild(limit);
+
+        var stepper = document.createElement("div");
+        stepper.className = "stepper";
+
+        var minusButton = document.createElement("button");
+        minusButton.type = "button";
+        minusButton.dataset.action = "decrement";
+        minusButton.dataset.group = groupName;
+        minusButton.dataset.key = item.key;
+        minusButton.setAttribute("aria-label", item.label + "を1減らす");
+        minusButton.textContent = "－";
+
+        var input = document.createElement("input");
+        input.type = "number";
+        input.min = "0";
+        input.max = String(item.max);
+        input.step = "1";
+        input.inputMode = "numeric";
+        input.dataset.group = groupName;
+        input.dataset.key = item.key;
+        input.setAttribute("aria-labelledby", label.id);
+
+        var plusButton = document.createElement("button");
+        plusButton.type = "button";
+        plusButton.dataset.action = "increment";
+        plusButton.dataset.group = groupName;
+        plusButton.dataset.key = item.key;
+        plusButton.setAttribute("aria-label", item.label + "を1増やす");
+        plusButton.textContent = "＋";
+
+        stepper.appendChild(minusButton);
+        stepper.appendChild(input);
+        stepper.appendChild(plusButton);
+
+        var display = document.createElement("div");
+        display.className = "metric-display";
+
+        var blocks = document.createElement("span");
+        blocks.className = "blocks";
+        blocks.dataset.role = "blocks";
+
+        display.appendChild(blocks);
+
+        if (item.staged) {
+          var stage = document.createElement("span");
+          stage.className = "stage-name";
+          stage.dataset.role = "stage";
+          display.appendChild(stage);
+        }
+
+        row.appendChild(labelWrap);
+        row.appendChild(stepper);
+        row.appendChild(display);
+        return row;
+      }
+
+      function renderMetricControls() {
+        Object.keys(definitions).forEach(function (groupName) {
+          var container = document.getElementById(groupSettings[groupName].containerId);
+          var fragment = document.createDocumentFragment();
+          definitions[groupName].forEach(function (item) {
+            fragment.appendChild(createMetricRow(groupName, item));
+          });
+          container.replaceChildren(fragment);
+        });
+      }
+
+      function renderFreeFields() {
+        var container = document.getElementById("free-fields");
+        var fragment = document.createDocumentFragment();
+
+        freeFieldDefinitions.forEach(function (field) {
+          var wrapper = document.createElement("div");
+          wrapper.className = "field";
+
+          var label = document.createElement("label");
+          label.htmlFor = "free-" + field.key;
+          label.textContent = field.label;
+
+          var textarea = document.createElement("textarea");
+          textarea.id = "free-" + field.key;
+          textarea.dataset.freeField = field.key;
+          textarea.placeholder = field.placeholder;
+          textarea.spellcheck = true;
+
+          wrapper.appendChild(label);
+          wrapper.appendChild(textarea);
+          fragment.appendChild(wrapper);
+        });
+
+        container.replaceChildren(fragment);
+      }
+
+      function findDefinition(groupName, key) {
+        return definitions[groupName].find(function (item) {
+          return item.key === key;
+        });
+      }
+
+      function setFeedback(message, type, shouldClear) {
+        var feedback = document.getElementById("feedback");
+        if (feedbackTimer) {
+          window.clearTimeout(feedbackTimer);
+          feedbackTimer = null;
+        }
+        feedback.textContent = message || "";
+        feedback.className = "feedback";
+        if (type === "error") {
+          feedback.classList.add("is-error");
+        } else if (type === "success") {
+          feedback.classList.add("is-success");
+        }
+        if (message && shouldClear !== false) {
+          feedbackTimer = window.setTimeout(function () {
+            feedback.textContent = "";
+            feedback.className = "feedback";
+          }, 3500);
+        }
+      }
+
+      function setMetricValue(groupName, key, requestedValue) {
+        var item = findDefinition(groupName, key);
+        if (!item) {
+          return false;
+        }
+
+        var currentValue = state[groupName][key];
+        var nextValue = clampInteger(requestedValue, 0, item.max);
+        var totals = getTotals();
+        var nextUsed = totals.used - currentValue + nextValue;
+
+        if (nextValue > currentValue && nextUsed > state.totalPoints) {
+          var needed = nextUsed - state.totalPoints;
+          setFeedback("残りポイントが足りません（あと" + needed + "ポイント必要です）。", "error");
+          updateView();
+          return false;
+        }
+
+        state[groupName][key] = nextValue;
+        saveState();
+        updateView();
+        return true;
+      }
+
+      function updateBasicInputs() {
+        document.getElementById("character-name").value = state.name;
+        document.getElementById("creation-target").value = state.targetType;
+        document.getElementById("total-points").value = String(state.totalPoints);
+        document.getElementById("build").value = state.build;
+        freeFieldDefinitions.forEach(function (field) {
+          var textarea = document.querySelector("[data-free-field='" + field.key + "']");
+          if (textarea) {
+            textarea.value = state[field.key];
+          }
+        });
+      }
+
+      function updateMetrics() {
+        var totals = getTotals();
+        Object.keys(definitions).forEach(function (groupName) {
+          definitions[groupName].forEach(function (item) {
+            var rowSelector = ".metric-row[data-group='" + groupName + "'][data-key='" + item.key + "']";
+            var row = document.querySelector(rowSelector);
+            var value = state[groupName][item.key];
+            var input = row.querySelector("input");
+            var minusButton = row.querySelector("[data-action='decrement']");
+            var plusButton = row.querySelector("[data-action='increment']");
+            var blocks = row.querySelector("[data-role='blocks']");
+            var stage = row.querySelector("[data-role='stage']");
+
+            input.value = String(value);
+            minusButton.disabled = value <= 0;
+            plusButton.disabled = value >= item.max || totals.remaining <= 0;
+            blocks.textContent = marksFor(value, groupSettings[groupName].zeroLabel);
+            blocks.setAttribute("aria-label", item.label + " " + value + "/" + item.max);
+
+            if (stage) {
+              stage.textContent = stageNames[value];
+            }
+          });
+        });
+      }
+
+      function updatePointSummary() {
+        var totals = getTotals();
+        var status = document.getElementById("allocation-status");
+        var banner = document.getElementById("over-banner");
+        var copyPlayer = document.getElementById("copy-player");
+        var copyChappy = document.getElementById("copy-chappy");
+
+        document.getElementById("summary-total").textContent = String(totals.total);
+        document.getElementById("summary-used").textContent = String(totals.used);
+        document.getElementById("summary-remaining").textContent = String(totals.remaining);
+
+        status.className = "allocation-status";
+        if (totals.excess > 0) {
+          status.textContent = "ポイント超過：" + totals.excess;
+          status.classList.add("is-over");
+          banner.hidden = false;
+          banner.textContent = "警告：使用ポイントが合計を" + totals.excess +
+            "ポイント超えています。値を減らすか合計ポイントを増やしてください。";
+        } else if (totals.remaining === 0) {
+          status.textContent = "配分完了";
+          status.classList.add("is-complete");
+          banner.hidden = true;
+          banner.textContent = "";
+        } else {
+          status.textContent = "残り" + totals.remaining + "ポイント";
+          banner.hidden = true;
+          banner.textContent = "";
+        }
+
+        copyPlayer.disabled = totals.excess > 0;
+        copyChappy.disabled = totals.excess > 0;
+      }
+
+      function updateTargetPresentation() {
+        var isMonster = state.targetType === "monster";
+        var practicalSection = document.getElementById("practical-section");
+        var targetHint = document.getElementById("creation-target-hint");
+        practicalSection.hidden = isMonster;
+        targetHint.textContent = isMonster
+          ? "実務技能は非表示・ポイント計算対象外です"
+          : "実務技能を表示・ポイント計算します";
+      }
+
+      function textOrNone(value) {
+        var trimmed = value.trim();
+        return trimmed ? trimmed : "なし";
+      }
+
+      function appendMetricLines(lines, groupName, includeNumbers) {
+        definitions[groupName].forEach(function (item, index) {
+          if (groupName === "practicalSkills" && item.key === "adventure" && index > 0) {
+            lines.push("");
+          }
+          var value = state[groupName][item.key];
+          var rendered = marksFor(value, groupSettings[groupName].zeroLabel);
+          var numeric = includeNumbers ? "（" + value + "/" + item.max + "）" : "";
+          lines.push(item.label + "　" + rendered + numeric);
+        });
+      }
+
+      function buildMarkdown(includeNumbers) {
+        var totals = getTotals();
+        var characterName = state.name.trim() || "（名前未入力）";
+        var buildText = state.build.trim() || "未入力";
+        var lines = [
+          "# " + characterName,
+          "",
+          "作成対象：" + (state.targetType === "monster" ? "モンスター" : "キャラクター"),
+          "合計ポイント：" + totals.total,
+          "使用ポイント：" + totals.used,
+          "残りポイント：" + totals.remaining
+        ];
+
+        if (totals.excess > 0) {
+          lines.push("ポイント超過：" + totals.excess);
+        }
+
+        lines.push("体格：" + buildText);
+        lines.push("");
+        lines.push("## 基礎ステータス");
+        lines.push("");
+        appendMetricLines(lines, "baseStats", includeNumbers);
+        lines.push("");
+        lines.push("## 潜在能力");
+        lines.push("");
+        appendMetricLines(lines, "potentialStats", includeNumbers);
+        if (state.targetType !== "monster") {
+          lines.push("");
+          lines.push("## 実務技能");
+          lines.push("");
+          appendMetricLines(lines, "practicalSkills", includeNumbers);
+        }
+
+        freeFieldDefinitions.forEach(function (field) {
+          lines.push("");
+          lines.push("## " + field.label);
+          lines.push("");
+          lines.push(textOrNone(state[field.key]));
+        });
+
+        return lines.join("\n");
+      }
+
+      function updatePreview() {
+        document.getElementById("sheet-preview").textContent = buildMarkdown(false);
+      }
+
+      function updateView() {
+        updateMetrics();
+        updateTargetPresentation();
+        updatePointSummary();
+        updatePreview();
+      }
+
+      function handleMetricClick(event) {
+        var button = event.target.closest("button[data-action]");
+        if (!button) {
+          return;
+        }
+        var groupName = button.dataset.group;
+        var key = button.dataset.key;
+        var direction = button.dataset.action === "increment" ? 1 : -1;
+        setMetricValue(groupName, key, state[groupName][key] + direction);
+      }
+
+      function handleMetricInput(event) {
+        var input = event.target.closest("input[data-group][data-key]");
+        if (!input) {
+          return;
+        }
+        var groupName = input.dataset.group;
+        var key = input.dataset.key;
+        setMetricValue(groupName, key, input.value);
+      }
+
+      function validateCopyRequest() {
+        var totals = getTotals();
+        var nameInput = document.getElementById("character-name");
+        var nameError = document.getElementById("name-error");
+
+        if (totals.excess > 0) {
+          setFeedback("ポイント超過中はコピーできません。", "error");
+          return false;
+        }
+
+        if (!state.name.trim()) {
+          nameError.textContent = "名前を入力してからコピーしてください。";
+          nameInput.setAttribute("aria-invalid", "true");
+          nameInput.focus();
+          nameInput.scrollIntoView({ behavior: "smooth", block: "center" });
+          setFeedback("名前が未入力です。", "error");
+          return false;
+        }
+
+        nameError.textContent = "";
+        nameInput.removeAttribute("aria-invalid");
+        return true;
+      }
+
+      function legacyCopy(text) {
+        var temporary = document.createElement("textarea");
+        temporary.value = text;
+        temporary.setAttribute("readonly", "");
+        temporary.className = "visually-hidden";
+        document.body.appendChild(temporary);
+        temporary.select();
+        temporary.setSelectionRange(0, text.length);
+        var copied = false;
+        try {
+          copied = document.execCommand("copy");
+        } catch (error) {
+          copied = false;
+        }
+        temporary.remove();
+        return copied;
+      }
+
+      function showManualCopy(text) {
+        var dialog = document.getElementById("manual-copy-dialog");
+        var textarea = document.getElementById("manual-copy-text");
+        textarea.value = text;
+        if (typeof dialog.showModal === "function") {
+          dialog.showModal();
+          textarea.focus();
+          textarea.select();
+        } else {
+          window.prompt("下の内容を手動でコピーしてください。", text);
+        }
+      }
+
+      async function copyText(text, successMessage) {
+        var copied = false;
+        if (navigator.clipboard && window.isSecureContext) {
+          try {
+            await navigator.clipboard.writeText(text);
+            copied = true;
+          } catch (error) {
+            copied = false;
+          }
+        }
+
+        if (!copied) {
+          copied = legacyCopy(text);
+        }
+
+        if (copied) {
+          setFeedback(successMessage, "success");
+        } else {
+          showManualCopy(text);
+          setFeedback("自動コピーを使用できないため、手動コピー画面を開きました。", "error", false);
+        }
+      }
+
+      function handleCopy(includeNumbers) {
+        if (!validateCopyRequest()) {
+          return;
+        }
+        var successMessage = includeNumbers
+          ? "チャッピー用データをコピーしました。"
+          : "プレイヤー用Markdownをコピーしました。";
+        copyText(buildMarkdown(includeNumbers), successMessage);
+      }
+
+      function resetAll() {
+        var confirmed = window.confirm(
+          "名前、ポイント、すべての入力内容とブラウザ内の保存データを削除します。よろしいですか？"
+        );
+        if (!confirmed) {
+          setFeedback("リセットを取り消しました。", "");
+          return;
+        }
+
+        try {
+          window.localStorage.removeItem(STORAGE_KEY);
+        } catch (ignored) {
+          // localStorageを使用できなくても画面上の初期化は続行する。
+        }
+        state = createInitialState();
+        updateBasicInputs();
+        updateView();
+        document.getElementById("name-error").textContent = "";
+        document.getElementById("character-name").removeAttribute("aria-invalid");
+        setFeedback("すべての入力内容をリセットしました。", "success");
+      }
+
+      function bindEvents() {
+        Object.keys(groupSettings).forEach(function (groupName) {
+          var container = document.getElementById(groupSettings[groupName].containerId);
+          container.addEventListener("click", handleMetricClick);
+          container.addEventListener("input", handleMetricInput);
+          container.addEventListener("blur", function (event) {
+            var input = event.target.closest("input[data-group][data-key]");
+            if (input) {
+              input.value = String(state[input.dataset.group][input.dataset.key]);
+            }
+          }, true);
+        });
+
+        document.getElementById("character-name").addEventListener("input", function (event) {
+          state.name = event.target.value;
+          if (state.name.trim()) {
+            document.getElementById("name-error").textContent = "";
+            event.target.removeAttribute("aria-invalid");
+          }
+          saveState();
+          updatePreview();
+        });
+
+        document.getElementById("creation-target").addEventListener("change", function (event) {
+          state.targetType = event.target.value === "monster" ? "monster" : "character";
+          saveState();
+          updateView();
+        });
+
+        document.getElementById("total-points").addEventListener("input", function (event) {
+          state.totalPoints = clampInteger(event.target.value, 0, 999);
+          event.target.value = String(state.totalPoints);
+          saveState();
+          updateView();
+        });
+
+        document.getElementById("build").addEventListener("input", function (event) {
+          if (event.target.value === "") {
+            state.build = "";
+          } else {
+            var numeric = Number(event.target.value);
+            state.build = Number.isFinite(numeric) ? String(Math.trunc(numeric)) : "";
+            event.target.value = state.build;
+          }
+          saveState();
+          updatePreview();
+        });
+
+        document.getElementById("free-fields").addEventListener("input", function (event) {
+          var key = event.target.dataset.freeField;
+          if (!key) {
+            return;
+          }
+          state[key] = event.target.value;
+          saveState();
+          updatePreview();
+        });
+
+        document.getElementById("copy-player").addEventListener("click", function () {
+          handleCopy(false);
+        });
+
+        document.getElementById("copy-chappy").addEventListener("click", function () {
+          handleCopy(true);
+        });
+
+        document.getElementById("reset-all").addEventListener("click", resetAll);
+
+        document.getElementById("close-copy-dialog").addEventListener("click", function () {
+          document.getElementById("manual-copy-dialog").close();
+        });
+      }
+
+      function initialize() {
+        renderMetricControls();
+        renderFreeFields();
+        updateBasicInputs();
+        bindEvents();
+        updateView();
+        if (loadNotice) {
+          setFeedback(loadNotice, "error", false);
+        }
+      }
+
+      window.characterSheetBuilder = Object.freeze({
+        definitions: definitions,
+        marksFor: marksFor,
+        getTotals: getTotals,
+        getState: function () {
+          return JSON.parse(JSON.stringify(state));
+        },
+        buildPlayerMarkdown: function () {
+          return buildMarkdown(false);
+        },
+        buildChappyMarkdown: function () {
+          return buildMarkdown(true);
+        }
+      });
+
+      initialize();
+    }());
+  </script>
+</body>
+</html>
