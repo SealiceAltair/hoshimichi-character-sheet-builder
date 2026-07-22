@@ -485,7 +485,7 @@
 
     .combat-summary {
       display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr));
       gap: 0.7rem;
       margin-bottom: 1rem;
     }
@@ -523,6 +523,21 @@
     .weapon-stack {
       display: grid;
       gap: 0.9rem;
+    }
+
+    .weapon-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      width: fit-content;
+      color: var(--accent-dark);
+      font-weight: 800;
+    }
+
+    .weapon-toggle input {
+      width: 1.1rem;
+      min-height: 1.1rem;
+      margin: 0;
     }
 
     .weapon-card {
@@ -789,6 +804,11 @@
       white-space: pre-wrap;
       overflow-wrap: anywhere;
       tab-size: 2;
+    }
+
+    .summary-preview {
+      min-height: 12rem;
+      max-height: 32rem;
     }
 
     .actions-panel {
@@ -1158,6 +1178,22 @@
               <span>最大HP</span>
               <strong id="combat-max-hp">50</strong>
             </div>
+            <div class="combat-summary-card">
+              <span>最大AP</span>
+              <strong id="combat-max-ap">10</strong>
+            </div>
+            <div class="combat-summary-card">
+              <span>SP</span>
+              <strong id="combat-sp">―</strong>
+            </div>
+            <div class="combat-summary-card">
+              <span>MP</span>
+              <strong id="combat-mp">―</strong>
+            </div>
+            <div class="combat-summary-card">
+              <span>FP</span>
+              <strong id="combat-fp">―</strong>
+            </div>
           </div>
           <div class="weapon-stack">
             <fieldset class="weapon-card">
@@ -1187,6 +1223,7 @@
                   <select id="weapon-1-accuracy-stat">
                     <option value="strength">筋力</option><option value="skill">技量</option>
                     <option value="agility">敏捷</option><option value="sense">感覚</option>
+                    <option value="intellect">知性</option><option value="spirit">精神</option>
                   </select>
                 </div>
                 <div class="field weapon-description-field">
@@ -1195,7 +1232,11 @@
                 </div>
               </div>
             </fieldset>
-            <fieldset class="weapon-card">
+            <label class="weapon-toggle" for="has-weapon-2">
+              <input id="has-weapon-2" type="checkbox">
+              武器2あり
+            </label>
+            <fieldset id="weapon-2-card" class="weapon-card" hidden>
               <legend>武器2</legend>
               <div class="equipment-grid">
                 <div class="field">
@@ -1222,6 +1263,7 @@
                   <select id="weapon-2-accuracy-stat">
                     <option value="strength">筋力</option><option value="skill">技量</option>
                     <option value="agility">敏捷</option><option value="sense">感覚</option>
+                    <option value="intellect">知性</option><option value="spirit">精神</option>
                   </select>
                 </div>
                 <div class="field weapon-description-field">
@@ -1373,7 +1415,7 @@
             <label for="kp-sim-weapon">使用武器</label>
             <select id="kp-sim-weapon">
               <option value="0">武器1</option>
-              <option value="1">武器2</option>
+              <option id="kp-sim-weapon-2-option" value="1">武器2</option>
             </select>
           </div>
           <div class="field">
@@ -1443,6 +1485,17 @@
       <p id="feedback" class="feedback" aria-live="polite"></p>
     </section>
 
+    <section class="panel section-panel" aria-labelledby="character-summary-heading">
+      <div class="section-heading">
+        <h2 id="character-summary-heading">12. キャラクターシート要約</h2>
+        <p class="section-note">入力内容から自動作成／★は5、☆と■は1、△はBLD 0</p>
+      </div>
+      <pre id="character-summary" class="preview summary-preview" aria-live="polite"></pre>
+      <div class="import-actions">
+        <button id="copy-summary" type="button" class="secondary-button">要約をコピー</button>
+      </div>
+    </section>
+
     <div class="kp-gate" aria-label="KPモード切替">
       <label class="visually-hidden" for="kp-passphrase">KPモードの合言葉</label>
       <input id="kp-passphrase" type="text" maxlength="64" autocomplete="off" lang="ja"
@@ -1476,7 +1529,7 @@
       "use strict";
 
       var STORAGE_KEY = "hoshimichi-character-sheet-builder";
-      var STORAGE_VERSION = 6;
+      var STORAGE_VERSION = 7;
       var KP_PASSPHRASE_HASH = "6da948cc";
       var feedbackTimer = null;
       var loadNotice = "";
@@ -1532,7 +1585,7 @@
       var groupSettings = {
         baseStats: {
           containerId: "base-stats",
-          zeroLabel: "基準"
+          zeroLabel: "一般人"
         },
         potentialStats: {
           containerId: "potential-stats",
@@ -1796,6 +1849,7 @@
           practicalSkills: makeNumberMap(definitions.practicalSkills),
           uniqueAbility: "",
           characterSetting: "",
+          hasWeapon2: false,
           weapons: [createDefaultWeapon(), createDefaultWeapon()],
           armor: createDefaultArmor(),
           skills: [],
@@ -1925,6 +1979,20 @@
         return clean;
       }
 
+      function hasMeaningfulWeaponData(raw) {
+        if (!raw || typeof raw !== "object") {
+          return false;
+        }
+        var defaultWeapon = createDefaultWeapon();
+        return Boolean(sanitizeText(raw.name).trim() || sanitizeText(raw.description).trim() ||
+          raw.attackType && raw.attackType !== defaultWeapon.attackType ||
+          Number.isFinite(Number(raw.power)) && Number(raw.power) !== defaultWeapon.power ||
+          raw.accuracyStat && raw.accuracyStat !== defaultWeapon.accuracyStat ||
+          raw.defenseType && raw.defenseType !== defaultWeapon.defenseType ||
+          Number.isFinite(Number(raw.receiveMultiplier)) &&
+            Number(raw.receiveMultiplier) !== defaultWeapon.receiveMultiplier);
+      }
+
       function sanitizeArmor(raw) {
         var source = raw && typeof raw === "object" ? raw : {};
         return {
@@ -1937,7 +2005,7 @@
       function sanitizeState(raw) {
         if (!raw || typeof raw !== "object" ||
             (raw.version !== 1 && raw.version !== 2 && raw.version !== 3 &&
-              raw.version !== 4 && raw.version !== 5 &&
+              raw.version !== 4 && raw.version !== 5 && raw.version !== 6 &&
               raw.version !== STORAGE_VERSION)) {
           throw new Error("unsupported storage data");
         }
@@ -1970,6 +2038,9 @@
           sanitizeWeapon(sourceWeapons[0]),
           sanitizeWeapon(sourceWeapons[1])
         ];
+        clean.hasWeapon2 = typeof raw.hasWeapon2 === "boolean"
+          ? raw.hasWeapon2
+          : hasMeaningfulWeaponData(sourceWeapons[1]);
         clean.armor = sanitizeArmor(raw.armor);
         clean.skills = Array.isArray(raw.skills)
           ? raw.skills.slice(0, 50).map(sanitizeSkill)
@@ -1988,6 +2059,9 @@
         clean.kpSettings.simulationWeaponIndex = clampInteger(
           sourceKp.simulationWeaponIndex, 0, 1
         );
+        if (!clean.hasWeapon2 && clean.kpSettings.simulationWeaponIndex === 1) {
+          clean.kpSettings.simulationWeaponIndex = 0;
+        }
         clean.kpSettings.goblinProtection = clampDecimal(sourceKp.goblinProtection, 0, 999, 1);
         clean.kpSettings.goblinReceiveMultiplier = clampDecimal(
           sourceKp.goblinReceiveMultiplier, 0.07, 1, 0.95
@@ -2537,8 +2611,17 @@
       function updateCombatInputs() {
         document.getElementById("combat-base-success").textContent = formatNumber(getBaseSuccessValue());
         document.getElementById("combat-max-hp").textContent = String(getMaximumHp());
+        document.getElementById("combat-max-ap").textContent = String(getMaximumAp());
+        document.getElementById("combat-sp").textContent =
+          state.potentialStats.willpower > 0 ? String(state.potentialStats.willpower) : "―";
+        document.getElementById("combat-mp").textContent =
+          state.potentialStats.magic > 0 ? String(state.potentialStats.magic) : "―";
+        document.getElementById("combat-fp").textContent =
+          state.potentialStats.holy > 0 ? String(state.potentialStats.holy) : "―";
         document.getElementById("monster-base-success").value = String(state.monsterBaseSuccess);
         document.getElementById("monster-hp").value = String(state.monsterHp);
+        document.getElementById("has-weapon-2").checked = state.hasWeapon2;
+        document.getElementById("weapon-2-card").hidden = !state.hasWeapon2;
         state.weapons.forEach(function (weapon, index) {
           var number = index + 1;
           document.getElementById("weapon-" + number + "-name").value = weapon.name;
@@ -2627,6 +2710,10 @@
         return Math.round(50 * (1 + state.baseStats.robustness / 3));
       }
 
+      function getMaximumAp() {
+        return Math.round(10 * (1 + state.baseStats.endurance / 3));
+      }
+
       function getFinalSuccessValue(statKey, flatBonus) {
         var statValue = state.baseStats[statKey];
         if (!Number.isFinite(statValue)) {
@@ -2671,6 +2758,8 @@
         appendRow(["最大HP", String(state.baseStats.robustness),
           state.targetType === "monster" ? "個別設定" : "×" + formatNumber(1 + state.baseStats.robustness / 3),
           String(getMaximumHp())]);
+        appendRow(["最大AP", String(state.baseStats.endurance),
+          "×" + formatNumber(1 + state.baseStats.endurance / 3), String(getMaximumAp())]);
 
         definitions.baseStats.forEach(function (item) {
           var raw = state.baseStats[item.key];
@@ -2706,6 +2795,9 @@
         }
 
         state.weapons.forEach(function (weapon, index) {
+          if (index === 1 && !state.hasWeapon2) {
+            return;
+          }
           appendRow(["武器" + (index + 1) + "単発威力", formatNumber(weapon.power),
             attackTypeDefinitions[weapon.attackType].label,
             getPowerIndicator(weapon.power, weapon.attackType)]);
@@ -2738,6 +2830,9 @@
       }
 
       function getSimulationWeapon() {
+        if (!state.hasWeapon2 && state.kpSettings.simulationWeaponIndex === 1) {
+          state.kpSettings.simulationWeaponIndex = 0;
+        }
         return state.weapons[state.kpSettings.simulationWeaponIndex] || state.weapons[0];
       }
 
@@ -2770,6 +2865,7 @@
           "最大HP ＝ " + (state.targetType === "monster"
             ? "個別設定 " + formatNumber(state.monsterHp)
             : "50 × (1＋頑健÷3) ＝ " + getMaximumHp()),
+          "最大AP ＝ 10 × (1＋持久÷3) ＝ " + getMaximumAp(),
           "一命中の威力 ＝ 武器単発威力 × 攻撃技倍率 × 潜在倍率 × 成功段階倍率 × 状況倍率",
           "スキル性能予算 ＝ 消費×65 ／ 基本性能差 ＝ (性能指数－1)×100",
           "基本性能差が正なら予算を使用し、負ならマイナス補正として予算が増加",
@@ -2789,6 +2885,12 @@
         document.getElementById("kp-damage-formula").value = state.kpSettings.damageFormula;
         document.getElementById("kp-trial-count").value = String(state.kpSettings.trialCount);
         document.getElementById("kp-sim-count").value = String(state.kpSettings.simulationCount);
+        var weapon2Option = document.getElementById("kp-sim-weapon-2-option");
+        weapon2Option.hidden = !state.hasWeapon2;
+        weapon2Option.disabled = !state.hasWeapon2;
+        if (!state.hasWeapon2 && state.kpSettings.simulationWeaponIndex === 1) {
+          state.kpSettings.simulationWeaponIndex = 0;
+        }
         document.getElementById("kp-sim-weapon").value = String(state.kpSettings.simulationWeaponIndex);
         document.getElementById("kp-goblin-protection").value = String(state.kpSettings.goblinProtection);
         document.getElementById("kp-goblin-receive").value = String(state.kpSettings.goblinReceiveMultiplier);
@@ -3550,25 +3652,130 @@
         lines.push("");
         lines.push("基準成功値：" + formatNumber(getBaseSuccessValue()));
         lines.push("最大HP：" + getMaximumHp());
+        lines.push("最大AP：" + getMaximumAp());
+        if (state.potentialStats.willpower > 0) {
+          lines.push("SP：" + state.potentialStats.willpower);
+        }
+        if (state.potentialStats.magic > 0) {
+          lines.push("MP：" + state.potentialStats.magic);
+        }
+        if (state.potentialStats.holy > 0) {
+          lines.push("FP：" + state.potentialStats.holy);
+        }
         state.weapons.forEach(function (weapon, index) {
-          var accuracyStat = findDefinition("baseStats", weapon.accuracyStat);
           lines.push("");
           lines.push("### 武器" + (index + 1));
           lines.push("");
-          lines.push("武器名：" + textOrNone(weapon.name));
+          if (index === 1 && !state.hasWeapon2) {
+            lines.push("なし");
+            return;
+          }
+          var accuracyStat = findDefinition("baseStats", weapon.accuracyStat);
+          lines.push((weapon.name.trim() || "（武器名未入力）") +
+            "【" + formatNumber(weapon.power) + "】");
           lines.push("武器攻撃型：" + attackTypeDefinitions[weapon.attackType].label);
-          lines.push("単発威力：" + formatNumber(weapon.power) + "（" +
-            getPowerIndicator(weapon.power, weapon.attackType) + "）");
+          lines.push("単発威力の目安：" + getPowerIndicator(weapon.power, weapon.attackType));
           lines.push("命中に使う能力：" + accuracyStat.label);
           lines.push("武器説明：" + textOrNone(weapon.description));
         });
         lines.push("");
         lines.push("### 防具");
         lines.push("");
-        lines.push("防具名：" + textOrNone(state.armor.name));
-        lines.push("防護点：" + formatNumber(state.armor.protection) + "（" +
-          getProtectionIndicator(state.armor.protection) + "）");
+        lines.push((state.armor.name.trim() || "（防具名未入力）") +
+          "【" + formatNumber(state.armor.protection) + "】");
+        lines.push("防護点の目安：" + getProtectionIndicator(state.armor.protection));
         lines.push("防具説明：" + textOrNone(state.armor.description));
+      }
+
+      function groupedSymbols(symbols) {
+        return symbols.match(/.{1,5}/g).join(" ");
+      }
+
+      function starMarksFor(value) {
+        var numeric = Math.max(0, Math.trunc(Number(value) || 0));
+        if (numeric <= 0) {
+          return "";
+        }
+        return groupedSymbols("★".repeat(Math.floor(numeric / 5)) + "☆".repeat(numeric % 5));
+      }
+
+      function squareMarksFor(value) {
+        var numeric = Math.max(0, Math.trunc(Number(value) || 0));
+        return numeric > 0 ? groupedSymbols("■".repeat(numeric)) : "";
+      }
+
+      function buildCharacterSummary() {
+        var lines = [
+          "## キャラクターシート要約",
+          "",
+          "名前：" + (state.name.trim() || "（名前未入力）")
+        ];
+        var weapons = state.weapons.filter(function (weapon, index) {
+          return (index === 0 || state.hasWeapon2) && weapon.name.trim();
+        }).map(function (weapon) {
+          return weapon.name.trim() + "【" + formatNumber(weapon.power) + "】";
+        });
+        if (weapons.length) {
+          lines.push("武器：" + weapons.join("　"));
+        }
+        if (state.armor.name.trim()) {
+          lines.push("防具：" + state.armor.name.trim() +
+            "【" + formatNumber(state.armor.protection) + "】");
+        }
+        var skills = state.skills.filter(function (skill) {
+          return skill.name.trim();
+        }).map(function (skill) {
+          return skill.name.trim() + "【" + skill.powerDisplay + "】";
+        });
+        if (skills.length) {
+          lines.push("スキル：" + skills.join("　"));
+        }
+
+        lines.push("");
+        if (state.totalPoints > 0) {
+          lines.push("CP：" + starMarksFor(state.totalPoints));
+        }
+        if (getMaximumHp() > 0) {
+          lines.push("HP：" + starMarksFor(getMaximumHp()));
+        }
+        if (getMaximumAp() > 0) {
+          lines.push("AP：" + starMarksFor(getMaximumAp()));
+        }
+        var buildValue = Number(state.build);
+        if (state.build !== "" && Number.isFinite(buildValue)) {
+          lines.push("BLD：" + (buildValue > 0
+            ? starMarksFor(buildValue)
+            : "△".repeat(Math.abs(Math.trunc(buildValue)) + 1)));
+        }
+        [
+          ["SP", state.potentialStats.willpower],
+          ["MP", state.potentialStats.magic],
+          ["FP", state.potentialStats.holy]
+        ].forEach(function (resource) {
+          if (resource[1] > 0) {
+            lines.push(resource[0] + "：" + squareMarksFor(resource[1]));
+          }
+        });
+
+        var allocated = [];
+        definitions.baseStats.forEach(function (item) {
+          if (state.baseStats[item.key] > 0) {
+            allocated.push(item.label + "：" + squareMarksFor(state.baseStats[item.key]));
+          }
+        });
+        if (state.targetType !== "monster") {
+          definitions.practicalSkills.forEach(function (item) {
+            if (state.practicalSkills[item.key] > 0) {
+              allocated.push(item.label + "：" + squareMarksFor(state.practicalSkills[item.key]));
+            }
+          });
+        }
+        if (allocated.length) {
+          lines.push("");
+          lines.push("割り振り能力");
+          Array.prototype.push.apply(lines, allocated);
+        }
+        return lines.join("\n");
       }
 
       function appendSkillLines(lines, includeInternal, heading) {
@@ -3658,7 +3865,7 @@
           delete weapon.receiveMultiplier;
           delete weapon.defenseType;
         });
-        return "<!-- HOSHIMICHI-PC-V5:" +
+        return "<!-- HOSHIMICHI-PC-V6:" +
           encodeURIComponent(JSON.stringify(publicState)) + " -->";
       }
 
@@ -3740,13 +3947,16 @@
           "",
           "PC基準成功値：50",
           "最大HP式：50×（1＋頑健÷3）",
+          "最大AP式：10×（1＋持久÷3）",
           "基礎ステータス倍率：1＋能力値÷10",
           "潜在能力倍率：1＋潜在能力値×0.15",
           "実務技能補正：技能値×20",
           "武器1受けカテゴリ：" + defenseEquipmentDefinitions[state.weapons[0].defenseType].label,
           "武器1受け倍率：" + formatNumber(state.weapons[0].receiveMultiplier),
-          "武器2受けカテゴリ：" + defenseEquipmentDefinitions[state.weapons[1].defenseType].label,
-          "武器2受け倍率：" + formatNumber(state.weapons[1].receiveMultiplier),
+          "武器2受けカテゴリ：" + (state.hasWeapon2
+            ? defenseEquipmentDefinitions[state.weapons[1].defenseType].label : "なし"),
+          "武器2受け倍率：" + (state.hasWeapon2
+            ? formatNumber(state.weapons[1].receiveMultiplier) : "なし"),
           "ゴブリン防護点：" + formatNumber(kp.goblinProtection),
           "ゴブリン武器受け倍率：" + formatNumber(kp.goblinReceiveMultiplier),
           "シミュレーション攻撃：" + kp.simulationAttack,
@@ -3758,12 +3968,12 @@
         ];
         appendSkillLines(lines, true, "KPスキル計算");
         lines.push("");
-        lines.push("<!-- HOSHIMICHI-KP-V5:" + encodeURIComponent(JSON.stringify(state)) + " -->");
+        lines.push("<!-- HOSHIMICHI-KP-V6:" + encodeURIComponent(JSON.stringify(state)) + " -->");
         return lines.join("\n");
       }
 
       function parseKpPayload(markdown) {
-        var match = sanitizeText(markdown).match(/<!--\s*HOSHIMICHI-KP-V(?:1|2|3|4|5):([\s\S]*?)-->/);
+        var match = sanitizeText(markdown).match(/<!--\s*HOSHIMICHI-KP-V(?:1|2|3|4|5|6):([\s\S]*?)-->/);
         if (!match) {
           return null;
         }
@@ -3775,7 +3985,7 @@
       }
 
       function parsePublicPayload(markdown) {
-        var match = sanitizeText(markdown).match(/<!--\s*HOSHIMICHI-PC-V(?:1|2|3|4|5):([\s\S]*?)-->/);
+        var match = sanitizeText(markdown).match(/<!--\s*HOSHIMICHI-PC-V(?:1|2|3|4|5|6):([\s\S]*?)-->/);
         if (!match) {
           return null;
         }
@@ -3914,6 +4124,8 @@
           "最大HP：" + (importedState.targetType === "monster"
             ? Math.round(importedState.monsterHp)
             : Math.round(50 * (1 + importedState.baseStats.robustness / 3))),
+          "最大AP：" + Math.round(10 * (1 + importedState.baseStats.endurance / 3)),
+          "武器2：" + (importedState.hasWeapon2 ? "あり" : "なし"),
           "登録スキル数：" + importedState.skills.length,
           "キャラクター設定：" + (importedState.characterSetting.trim() ? "あり" : "なし"),
           "KP内部設定：" + (importResult.hasKpSettings ? "上書きします" : "現在の設定を維持します")
@@ -3966,6 +4178,7 @@
 
       function updatePreview() {
         document.getElementById("sheet-preview").textContent = buildMarkdown(false, false);
+        document.getElementById("character-summary").textContent = buildCharacterSummary();
       }
 
       function updateView() {
@@ -4377,6 +4590,15 @@
           updatePreview();
         });
 
+        document.getElementById("has-weapon-2").addEventListener("change", function (event) {
+          state.hasWeapon2 = event.target.checked === true;
+          if (!state.hasWeapon2 && state.kpSettings.simulationWeaponIndex === 1) {
+            state.kpSettings.simulationWeaponIndex = 0;
+          }
+          saveState();
+          updateView();
+        });
+
         document.getElementById("add-skill").addEventListener("click", addSkill);
         document.getElementById("skill-list").addEventListener("click", handleSkillClick);
         document.getElementById("skill-list").addEventListener("input", handleSkillInput);
@@ -4399,29 +4621,31 @@
         state.weapons.forEach(function (weapon, index) {
           var number = index + 1;
           document.getElementById("weapon-" + number + "-name").addEventListener("input", function (event) {
-            weapon.name = sanitizeText(event.target.value).slice(0, 100);
+            state.weapons[index].name = sanitizeText(event.target.value).slice(0, 100);
             saveState();
             updatePreview();
           });
           document.getElementById("weapon-" + number + "-description").addEventListener("input", function (event) {
-            weapon.description = sanitizeText(event.target.value).slice(0, 2000);
+            state.weapons[index].description = sanitizeText(event.target.value).slice(0, 2000);
             saveState();
             updatePreview();
           });
           document.getElementById("weapon-" + number + "-attack-type").addEventListener("change", function (event) {
-            weapon.attackType = normalizeChoice(event.target.value, attackTypeDefinitions, "standard");
-            weapon.power = attackTypeDefinitions[weapon.attackType].power;
+            state.weapons[index].attackType = normalizeChoice(
+              event.target.value, attackTypeDefinitions, "standard"
+            );
+            state.weapons[index].power = attackTypeDefinitions[state.weapons[index].attackType].power;
             saveState();
             updateView();
           });
           document.getElementById("weapon-" + number + "-power").addEventListener("input", function (event) {
-            weapon.power = clampDecimal(event.target.value, 0, 999, 0);
-            event.target.value = String(weapon.power);
+            state.weapons[index].power = clampDecimal(event.target.value, 0, 999, 0);
+            event.target.value = String(state.weapons[index].power);
             saveState();
             updateView();
           });
           document.getElementById("weapon-" + number + "-accuracy-stat").addEventListener("change", function (event) {
-            weapon.accuracyStat = definitions.baseStats.some(function (item) {
+            state.weapons[index].accuracyStat = definitions.baseStats.some(function (item) {
               return item.key === event.target.value;
             }) ? event.target.value : "skill";
             saveState();
@@ -4482,20 +4706,21 @@
           var number = index + 1;
           document.getElementById("kp-weapon-" + number + "-defense-type")
             .addEventListener("change", function (event) {
-              weapon.defenseType = normalizeChoice(
+              state.weapons[index].defenseType = normalizeChoice(
                 event.target.value, defenseEquipmentDefinitions, "technical"
               );
-              weapon.receiveMultiplier = defenseEquipmentDefinitions[weapon.defenseType].defaultValue;
+              state.weapons[index].receiveMultiplier =
+                defenseEquipmentDefinitions[state.weapons[index].defenseType].defaultValue;
               saveState();
               updateKpInputs();
             });
           document.getElementById("kp-weapon-" + number + "-receive")
             .addEventListener("input", function (event) {
-              var category = defenseEquipmentDefinitions[weapon.defenseType];
-              weapon.receiveMultiplier = clampDecimal(
+              var category = defenseEquipmentDefinitions[state.weapons[index].defenseType];
+              state.weapons[index].receiveMultiplier = clampDecimal(
                 event.target.value, category.minimum, category.maximum, category.defaultValue
               );
-              event.target.value = String(weapon.receiveMultiplier);
+              event.target.value = String(state.weapons[index].receiveMultiplier);
               saveState();
               renderInternalValues();
             });
@@ -4545,6 +4770,10 @@
           handleCopy(true);
         });
 
+        document.getElementById("copy-summary").addEventListener("click", function () {
+          copyText(buildCharacterSummary(), "キャラクターシート要約をコピーしました。");
+        });
+
         document.getElementById("reset-all").addEventListener("click", resetAll);
 
         document.getElementById("preview-import").addEventListener("click", previewImport);
@@ -4588,6 +4817,7 @@
           return buildMarkdown(true, true);
         },
         buildKpMarkdown: buildKpMarkdown,
+        buildCharacterSummary: buildCharacterSummary,
         parseMarkdownState: parseMarkdownState,
         applyImportedState: function (markdown) {
           var result = parseMarkdownState(markdown);
@@ -4604,6 +4834,7 @@
           return JSON.parse(JSON.stringify(getSkillPerformance(skill)));
         },
         getMaximumHp: getMaximumHp,
+        getMaximumAp: getMaximumAp,
         tryEnterKpMode: tryEnterKpMode,
         exitKpMode: exitKpMode,
         isKpMode: function () {
