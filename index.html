@@ -1259,7 +1259,7 @@
             <p id="skill-warning" class="field-error" aria-live="polite"></p>
           </div>
           <p class="adventure-note">
-            威力・命中・対象数・追加効果から性能予算を自動計算し、選んだ消費の予算を超える設定は受け付けません。
+            威力・命中・対象・範囲・追加効果から性能予算を自動計算し、選んだ消費の予算を超える設定は受け付けません。
           </p>
         </section>
 
@@ -1472,7 +1472,7 @@
       "use strict";
 
       var STORAGE_KEY = "hoshimichi-character-sheet-builder";
-      var STORAGE_VERSION = 5;
+      var STORAGE_VERSION = 6;
       var KP_PASSPHRASE_HASH = "6da948cc";
       var feedbackTimer = null;
       var loadNotice = "";
@@ -1492,9 +1492,27 @@
           { key: "spirit", label: "精神", max: 15, appliesTo: "恐怖・威圧・誘惑・幻惑への抵抗・集中" }
         ],
         potentialStats: [
-          { key: "willpower", label: "気力", max: 10 },
-          { key: "magic", label: "魔力", max: 10 },
-          { key: "holy", label: "聖力", max: 10 }
+          {
+            key: "willpower",
+            label: "気力",
+            max: 10,
+            description: "肉体強化、武技、耐久、瞬発力に関わる。",
+            rarity: "みんな持ってる。正しく使えるのは一握り"
+          },
+          {
+            key: "magic",
+            label: "魔力",
+            max: 10,
+            description: "魔術、錬金術、術式、魔道具に関わる。",
+            rarity: "10人にひとりの才能"
+          },
+          {
+            key: "holy",
+            label: "聖力",
+            max: 10,
+            description: "治癒、浄化、加護、結界に関わる。",
+            rarity: "100人にひとりの才能"
+          }
         ],
         practicalSkills: [
           { key: "cooking", label: "料理", max: 3, staged: true },
@@ -1555,9 +1573,13 @@
         heavyLargeShield: { label: "重装大盾", minimum: 0.07, maximum: 0.07, defaultValue: 0.07 }
       };
 
-      var targetShapeDefinitions = {
+      var targetModeDefinitions = {
         single: "単体",
-        multiple: "複数対象",
+        multiple: "複数指定",
+        range: "範囲指定"
+      };
+
+      var rangeShapeDefinitions = {
         line: "直線",
         cone: "扇状",
         around: "周囲",
@@ -1621,7 +1643,7 @@
       ];
 
       function getPotentialStageName(value) {
-        return value <= 0 ? "使用不可" : "習得" + value + "・一日" + value;
+        return value <= 0 ? "使用不可" : "習得数" + value + "・1日" + value + "回";
       }
 
       function getPowerIndicator(value, attackType) {
@@ -1667,8 +1689,30 @@
         return "人間を超える巨体";
       }
 
-      function getTargetShapeMinimumBudget(shape) {
-        return shape === "single" ? 0 : 50;
+      function getTargetBudget(skill) {
+        return skill.targetMode === "multiple"
+          ? Math.max(0, skill.maxTargets - 1) * 25
+          : 0;
+      }
+
+      function getRangeBudget(skill) {
+        if (skill.targetMode !== "range") return 0;
+        var distance = Math.max(0, Number(skill.rangeDistance) || 0);
+        var angle = Math.max(0, Number(skill.rangeAngle) || 0);
+        var radius = Math.max(0, Number(skill.areaRadius) || 0);
+        if (skill.rangeShape === "line") {
+          return Math.ceil(distance / 3 * 15);
+        }
+        if (skill.rangeShape === "cone") {
+          return Math.ceil(20 * (angle / 90) * Math.pow(distance / 3, 2));
+        }
+        if (skill.rangeShape === "around") {
+          return Math.ceil(20 * Math.pow(radius / 1.5, 2));
+        }
+        if (skill.rangeShape === "area") {
+          return Math.ceil(distance / 3 * 10 + 20 * Math.pow(radius / 1.5, 2));
+        }
+        return 0;
       }
 
       function makeNumberMap(items) {
@@ -1723,8 +1767,12 @@
           accuracy: 0,
           cost: 0,
           effectBudget: 0,
-          targetShape: "single",
+          targetMode: "single",
           maxTargets: 1,
+          rangeShape: "line",
+          rangeDistance: 3,
+          rangeAngle: 90,
+          areaRadius: 1.5,
           description: ""
         };
       }
@@ -1792,18 +1840,21 @@
       function getSkillPerformance(skill) {
         var powerFactor = 1 + skill.powerDisplay / 100;
         var accuracyFactor = Math.max(0.40, 1 + skill.accuracy / 50);
-        var targetFactor = 1 + 0.50 * (skill.maxTargets - 1);
-        var performanceIndex = powerFactor * accuracyFactor * targetFactor;
+        var performanceIndex = powerFactor * accuracyFactor;
         var basePerformanceLoad = performanceIndex - 1;
+        var targetBudget = getTargetBudget(skill);
+        var rangeBudget = getRangeBudget(skill);
         var effectLoad = (Number(skill.effectBudget) || 0) / 100;
-        var performanceLoad = basePerformanceLoad + effectLoad;
+        var performanceLoad = basePerformanceLoad +
+          (targetBudget + rangeBudget) / 100 + effectLoad;
         var requiredCost = Math.ceil(Math.max(0, performanceLoad - 1e-9) / 0.65);
         return {
           powerFactor: powerFactor,
           accuracyFactor: accuracyFactor,
-          targetFactor: targetFactor,
           performanceIndex: performanceIndex,
           basePerformanceLoad: basePerformanceLoad,
+          targetBudget: targetBudget,
+          rangeBudget: rangeBudget,
           effectLoad: effectLoad,
           performanceLoad: performanceLoad,
           requiredCost: requiredCost
@@ -1820,10 +1871,20 @@
         clean.accuracy = clampInteger(source.accuracy, -999, 999);
         clean.cost = clampInteger(source.cost, 0, 10);
         clean.effectBudget = clampInteger(source.effectBudget, 0, 999);
-        clean.targetShape = normalizeChoice(source.targetShape, targetShapeDefinitions, "single");
-        clean.maxTargets = clean.targetShape === "single"
-          ? 1
-          : clampInteger(source.maxTargets || 2, 2, 5);
+        var legacyShape = sanitizeText(source.targetShape);
+        clean.targetMode = normalizeChoice(source.targetMode, targetModeDefinitions,
+          legacyShape === "multiple" ? "multiple" :
+            (["line", "cone", "around", "area"].indexOf(legacyShape) >= 0 ? "range" : "single"));
+        clean.maxTargets = clean.targetMode === "multiple"
+          ? clampInteger(source.maxTargets || 2, 2, 99)
+          : 1;
+        clean.rangeShape = normalizeChoice(source.rangeShape, rangeShapeDefinitions,
+          Object.prototype.hasOwnProperty.call(rangeShapeDefinitions, legacyShape)
+            ? legacyShape
+            : "line");
+        clean.rangeDistance = clampDecimal(source.rangeDistance, 0, 999, 3);
+        clean.rangeAngle = clampDecimal(source.rangeAngle, 0, 360, 90);
+        clean.areaRadius = clampDecimal(source.areaRadius, 0, 999, 1.5);
         clean.description = sanitizeText(source.description).slice(0, 2000);
         return clean;
       }
@@ -1861,7 +1922,7 @@
       function sanitizeState(raw) {
         if (!raw || typeof raw !== "object" ||
             (raw.version !== 1 && raw.version !== 2 && raw.version !== 3 &&
-              raw.version !== 4 &&
+              raw.version !== 4 && raw.version !== 5 &&
               raw.version !== STORAGE_VERSION)) {
           throw new Error("unsupported storage data");
         }
@@ -2013,6 +2074,20 @@
           labelWrap.appendChild(appliesTo);
         }
 
+        if (item.description) {
+          var description = document.createElement("span");
+          description.className = "metric-applies";
+          description.textContent = "説明：" + item.description;
+          labelWrap.appendChild(description);
+        }
+
+        if (item.rarity) {
+          var rarity = document.createElement("span");
+          rarity.className = "metric-applies";
+          rarity.textContent = "保有の目安：" + item.rarity;
+          labelWrap.appendChild(rarity);
+        }
+
         var stepper = document.createElement("div");
         stepper.className = "stepper";
 
@@ -2147,15 +2222,20 @@
         select.value = selectedValue;
       }
 
-      function appendTargetShapeOptions(select, selectedValue) {
-        Object.keys(targetShapeDefinitions).forEach(function (key) {
+      function appendPresetOptions(select, presets, selectedValue) {
+        var custom = document.createElement("option");
+        custom.value = "custom";
+        custom.textContent = "自由入力";
+        select.appendChild(custom);
+        presets.forEach(function (preset) {
           var option = document.createElement("option");
-          option.value = key;
-          option.textContent = targetShapeDefinitions[key] +
-            "（最小消費予算 " + getTargetShapeMinimumBudget(key) + "）";
+          option.value = String(preset.value);
+          option.textContent = preset.label;
           select.appendChild(option);
         });
-        select.value = selectedValue;
+        select.value = presets.some(function (preset) {
+          return Number(preset.value) === Number(selectedValue);
+        }) ? String(selectedValue) : "custom";
       }
 
       function renderSkillControls() {
@@ -2231,27 +2311,144 @@
           accuracyInput.disabled = !unlocked;
           grid.appendChild(createSkillField("命中補正", skill, "accuracy", accuracyInput));
 
-          var targetSelect = document.createElement("select");
-          appendTargetShapeOptions(targetSelect, skill.targetShape);
-          targetSelect.disabled = !unlocked;
-          var targetShapeField = createSkillField(
-            "対象形状（選択式）", skill, "targetShape", targetSelect
-          );
-          var targetShapeHint = document.createElement("span");
-          targetShapeHint.className = "field-hint";
-          targetShapeHint.textContent = "選択中の最小消費予算：" +
-            getTargetShapeMinimumBudget(skill.targetShape);
-          targetShapeField.appendChild(targetShapeHint);
-          grid.appendChild(targetShapeField);
+          var targetModeSelect = document.createElement("select");
+          appendOptions(targetModeSelect, targetModeDefinitions, skill.targetMode);
+          targetModeSelect.disabled = !unlocked;
+          grid.appendChild(createSkillField("対象指定", skill, "targetMode", targetModeSelect));
 
-          var targetsInput = document.createElement("input");
-          targetsInput.type = "number";
-          targetsInput.min = skill.targetShape === "single" ? "1" : "2";
-          targetsInput.max = "5";
-          targetsInput.step = "1";
-          targetsInput.value = String(skill.maxTargets);
-          targetsInput.disabled = !unlocked || skill.targetShape === "single";
-          grid.appendChild(createSkillField("最大対象数", skill, "maxTargets", targetsInput));
+          if (skill.targetMode === "multiple") {
+            var targetPreset = document.createElement("select");
+            appendPresetOptions(targetPreset, [
+              { value: 2, label: "2体（対象予算25）" },
+              { value: 3, label: "3体（対象予算50）" },
+              { value: 4, label: "4体（対象予算75）" },
+              { value: 5, label: "5体（対象予算100）" }
+            ], skill.maxTargets);
+            targetPreset.disabled = !unlocked;
+            grid.appendChild(createSkillField(
+              "最大対象数の目安", skill, "maxTargetsPreset", targetPreset
+            ));
+
+            var targetsInput = document.createElement("input");
+            targetsInput.type = "number";
+            targetsInput.min = "2";
+            targetsInput.max = "99";
+            targetsInput.step = "1";
+            targetsInput.value = String(skill.maxTargets);
+            targetsInput.disabled = !unlocked;
+            var targetsField = createSkillField(
+              "最大対象数（自由入力）", skill, "maxTargets", targetsInput
+            );
+            var targetsHint = document.createElement("span");
+            targetsHint.className = "field-hint";
+            targetsHint.textContent = "現在の対象予算：" + performance.targetBudget;
+            targetsField.appendChild(targetsHint);
+            grid.appendChild(targetsField);
+          }
+
+          if (skill.targetMode === "range") {
+            var rangeShapeSelect = document.createElement("select");
+            appendOptions(rangeShapeSelect, rangeShapeDefinitions, skill.rangeShape);
+            rangeShapeSelect.disabled = !unlocked;
+            grid.appendChild(createSkillField(
+              "範囲形状", skill, "rangeShape", rangeShapeSelect
+            ));
+
+            if (skill.rangeShape === "line" || skill.rangeShape === "cone" ||
+                skill.rangeShape === "area") {
+              var distancePreset = document.createElement("select");
+              var distancePresets = skill.rangeShape === "line"
+                ? [
+                    { value: 3, label: "3m（範囲予算15）" },
+                    { value: 6, label: "6m（範囲予算30）" },
+                    { value: 9, label: "9m（範囲予算45）" }
+                  ]
+                : skill.rangeShape === "cone"
+                  ? [
+                      { value: 3, label: "3m（90°なら予算20）" },
+                      { value: 6, label: "6m（90°なら予算80）" },
+                      { value: 9, label: "9m（90°なら予算180）" }
+                    ]
+                  : [
+                      { value: 3, label: "3m（指定距離予算10）" },
+                      { value: 6, label: "6m（指定距離予算20）" },
+                      { value: 9, label: "9m（指定距離予算30）" }
+                    ];
+              appendPresetOptions(distancePreset, distancePresets, skill.rangeDistance);
+              distancePreset.disabled = !unlocked;
+              grid.appendChild(createSkillField(
+                skill.rangeShape === "area" ? "指定可能距離の目安" : "距離の目安",
+                skill, "rangeDistancePreset", distancePreset
+              ));
+
+              var distanceInput = document.createElement("input");
+              distanceInput.type = "number";
+              distanceInput.min = "0";
+              distanceInput.max = "999";
+              distanceInput.step = "0.1";
+              distanceInput.value = String(skill.rangeDistance);
+              distanceInput.disabled = !unlocked;
+              grid.appendChild(createSkillField(
+                skill.rangeShape === "area" ? "指定可能距離m（自由入力）" : "距離m（自由入力）",
+                skill, "rangeDistance", distanceInput
+              ));
+            }
+
+            if (skill.rangeShape === "cone") {
+              var anglePreset = document.createElement("select");
+              appendPresetOptions(anglePreset, [
+                { value: 45, label: "45°（距離3mなら予算10）" },
+                { value: 90, label: "90°（距離3mなら予算20）" },
+                { value: 180, label: "180°（距離3mなら予算40）" },
+                { value: 360, label: "360°（距離3mなら予算80）" }
+              ], skill.rangeAngle);
+              anglePreset.disabled = !unlocked;
+              grid.appendChild(createSkillField(
+                "角度の目安", skill, "rangeAnglePreset", anglePreset
+              ));
+
+              var angleInput = document.createElement("input");
+              angleInput.type = "number";
+              angleInput.min = "0";
+              angleInput.max = "360";
+              angleInput.step = "1";
+              angleInput.value = String(skill.rangeAngle);
+              angleInput.disabled = !unlocked;
+              grid.appendChild(createSkillField(
+                "角度°（自由入力）", skill, "rangeAngle", angleInput
+              ));
+            }
+
+            if (skill.rangeShape === "around" || skill.rangeShape === "area") {
+              var radiusPreset = document.createElement("select");
+              appendPresetOptions(radiusPreset, [
+                { value: 1.5, label: "半径1.5m（範囲予算20）" },
+                { value: 3, label: "半径3m（範囲予算80）" },
+                { value: 4.5, label: "半径4.5m（範囲予算180）" }
+              ], skill.areaRadius);
+              radiusPreset.disabled = !unlocked;
+              grid.appendChild(createSkillField(
+                "範囲半径の目安", skill, "areaRadiusPreset", radiusPreset
+              ));
+
+              var radiusInput = document.createElement("input");
+              radiusInput.type = "number";
+              radiusInput.min = "0";
+              radiusInput.max = "999";
+              radiusInput.step = "0.1";
+              radiusInput.value = String(skill.areaRadius);
+              radiusInput.disabled = !unlocked;
+              grid.appendChild(createSkillField(
+                "範囲半径m（自由入力）", skill, "areaRadius", radiusInput
+              ));
+            }
+
+            var rangeBudgetNote = document.createElement("p");
+            rangeBudgetNote.className = "skill-metrics";
+            rangeBudgetNote.textContent = "現在の範囲予算：" + performance.rangeBudget +
+              "（範囲内の対象すべてが候補／最大対象数なし）";
+            grid.appendChild(rangeBudgetNote);
+          }
 
           var effectBudgetInput = document.createElement("input");
           effectBudgetInput.type = "number";
@@ -2265,7 +2462,7 @@
           );
           var effectBudgetHint = document.createElement("span");
           effectBudgetHint.className = "field-hint";
-          effectBudgetHint.textContent = "追加効果を付ける場合、KPと相談した予算を入力";
+          effectBudgetHint.textContent = "任意。0でも効果を記載できます。必要ならKP相談値を入力";
           effectBudgetField.appendChild(effectBudgetHint);
           grid.appendChild(effectBudgetField);
 
@@ -2283,7 +2480,8 @@
           var baseBudget = performance.basePerformanceLoad * 100;
           var budgetIncrease = Math.max(0, -baseBudget);
           var baseConsumedBudget = Math.max(0, baseBudget);
-          var consumedBudget = baseConsumedBudget + skill.effectBudget;
+          var consumedBudget = baseConsumedBudget + performance.targetBudget +
+            performance.rangeBudget + skill.effectBudget;
           var remainingBudget = availableBudget + budgetIncrease - consumedBudget;
           metrics.textContent = unlocked
             ? "性能予算 " + formatNumber(availableBudget) +
@@ -2291,13 +2489,15 @@
                 ? " ／ マイナス補正による予算増加 " + formatNumber(budgetIncrease)
                 : "") +
               " ／ 使用中 " + formatNumber(consumedBudget) +
-              (skill.effectBudget > 0
+              (performance.targetBudget > 0 || performance.rangeBudget > 0 || skill.effectBudget > 0
                 ? "（基本性能 " + formatNumber(baseConsumedBudget) +
+                  "＋対象 " + formatNumber(performance.targetBudget) +
+                  "＋範囲 " + formatNumber(performance.rangeBudget) +
                   "＋追加効果 " + formatNumber(skill.effectBudget) + "）"
                 : "") +
               " ／ 残り " + formatNumber(remainingBudget) +
               " ／ 必要消費 " + performance.requiredCost
-            : "消費を選ぶと、威力・命中・対象数・効果を入力できます。";
+            : "消費を選ぶと、威力・命中・対象・範囲・効果を入力できます。";
           grid.appendChild(metrics);
           card.appendChild(grid);
           fragment.appendChild(card);
@@ -2469,7 +2669,7 @@
             item.label,
             String(raw),
             raw > 0 ? "×" + formatNumber(getPotentialMultiplier(raw)) : "使用不可",
-            "枠・一日" + raw
+            "習得数" + raw + "・1日" + raw + "回"
           ]);
         });
 
@@ -2513,7 +2713,6 @@
       function getConfiguredSkills() {
         return state.skills.filter(function (skill) {
           return skill.cost > 0 && skill.name.trim() &&
-            (!skill.description.trim() || skill.effectBudget > 0) &&
             getSkillPerformance(skill).requiredCost <= skill.cost;
         });
       }
@@ -2554,7 +2753,8 @@
           "一命中の威力 ＝ 武器単発威力 × 攻撃技倍率 × 潜在倍率 × 成功段階倍率 × 状況倍率",
           "スキル性能予算 ＝ 消費×65 ／ 基本性能差 ＝ (性能指数－1)×100",
           "基本性能差が正なら予算を使用し、負ならマイナス補正として予算が増加",
-          "総使用予算 ＝ 基本性能差＋追加効果予算（追加効果予算はKPと相談）",
+          "総使用予算 ＝ 基本性能差＋対象予算＋範囲予算＋追加効果予算",
+          "対象予算は追加1体25／直線3m15／扇状90°・3m20／周囲半径1.5m20",
           "防御損害 ＝ 一命中威力 × 防御結果倍率 × 武器受け倍率 − 防護点"
         ];
         document.getElementById("kp-rule-formulas").textContent = lines.join("\n");
@@ -3142,9 +3342,6 @@
             } else if (skill.cost > value) {
               issues.push(label + "は" + resource.label + skill.cost + "を使用できません");
             }
-            if (skill.description.trim() && skill.effectBudget <= 0) {
-              issues.push(label + "の追加効果予算が未入力");
-            }
             var required = getSkillPerformance(skill).requiredCost;
             if (skill.cost > 0 && skill.cost < required) {
               issues.push(label + "の必要消費は" + required);
@@ -3370,24 +3567,44 @@
           lines.push("");
           lines.push("消費：" + resource.label + skill.cost);
           lines.push("命中補正：" + formatSigned(skill.accuracy));
-          lines.push("対象：" + targetShapeDefinitions[skill.targetShape] +
-            "（最大" + skill.maxTargets + "体／最小消費予算" +
-            getTargetShapeMinimumBudget(skill.targetShape) + "）");
+          if (skill.targetMode === "single") {
+            lines.push("対象指定：単体（対象予算0）");
+          } else if (skill.targetMode === "multiple") {
+            lines.push("対象指定：複数指定（最大" + skill.maxTargets +
+              "体／対象予算" + performance.targetBudget + "）");
+          } else {
+            lines.push("対象指定：範囲指定（最大対象数なし）");
+            lines.push("範囲形状：" + rangeShapeDefinitions[skill.rangeShape]);
+            if (skill.rangeShape === "line") {
+              lines.push("直線距離：" + formatNumber(skill.rangeDistance) + "m");
+            } else if (skill.rangeShape === "cone") {
+              lines.push("扇状距離：" + formatNumber(skill.rangeDistance) + "m");
+              lines.push("扇状角度：" + formatNumber(skill.rangeAngle) + "°");
+            } else if (skill.rangeShape === "around") {
+              lines.push("周囲半径：" + formatNumber(skill.areaRadius) + "m");
+            } else if (skill.rangeShape === "area") {
+              lines.push("地点指定可能距離：" + formatNumber(skill.rangeDistance) + "m");
+              lines.push("地点範囲半径：" + formatNumber(skill.areaRadius) + "m");
+            }
+            lines.push("範囲予算：" + performance.rangeBudget);
+          }
           lines.push("追加効果予算：" + skill.effectBudget);
           lines.push("効果：" + textOrNone(skill.description));
           if (includeInternal) {
             lines.push("威力倍率：×" + formatNumber(performance.powerFactor));
             lines.push("命中係数：×" + formatNumber(performance.accuracyFactor));
-            lines.push("対象係数：×" + formatNumber(performance.targetFactor));
             lines.push("性能指数：" + formatNumber(performance.performanceIndex));
             lines.push("基本性能差：" + formatNumber(performance.basePerformanceLoad));
+            lines.push("対象予算：" + performance.targetBudget);
+            lines.push("範囲予算：" + performance.rangeBudget);
             lines.push("追加効果負荷：" + formatNumber(performance.effectLoad));
             lines.push("性能負荷合計：" + formatNumber(performance.performanceLoad));
             lines.push("性能予算：" + formatNumber(skill.cost * 65));
             lines.push("マイナス補正による予算増加：" + formatNumber(Math.max(0,
               -performance.basePerformanceLoad * 100)));
             lines.push("使用中予算：" + formatNumber(Math.max(0,
-              performance.basePerformanceLoad * 100) + skill.effectBudget));
+              performance.basePerformanceLoad * 100) + performance.targetBudget +
+              performance.rangeBudget + skill.effectBudget));
             lines.push("残り予算：" + formatNumber(
               skill.cost * 65 - performance.performanceLoad * 100));
             lines.push("必要消費：" + performance.requiredCost);
@@ -3420,7 +3637,7 @@
           delete weapon.receiveMultiplier;
           delete weapon.defenseType;
         });
-        return "<!-- HOSHIMICHI-PC-V4:" +
+        return "<!-- HOSHIMICHI-PC-V5:" +
           encodeURIComponent(JSON.stringify(publicState)) + " -->";
       }
 
@@ -3520,12 +3737,12 @@
         ];
         appendSkillLines(lines, true, "KPスキル計算");
         lines.push("");
-        lines.push("<!-- HOSHIMICHI-KP-V4:" + encodeURIComponent(JSON.stringify(state)) + " -->");
+        lines.push("<!-- HOSHIMICHI-KP-V5:" + encodeURIComponent(JSON.stringify(state)) + " -->");
         return lines.join("\n");
       }
 
       function parseKpPayload(markdown) {
-        var match = sanitizeText(markdown).match(/<!--\s*HOSHIMICHI-KP-V(?:1|2|3|4):([\s\S]*?)-->/);
+        var match = sanitizeText(markdown).match(/<!--\s*HOSHIMICHI-KP-V(?:1|2|3|4|5):([\s\S]*?)-->/);
         if (!match) {
           return null;
         }
@@ -3537,7 +3754,7 @@
       }
 
       function parsePublicPayload(markdown) {
-        var match = sanitizeText(markdown).match(/<!--\s*HOSHIMICHI-PC-V(?:1|2|3|4):([\s\S]*?)-->/);
+        var match = sanitizeText(markdown).match(/<!--\s*HOSHIMICHI-PC-V(?:1|2|3|4|5):([\s\S]*?)-->/);
         if (!match) {
           return null;
         }
@@ -3842,17 +4059,33 @@
           candidate.accuracy = clampInteger(target.value, -999, 999);
         } else if (field === "effectBudget") {
           candidate.effectBudget = clampInteger(target.value, 0, 999);
-        } else if (field === "targetShape") {
-          candidate.targetShape = normalizeChoice(target.value, targetShapeDefinitions, "single");
-          if (candidate.targetShape === "single") {
+        } else if (field === "targetMode") {
+          candidate.targetMode = normalizeChoice(target.value, targetModeDefinitions, "single");
+          if (candidate.targetMode !== "multiple") {
             candidate.maxTargets = 1;
           } else if (candidate.maxTargets < 2) {
             candidate.maxTargets = 2;
           }
-        } else if (field === "maxTargets") {
-          candidate.maxTargets = candidate.targetShape === "single"
-            ? 1
-            : clampInteger(target.value, 2, 5);
+        } else if (field === "maxTargets" || field === "maxTargetsPreset") {
+          if (target.value !== "custom") {
+            candidate.maxTargets = candidate.targetMode === "multiple"
+              ? clampInteger(target.value, 2, 99)
+              : 1;
+          }
+        } else if (field === "rangeShape") {
+          candidate.rangeShape = normalizeChoice(target.value, rangeShapeDefinitions, "line");
+        } else if (field === "rangeDistance" || field === "rangeDistancePreset") {
+          if (target.value !== "custom") {
+            candidate.rangeDistance = clampDecimal(target.value, 0, 999, 0);
+          }
+        } else if (field === "rangeAngle" || field === "rangeAnglePreset") {
+          if (target.value !== "custom") {
+            candidate.rangeAngle = clampDecimal(target.value, 0, 360, 0);
+          }
+        } else if (field === "areaRadius" || field === "areaRadiusPreset") {
+          if (target.value !== "custom") {
+            candidate.areaRadius = clampDecimal(target.value, 0, 999, 0);
+          }
         }
 
         var required = getSkillPerformance(candidate).requiredCost;
