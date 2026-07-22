@@ -115,7 +115,45 @@
     }
 
     .page-header {
+      position: relative;
+      padding-top: 3.7rem;
       margin-bottom: 1.25rem;
+    }
+
+    .kp-gate {
+      position: absolute;
+      top: 0;
+      left: 0;
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+      max-width: 100%;
+    }
+
+    .kp-gate input {
+      width: min(11rem, calc(100vw - 8rem));
+      min-height: 44px;
+    }
+
+    .kp-gate button {
+      width: 44px;
+      min-width: 44px;
+      padding: 0;
+      font-size: 1.15rem;
+    }
+
+    .kp-mode-status {
+      color: var(--muted);
+      font-size: 0.78rem;
+      font-weight: 800;
+    }
+
+    .kp-mode-status.is-success {
+      color: var(--success);
+    }
+
+    .kp-mode-status.is-error {
+      color: var(--danger);
     }
 
     .eyebrow {
@@ -440,6 +478,131 @@
       gap: 1rem;
     }
 
+    .kp-panel {
+      border-color: #6c5ca8;
+      background: linear-gradient(180deg, #fcfaff 0%, #f6f2ff 100%);
+    }
+
+    .kp-panel[hidden] {
+      display: none;
+    }
+
+    .kp-heading-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.7rem;
+    }
+
+    .kp-heading-actions button {
+      min-height: 38px;
+      padding: 0.35rem 0.8rem;
+    }
+
+    .kp-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+      gap: 1rem;
+    }
+
+    .kp-subpanel {
+      min-width: 0;
+      padding: 1rem;
+      border: 1px solid #cfc5ed;
+      border-radius: 11px;
+      background: rgba(255, 255, 255, 0.82);
+    }
+
+    .kp-subpanel h3 {
+      margin: 0 0 0.75rem;
+      font-size: 1rem;
+    }
+
+    .kp-settings-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 0.7rem;
+      margin-bottom: 1rem;
+    }
+
+    .kp-formulas {
+      display: grid;
+      gap: 0.8rem;
+    }
+
+    .kp-formulas textarea {
+      min-height: 4.8rem;
+      font-family: ui-monospace, "Cascadia Mono", "Yu Gothic UI", monospace;
+    }
+
+    .internal-values {
+      display: grid;
+      gap: 0.35rem;
+      max-height: 30rem;
+      overflow: auto;
+    }
+
+    .internal-row {
+      display: grid;
+      grid-template-columns: minmax(5rem, 1fr) auto auto;
+      gap: 0.6rem;
+      padding: 0.4rem 0.55rem;
+      border-radius: 7px;
+      background: #f7f4ff;
+      font-size: 0.82rem;
+    }
+
+    .internal-row span:nth-child(2),
+    .internal-row span:nth-child(3) {
+      font-family: ui-monospace, "Cascadia Mono", monospace;
+      font-weight: 800;
+      text-align: right;
+    }
+
+    .trial-controls {
+      display: grid;
+      grid-template-columns: minmax(8rem, 0.4fr) minmax(12rem, 1fr);
+      gap: 0.7rem;
+      align-items: end;
+    }
+
+    .trial-output,
+    .import-summary {
+      min-height: 7rem;
+      max-height: 22rem;
+      margin: 0.8rem 0 0;
+      overflow: auto;
+      border: 1px solid #cfc5ed;
+      border-radius: 9px;
+      background: #181527;
+      color: #f3efff;
+      padding: 0.8rem;
+      font-family: ui-monospace, "Cascadia Mono", "Yu Gothic UI", monospace;
+      font-size: 0.8rem;
+      white-space: pre-wrap;
+    }
+
+    .import-box {
+      margin-top: 1rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--line);
+    }
+
+    .import-box textarea {
+      min-height: 9rem;
+      font-family: ui-monospace, "Cascadia Mono", "Yu Gothic UI", monospace;
+      font-size: 0.82rem;
+    }
+
+    .import-actions {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 0.7rem;
+    }
+
+    .import-actions button {
+      padding: 0.6rem 1rem;
+    }
+
     .preview-panel {
       position: sticky;
       top: 9.2rem;
@@ -553,6 +716,7 @@
     .dialog-actions {
       display: flex;
       justify-content: flex-end;
+      gap: 0.6rem;
       margin-top: 0.8rem;
     }
 
@@ -583,6 +747,10 @@
       }
 
       .editor-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .kp-grid {
         grid-template-columns: 1fr;
       }
 
@@ -643,6 +811,16 @@
         text-align: left;
       }
 
+      .kp-heading-actions {
+        justify-content: space-between;
+        margin-top: 0.6rem;
+      }
+
+      .kp-settings-grid,
+      .trial-controls {
+        grid-template-columns: 1fr;
+      }
+
       .metric-row {
         grid-template-columns: 1fr;
         gap: 0.55rem;
@@ -688,6 +866,13 @@
 <body>
   <main class="page-shell">
     <header class="page-header">
+      <div class="kp-gate" aria-label="KPモード切替">
+        <label class="visually-hidden" for="kp-passphrase">KPモードの合言葉</label>
+        <input id="kp-passphrase" type="password" maxlength="64" autocomplete="off"
+          placeholder="合言葉" aria-describedby="kp-mode-status">
+        <button id="kp-enter" type="button" aria-label="合言葉を確認してKPモードへ接続">✓</button>
+        <span id="kp-mode-status" class="kp-mode-status" aria-live="polite"></span>
+      </div>
       <p class="eyebrow">試作ツール</p>
       <h1>星みちTRPG キャラクターポイント入力</h1>
       <p class="lead">
@@ -804,6 +989,64 @@
       </aside>
     </div>
 
+    <section id="kp-panel" class="panel section-panel kp-panel" aria-labelledby="kp-heading" hidden>
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">星の裏側</p>
+          <h2 id="kp-heading">KPモード</h2>
+        </div>
+        <div class="kp-heading-actions">
+          <span class="section-note">内部数値・倍率・判定式</span>
+          <button id="kp-exit" type="button" class="secondary-button">KPモードを終了</button>
+        </div>
+      </div>
+      <div class="kp-grid">
+        <div class="kp-subpanel">
+          <h3>内部数値</h3>
+          <div id="kp-internal-values" class="internal-values"></div>
+        </div>
+        <div class="kp-subpanel">
+          <h3>倍率と攻撃試験</h3>
+          <div class="kp-settings-grid">
+            <div class="field">
+              <label for="kp-base-multiplier">基礎倍率</label>
+              <input id="kp-base-multiplier" type="number" min="0" max="100" step="0.1">
+            </div>
+            <div class="field">
+              <label for="kp-potential-multiplier">潜在倍率</label>
+              <input id="kp-potential-multiplier" type="number" min="0" max="100" step="0.1">
+            </div>
+            <div class="field">
+              <label for="kp-practical-multiplier">実務倍率</label>
+              <input id="kp-practical-multiplier" type="number" min="0" max="100" step="0.1">
+            </div>
+          </div>
+          <div class="kp-formulas">
+            <div class="field">
+              <label for="kp-hit-formula">命中・判定式</label>
+              <textarea id="kp-hit-formula" placeholder="例：1d100 &lt;= 技量 * 5"></textarea>
+              <span class="field-hint">能力名、NdM、+ − × ÷、括弧、比較演算を使用できます。</span>
+            </div>
+            <div class="field">
+              <label for="kp-damage-formula">ダメージ式</label>
+              <textarea id="kp-damage-formula" placeholder="例：2d6 + 筋力"></textarea>
+            </div>
+            <div class="trial-controls">
+              <div class="field">
+                <label for="kp-trial-count">試験回数</label>
+                <input id="kp-trial-count" type="number" min="1" max="100" step="1">
+              </div>
+              <button id="kp-run-trial" type="button">入力した判定式で攻撃試験</button>
+            </div>
+          </div>
+          <pre id="kp-trial-output" class="trial-output" aria-live="polite">判定式を入力してください。</pre>
+          <div class="import-actions">
+            <button id="copy-kp" type="button" class="secondary-button">KP設定Markdownをコピー</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <section class="panel section-panel actions-panel" aria-labelledby="actions-heading">
       <div class="section-heading">
         <h2 id="actions-heading">8. コピー・リセット操作</h2>
@@ -813,6 +1056,17 @@
         <button id="copy-player" type="button">プレイヤー用Markdownをコピー</button>
         <button id="copy-chappy" type="button" class="secondary-button">チャッピー用データをコピー</button>
         <button id="reset-all" type="button" class="danger-button">すべてリセット</button>
+      </div>
+      <div class="import-box">
+        <div class="field">
+          <label for="markdown-import">Markdownから設定を再読み込み</label>
+          <textarea id="markdown-import"
+            placeholder="このサイトで出力したプレイヤー用・チャッピー用・KP設定Markdownを貼り付け"></textarea>
+          <span class="field-hint">PC・モンスターのどちらでも使用できます。確認後に現在の設定を上書きします。</span>
+        </div>
+        <div class="import-actions">
+          <button id="preview-import" type="button" class="secondary-button">読込内容を確認</button>
+        </div>
       </div>
       <p id="feedback" class="feedback" aria-live="polite"></p>
     </section>
@@ -827,14 +1081,28 @@
     </div>
   </dialog>
 
+  <dialog id="import-dialog" aria-labelledby="import-dialog-heading">
+    <h2 id="import-dialog-heading">読込内容の確認</h2>
+    <p>次の内容で現在の設定を上書きします。</p>
+    <pre id="import-summary" class="import-summary"></pre>
+    <div class="dialog-actions">
+      <button id="cancel-import" type="button" class="secondary-button">キャンセル</button>
+      <button id="apply-import" type="button">上書きする</button>
+    </div>
+  </dialog>
+
   <script>
     (function () {
       "use strict";
 
       var STORAGE_KEY = "hoshimichi-character-sheet-builder";
-      var STORAGE_VERSION = 1;
+      var STORAGE_VERSION = 2;
+      var KP_PASSPHRASE_HASH = "6da948cc";
       var feedbackTimer = null;
       var loadNotice = "";
+      var isKpMode = false;
+      var pendingImportState = null;
+      var pendingImportHasKpSettings = false;
 
       var definitions = {
         baseStats: [
@@ -911,6 +1179,17 @@
         return result;
       }
 
+      function createDefaultKpSettings() {
+        return {
+          baseMultiplier: 1,
+          potentialMultiplier: 1,
+          practicalMultiplier: 1,
+          hitFormula: "",
+          damageFormula: "",
+          trialCount: 1
+        };
+      }
+
       function createInitialState() {
         return {
           version: STORAGE_VERSION,
@@ -924,7 +1203,8 @@
           uniqueAbility: "",
           skills: "",
           weapons: "",
-          equipment: ""
+          equipment: "",
+          kpSettings: createDefaultKpSettings()
         };
       }
 
@@ -940,6 +1220,18 @@
         return typeof value === "string" ? value : "";
       }
 
+      function clampDecimal(value, minimum, maximum, fallback) {
+        var numeric = Number(value);
+        if (!Number.isFinite(numeric)) {
+          return fallback;
+        }
+        return Math.min(maximum, Math.max(minimum, numeric));
+      }
+
+      function sanitizeFormula(value) {
+        return sanitizeText(value).slice(0, 500);
+      }
+
       function sanitizeBuild(value) {
         if (value === "" || value === null || value === undefined) {
           return "1";
@@ -949,7 +1241,7 @@
       }
 
       function sanitizeState(raw) {
-        if (!raw || typeof raw !== "object" || raw.version !== STORAGE_VERSION) {
+        if (!raw || typeof raw !== "object" || (raw.version !== 1 && raw.version !== STORAGE_VERSION)) {
           throw new Error("unsupported storage data");
         }
 
@@ -972,6 +1264,16 @@
         freeFieldDefinitions.forEach(function (field) {
           clean[field.key] = sanitizeText(raw[field.key]);
         });
+
+        var sourceKp = raw.kpSettings && typeof raw.kpSettings === "object"
+          ? raw.kpSettings
+          : {};
+        clean.kpSettings.baseMultiplier = clampDecimal(sourceKp.baseMultiplier, 0, 100, 1);
+        clean.kpSettings.potentialMultiplier = clampDecimal(sourceKp.potentialMultiplier, 0, 100, 1);
+        clean.kpSettings.practicalMultiplier = clampDecimal(sourceKp.practicalMultiplier, 0, 100, 1);
+        clean.kpSettings.hitFormula = sanitizeFormula(sourceKp.hitFormula);
+        clean.kpSettings.damageFormula = sanitizeFormula(sourceKp.damageFormula);
+        clean.kpSettings.trialCount = clampInteger(sourceKp.trialCount || 1, 1, 100);
 
         return clean;
       }
@@ -1180,6 +1482,400 @@
         }
       }
 
+      function hashPassphrase(value) {
+        var hash = 2166136261;
+        var text = sanitizeText(value);
+        for (var index = 0; index < text.length; index += 1) {
+          hash ^= text.charCodeAt(index);
+          hash = Math.imul(hash, 16777619);
+        }
+        return (hash >>> 0).toString(16).padStart(8, "0");
+      }
+
+      function setKpModeStatus(message, type) {
+        var status = document.getElementById("kp-mode-status");
+        status.textContent = message || "";
+        status.className = "kp-mode-status";
+        if (type === "success") {
+          status.classList.add("is-success");
+        } else if (type === "error") {
+          status.classList.add("is-error");
+        }
+      }
+
+      function getMultiplierForGroup(groupName) {
+        if (groupName === "baseStats") {
+          return state.kpSettings.baseMultiplier;
+        }
+        if (groupName === "potentialStats") {
+          return state.kpSettings.potentialMultiplier;
+        }
+        return state.kpSettings.practicalMultiplier;
+      }
+
+      function getEffectiveMetricValue(groupName, key) {
+        var group = state[groupName];
+        if (!group || !Object.prototype.hasOwnProperty.call(group, key)) {
+          throw new Error("不明な内部数値です。");
+        }
+        return group[key] * getMultiplierForGroup(groupName);
+      }
+
+      function formatNumber(value) {
+        if (!Number.isFinite(value)) {
+          return String(value);
+        }
+        var rounded = Math.round(value * 10000) / 10000;
+        return String(rounded);
+      }
+
+      function renderInternalValues() {
+        var container = document.getElementById("kp-internal-values");
+        var fragment = document.createDocumentFragment();
+
+        var header = document.createElement("div");
+        header.className = "internal-row";
+        ["項目", "生値", "倍率後"].forEach(function (text) {
+          var heading = document.createElement("strong");
+          heading.textContent = text;
+          header.appendChild(heading);
+        });
+        fragment.appendChild(header);
+
+        Object.keys(definitions).forEach(function (groupName) {
+          definitions[groupName].forEach(function (item) {
+            var row = document.createElement("div");
+            row.className = "internal-row";
+            var label = document.createElement("span");
+            var raw = document.createElement("span");
+            var effective = document.createElement("span");
+            label.textContent = item.label;
+            raw.textContent = String(state[groupName][item.key]);
+            effective.textContent = formatNumber(getEffectiveMetricValue(groupName, item.key));
+            row.appendChild(label);
+            row.appendChild(raw);
+            row.appendChild(effective);
+            fragment.appendChild(row);
+          });
+        });
+
+        container.replaceChildren(fragment);
+      }
+
+      function updateKpInputs() {
+        if (!isKpMode) {
+          return;
+        }
+        document.getElementById("kp-base-multiplier").value =
+          String(state.kpSettings.baseMultiplier);
+        document.getElementById("kp-potential-multiplier").value =
+          String(state.kpSettings.potentialMultiplier);
+        document.getElementById("kp-practical-multiplier").value =
+          String(state.kpSettings.practicalMultiplier);
+        document.getElementById("kp-hit-formula").value = state.kpSettings.hitFormula;
+        document.getElementById("kp-damage-formula").value = state.kpSettings.damageFormula;
+        document.getElementById("kp-trial-count").value = String(state.kpSettings.trialCount);
+        renderInternalValues();
+      }
+
+      function updateKpPresentation() {
+        document.getElementById("kp-panel").hidden = !isKpMode;
+        if (isKpMode) {
+          updateKpInputs();
+        }
+      }
+
+      function tryEnterKpMode(passphrase) {
+        if (hashPassphrase(sanitizeText(passphrase).trim()) !== KP_PASSPHRASE_HASH) {
+          isKpMode = false;
+          updateKpPresentation();
+          setKpModeStatus("合言葉が違います。", "error");
+          return false;
+        }
+        isKpMode = true;
+        updateKpPresentation();
+        setKpModeStatus("星の裏側へ接続しました。", "success");
+        document.getElementById("kp-passphrase").value = "";
+        return true;
+      }
+
+      function exitKpMode() {
+        isKpMode = false;
+        updateKpPresentation();
+        setKpModeStatus("通常の星明かりへ戻ります。", "");
+        document.getElementById("kp-passphrase").focus();
+      }
+
+      function tokenizeFormula(formula) {
+        var source = sanitizeFormula(formula)
+          .replace(/[×＊]/g, "*")
+          .replace(/[÷／]/g, "/")
+          .replace(/[−－]/g, "-");
+        var tokens = [];
+        var cursor = 0;
+
+        while (cursor < source.length) {
+          var rest = source.slice(cursor);
+          var whitespace = rest.match(/^\s+/);
+          if (whitespace) {
+            cursor += whitespace[0].length;
+            continue;
+          }
+
+          var comparison = rest.match(/^(<=|>=|==|!=|<|>)/);
+          if (comparison) {
+            tokens.push({ type: "operator", value: comparison[1] });
+            cursor += comparison[1].length;
+            continue;
+          }
+
+          var dice = rest.match(/^(\d*)[dD](\d+)/);
+          if (dice) {
+            tokens.push({
+              type: "dice",
+              count: dice[1] ? Number(dice[1]) : 1,
+              sides: Number(dice[2]),
+              source: dice[0]
+            });
+            cursor += dice[0].length;
+            continue;
+          }
+
+          var number = rest.match(/^\d+(?:\.\d+)?/);
+          if (number) {
+            tokens.push({ type: "number", value: Number(number[0]) });
+            cursor += number[0].length;
+            continue;
+          }
+
+          var identifier = rest.match(/^[A-Za-z_\u3040-\u30ff\u3400-\u9fff][A-Za-z0-9_\u3040-\u30ff\u3400-\u9fff]*/);
+          if (identifier) {
+            tokens.push({ type: "identifier", value: identifier[0] });
+            cursor += identifier[0].length;
+            continue;
+          }
+
+          if (/^[()+\-*\/]/.test(rest)) {
+            tokens.push({ type: "operator", value: rest.charAt(0) });
+            cursor += 1;
+            continue;
+          }
+
+          throw new Error("判定式に使用できない文字があります：" + rest.charAt(0));
+        }
+
+        tokens.push({ type: "eof", value: "" });
+        return tokens;
+      }
+
+      function resolveFormulaIdentifier(identifier) {
+        var multiplierValues = {
+          "基礎倍率": state.kpSettings.baseMultiplier,
+          "潜在倍率": state.kpSettings.potentialMultiplier,
+          "実務倍率": state.kpSettings.practicalMultiplier
+        };
+        if (Object.prototype.hasOwnProperty.call(multiplierValues, identifier)) {
+          return multiplierValues[identifier];
+        }
+
+        var totals = getTotals();
+        var directValues = {
+          "体格": Number(state.build) || 0,
+          "合計ポイント": totals.total,
+          "使用ポイント": totals.used,
+          "残りポイント": totals.remaining
+        };
+        if (Object.prototype.hasOwnProperty.call(directValues, identifier)) {
+          return directValues[identifier];
+        }
+
+        var resolved = null;
+        Object.keys(definitions).some(function (groupName) {
+          var item = definitions[groupName].find(function (definition) {
+            return definition.label === identifier || definition.key === identifier;
+          });
+          if (!item) {
+            return false;
+          }
+          resolved = getEffectiveMetricValue(groupName, item.key);
+          return true;
+        });
+
+        if (resolved === null) {
+          throw new Error("不明な能力名です：" + identifier);
+        }
+        return resolved;
+      }
+
+      function evaluateFormula(formula, randomFunction) {
+        if (!sanitizeText(formula).trim()) {
+          throw new Error("判定式が空です。");
+        }
+        var tokens = tokenizeFormula(formula);
+        var position = 0;
+        var diceLog = [];
+        var random = typeof randomFunction === "function" ? randomFunction : Math.random;
+
+        function peek() {
+          return tokens[position];
+        }
+
+        function take() {
+          var token = tokens[position];
+          position += 1;
+          return token;
+        }
+
+        function requireNumber(value) {
+          if (typeof value !== "number" || !Number.isFinite(value)) {
+            throw new Error("数値として計算できない式です。");
+          }
+          return value;
+        }
+
+        function parsePrimary() {
+          var token = take();
+          if (token.type === "number") {
+            return token.value;
+          }
+          if (token.type === "identifier") {
+            return resolveFormulaIdentifier(token.value);
+          }
+          if (token.type === "dice") {
+            if (token.count < 1 || token.count > 100 || token.sides < 2 || token.sides > 10000) {
+              throw new Error("ダイスは1～100個、面数は2～10000で指定してください。");
+            }
+            var rolls = [];
+            var sum = 0;
+            for (var rollIndex = 0; rollIndex < token.count; rollIndex += 1) {
+              var roll = Math.floor(random() * token.sides) + 1;
+              rolls.push(roll);
+              sum += roll;
+            }
+            diceLog.push(token.source + "[" + rolls.join(",") + "]");
+            return sum;
+          }
+          if (token.type === "operator" && token.value === "(") {
+            var nested = parseAdditive();
+            var close = take();
+            if (close.type !== "operator" || close.value !== ")") {
+              throw new Error("閉じ括弧がありません。");
+            }
+            return nested;
+          }
+          throw new Error("判定式の並びが正しくありません。");
+        }
+
+        function parseUnary() {
+          if (peek().type === "operator" && (peek().value === "+" || peek().value === "-")) {
+            var operator = take().value;
+            var unaryValue = requireNumber(parseUnary());
+            return operator === "-" ? -unaryValue : unaryValue;
+          }
+          return parsePrimary();
+        }
+
+        function parseMultiplicative() {
+          var value = parseUnary();
+          while (peek().type === "operator" && (peek().value === "*" || peek().value === "/")) {
+            var operator = take().value;
+            var right = requireNumber(parseUnary());
+            value = requireNumber(value);
+            if (operator === "/" && right === 0) {
+              throw new Error("0では割れません。");
+            }
+            value = operator === "*" ? value * right : value / right;
+          }
+          return value;
+        }
+
+        function parseAdditive() {
+          var value = parseMultiplicative();
+          while (peek().type === "operator" && (peek().value === "+" || peek().value === "-")) {
+            var operator = take().value;
+            var right = requireNumber(parseMultiplicative());
+            value = requireNumber(value);
+            value = operator === "+" ? value + right : value - right;
+          }
+          return value;
+        }
+
+        var left = parseAdditive();
+        var result = left;
+        var comparisonOperator = null;
+        if (peek().type === "operator" && /^(?:<=|>=|==|!=|<|>)$/.test(peek().value)) {
+          comparisonOperator = take().value;
+          var right = requireNumber(parseAdditive());
+          left = requireNumber(left);
+          if (comparisonOperator === "<=") result = left <= right;
+          if (comparisonOperator === ">=") result = left >= right;
+          if (comparisonOperator === "<") result = left < right;
+          if (comparisonOperator === ">") result = left > right;
+          if (comparisonOperator === "==") result = left === right;
+          if (comparisonOperator === "!=") result = left !== right;
+        }
+
+        if (peek().type !== "eof") {
+          throw new Error("判定式の末尾を解釈できません。");
+        }
+
+        return {
+          value: result,
+          comparison: comparisonOperator,
+          dice: diceLog
+        };
+      }
+
+      function runAttackTrials(randomFunction) {
+        var hitFormula = state.kpSettings.hitFormula.trim();
+        var damageFormula = state.kpSettings.damageFormula.trim();
+        var count = state.kpSettings.trialCount;
+        if (!hitFormula) {
+          throw new Error("命中・判定式を入力してください。");
+        }
+
+        var lines = [];
+        var successCount = 0;
+        var comparableCount = 0;
+        var damageTotal = 0;
+        var damageCount = 0;
+
+        for (var trialIndex = 0; trialIndex < count; trialIndex += 1) {
+          var hit = evaluateFormula(hitFormula, randomFunction);
+          var succeeded = typeof hit.value === "boolean" ? hit.value : true;
+          if (typeof hit.value === "boolean") {
+            comparableCount += 1;
+            if (succeeded) successCount += 1;
+          }
+          var line = (trialIndex + 1) + "回目：" +
+            (hit.dice.length ? hit.dice.join(" ") + " → " : "") +
+            (typeof hit.value === "boolean" ? (hit.value ? "成功" : "失敗") : formatNumber(hit.value));
+
+          if (damageFormula && succeeded) {
+            var damage = evaluateFormula(damageFormula, randomFunction);
+            if (typeof damage.value !== "number") {
+              throw new Error("ダメージ式は数値になるよう入力してください。");
+            }
+            damageTotal += damage.value;
+            damageCount += 1;
+            line += " ／ ダメージ " +
+              (damage.dice.length ? damage.dice.join(" ") + " → " : "") +
+              formatNumber(damage.value);
+          }
+          lines.push(line);
+        }
+
+        lines.push("");
+        if (comparableCount > 0) {
+          lines.push("成功：" + successCount + "/" + comparableCount +
+            "（" + formatNumber(successCount / comparableCount * 100) + "%）");
+        }
+        if (damageCount > 0) {
+          lines.push("平均ダメージ：" + formatNumber(damageTotal / damageCount));
+        }
+        return lines.join("\n");
+      }
+
       function setMetricValue(groupName, key, requestedValue) {
         var item = findDefinition(groupName, key);
         if (!item) {
@@ -1249,6 +1945,7 @@
         var banner = document.getElementById("over-banner");
         var copyPlayer = document.getElementById("copy-player");
         var copyChappy = document.getElementById("copy-chappy");
+        var copyKp = document.getElementById("copy-kp");
 
         document.getElementById("summary-total").textContent = String(totals.total);
         document.getElementById("summary-used").textContent = String(totals.used);
@@ -1274,6 +1971,7 @@
 
         copyPlayer.disabled = totals.excess > 0;
         copyChappy.disabled = totals.excess > 0;
+        copyKp.disabled = totals.excess > 0;
       }
 
       function updateTargetPresentation() {
@@ -1303,7 +2001,14 @@
         });
       }
 
-      function buildMarkdown(includeNumbers) {
+      function buildPublicRestoreMarker() {
+        var publicState = JSON.parse(JSON.stringify(state));
+        delete publicState.kpSettings;
+        return "<!-- HOSHIMICHI-PC-V1:" +
+          encodeURIComponent(JSON.stringify(publicState)) + " -->";
+      }
+
+      function buildMarkdown(includeNumbers, includeRestoreData) {
         var totals = getTotals();
         var characterName = state.name.trim() || "（名前未入力）";
         var buildText = state.build.trim() || "未入力";
@@ -1343,11 +2048,224 @@
           lines.push(textOrNone(state[field.key]));
         });
 
+        if (includeRestoreData) {
+          lines.push("");
+          lines.push(buildPublicRestoreMarker());
+        }
+
         return lines.join("\n");
       }
 
+      function buildKpMarkdown() {
+        var kp = state.kpSettings;
+        var lines = [
+          buildMarkdown(true, false),
+          "",
+          "## KP内部設定",
+          "",
+          "基礎倍率：" + formatNumber(kp.baseMultiplier),
+          "潜在倍率：" + formatNumber(kp.potentialMultiplier),
+          "実務倍率：" + formatNumber(kp.practicalMultiplier),
+          "試験回数：" + kp.trialCount,
+          "命中・判定式：" + (kp.hitFormula || "未入力"),
+          "ダメージ式：" + (kp.damageFormula || "未入力"),
+          "",
+          "<!-- HOSHIMICHI-KP-V1:" + encodeURIComponent(JSON.stringify(state)) + " -->"
+        ];
+        return lines.join("\n");
+      }
+
+      function parseKpPayload(markdown) {
+        var match = sanitizeText(markdown).match(/<!--\s*HOSHIMICHI-KP-V1:([\s\S]*?)-->/);
+        if (!match) {
+          return null;
+        }
+        try {
+          return sanitizeState(JSON.parse(decodeURIComponent(match[1].trim())));
+        } catch (error) {
+          throw new Error("KP設定データを読み取れませんでした。");
+        }
+      }
+
+      function parsePublicPayload(markdown) {
+        var match = sanitizeText(markdown).match(/<!--\s*HOSHIMICHI-PC-V1:([\s\S]*?)-->/);
+        if (!match) {
+          return null;
+        }
+        try {
+          var decoded = JSON.parse(decodeURIComponent(match[1].trim()));
+          decoded.version = STORAGE_VERSION;
+          decoded.kpSettings = state.kpSettings;
+          return sanitizeState(decoded);
+        } catch (error) {
+          throw new Error("PC設定データを読み取れませんでした。");
+        }
+      }
+
+      function parseMarkdownState(markdown) {
+        var text = sanitizeText(markdown).replace(/\r\n?/g, "\n").trim();
+        if (!text) {
+          throw new Error("Markdownを貼り付けてください。");
+        }
+
+        var kpPayload = parseKpPayload(text);
+        if (kpPayload) {
+          return { state: kpPayload, hasKpSettings: true };
+        }
+
+        var publicPayload = parsePublicPayload(text);
+        if (publicPayload) {
+          return { state: publicPayload, hasKpSettings: false };
+        }
+
+        var imported = createInitialState();
+        imported.kpSettings = JSON.parse(JSON.stringify(state.kpSettings));
+        var recognized = 0;
+        var nameMatch = text.match(/^#\s+(.+)$/m);
+        if (nameMatch && nameMatch[1].trim() !== "（名前未入力）") {
+          imported.name = nameMatch[1].trim();
+          recognized += 1;
+        }
+
+        var targetMatch = text.match(/^作成対象：(.+)$/m);
+        if (targetMatch) {
+          imported.targetType = targetMatch[1].trim() === "モンスター" ? "monster" : "character";
+          recognized += 1;
+        }
+
+        var totalMatch = text.match(/^合計ポイント：(-?\d+)$/m);
+        if (totalMatch) {
+          imported.totalPoints = clampInteger(totalMatch[1], 0, 999);
+          recognized += 1;
+        }
+
+        var buildMatch = text.match(/^体格：(.*)$/m);
+        if (buildMatch) {
+          imported.build = buildMatch[1].trim() === "未入力" ? "" : sanitizeBuild(buildMatch[1].trim());
+          recognized += 1;
+        }
+
+        var sectionGroups = {
+          "基礎ステータス": "baseStats",
+          "潜在能力": "potentialStats",
+          "実務技能": "practicalSkills"
+        };
+        var freeLabels = {};
+        freeFieldDefinitions.forEach(function (field) {
+          freeLabels[field.label] = field.key;
+        });
+        var freeBuffers = {};
+        var currentSection = "";
+        var lines = text.split("\n");
+
+        lines.forEach(function (originalLine) {
+          var headingMatch = originalLine.match(/^##\s+(.+)\s*$/);
+          if (headingMatch) {
+            currentSection = headingMatch[1].trim();
+            if (freeLabels[currentSection] && !freeBuffers[freeLabels[currentSection]]) {
+              freeBuffers[freeLabels[currentSection]] = [];
+            }
+            return;
+          }
+
+          var groupName = sectionGroups[currentSection];
+          if (groupName) {
+            var trimmedLine = originalLine.trim();
+            definitions[groupName].some(function (item) {
+              if (trimmedLine.indexOf(item.label) !== 0) {
+                return false;
+              }
+              var remainder = trimmedLine.slice(item.label.length).trim();
+              var numericMatch = remainder.match(/[（(]\s*(\d+)\s*\/\s*\d+\s*[）)]/);
+              var value = numericMatch ? Number(numericMatch[1]) : (remainder.match(/■/g) || []).length;
+              imported[groupName][item.key] = clampInteger(value, 0, item.max);
+              recognized += 1;
+              return true;
+            });
+            return;
+          }
+
+          var freeKey = freeLabels[currentSection];
+          if (freeKey) {
+            freeBuffers[freeKey].push(originalLine);
+          }
+        });
+
+        Object.keys(freeBuffers).forEach(function (key) {
+          var value = freeBuffers[key].join("\n").trim();
+          imported[key] = value === "なし" ? "" : value;
+          recognized += 1;
+        });
+
+        if (recognized < 2) {
+          throw new Error("このサイトから出力したMarkdownを確認できませんでした。");
+        }
+        return { state: sanitizeState(imported), hasKpSettings: false };
+      }
+
+      function buildImportSummary(importResult) {
+        var importedState = importResult.state;
+        var currentState = state;
+        state = importedState;
+        var totals = getTotals();
+        state = currentState;
+        return [
+          "名前：" + (importedState.name || "（名前未入力）"),
+          "作成対象：" + (importedState.targetType === "monster" ? "モンスター" : "キャラクター"),
+          "合計ポイント：" + importedState.totalPoints,
+          "使用ポイント：" + totals.used,
+          "残りポイント：" + totals.remaining,
+          "体格：" + (importedState.build || "未入力"),
+          "KP内部設定：" + (importResult.hasKpSettings ? "上書きします" : "現在の設定を維持します")
+        ].join("\n");
+      }
+
+      function previewImport() {
+        var textarea = document.getElementById("markdown-import");
+        var dialog = document.getElementById("import-dialog");
+        try {
+          var result = parseMarkdownState(textarea.value);
+          pendingImportState = result.state;
+          pendingImportHasKpSettings = result.hasKpSettings;
+          document.getElementById("import-summary").textContent = buildImportSummary(result);
+          if (typeof dialog.showModal === "function") {
+            dialog.showModal();
+          } else if (window.confirm(buildImportSummary(result) + "\n\n上書きしますか？")) {
+            applyPendingImport();
+          }
+        } catch (error) {
+          pendingImportState = null;
+          setFeedback(error.message || "Markdownを読み込めませんでした。", "error", false);
+        }
+      }
+
+      function applyPendingImport() {
+        if (!pendingImportState) {
+          setFeedback("読込内容がありません。", "error");
+          return false;
+        }
+        var preservedKpSettings = state.kpSettings;
+        state = pendingImportState;
+        if (!pendingImportHasKpSettings) {
+          state.kpSettings = preservedKpSettings;
+        }
+        state.version = STORAGE_VERSION;
+        pendingImportState = null;
+        pendingImportHasKpSettings = false;
+        saveState();
+        updateBasicInputs();
+        updateView();
+        document.getElementById("markdown-import").value = "";
+        var dialog = document.getElementById("import-dialog");
+        if (dialog.open) {
+          dialog.close();
+        }
+        setFeedback("Markdownから設定を上書きしました。", "success", false);
+        return true;
+      }
+
       function updatePreview() {
-        document.getElementById("sheet-preview").textContent = buildMarkdown(false);
+        document.getElementById("sheet-preview").textContent = buildMarkdown(false, false);
       }
 
       function updateView() {
@@ -1355,6 +2273,7 @@
         updateTargetPresentation();
         updatePointSummary();
         updatePreview();
+        updateKpPresentation();
       }
 
       function handleMetricClick(event) {
@@ -1463,7 +2382,29 @@
         var successMessage = includeNumbers
           ? "チャッピー用データをコピーしました。"
           : "プレイヤー用Markdownをコピーしました。";
-        copyText(buildMarkdown(includeNumbers), successMessage);
+        copyText(buildMarkdown(includeNumbers, true), successMessage);
+      }
+
+      function handleKpCopy() {
+        if (!isKpMode) {
+          setFeedback("KPモードへ接続してください。", "error");
+          return;
+        }
+        if (!validateCopyRequest()) {
+          return;
+        }
+        copyText(buildKpMarkdown(), "KP設定Markdownをコピーしました。");
+      }
+
+      function handleKpTrial() {
+        var output = document.getElementById("kp-trial-output");
+        try {
+          output.textContent = runAttackTrials();
+          setFeedback("攻撃試験を実行しました。", "success");
+        } catch (error) {
+          output.textContent = error.message || "判定式を計算できませんでした。";
+          setFeedback(output.textContent, "error", false);
+        }
       }
 
       function resetAll() {
@@ -1489,6 +2430,18 @@
       }
 
       function bindEvents() {
+        document.getElementById("kp-enter").addEventListener("click", function () {
+          tryEnterKpMode(document.getElementById("kp-passphrase").value);
+        });
+
+        document.getElementById("kp-passphrase").addEventListener("keydown", function (event) {
+          if (event.key === "Enter") {
+            tryEnterKpMode(event.target.value);
+          }
+        });
+
+        document.getElementById("kp-exit").addEventListener("click", exitKpMode);
+
         Object.keys(groupSettings).forEach(function (groupName) {
           var container = document.getElementById(groupSettings[groupName].containerId);
           container.addEventListener("click", handleMetricClick);
@@ -1546,6 +2499,39 @@
           updatePreview();
         });
 
+        [
+          ["kp-base-multiplier", "baseMultiplier"],
+          ["kp-potential-multiplier", "potentialMultiplier"],
+          ["kp-practical-multiplier", "practicalMultiplier"]
+        ].forEach(function (mapping) {
+          document.getElementById(mapping[0]).addEventListener("input", function (event) {
+            state.kpSettings[mapping[1]] = clampDecimal(event.target.value, 0, 100, 1);
+            event.target.value = String(state.kpSettings[mapping[1]]);
+            saveState();
+            renderInternalValues();
+          });
+        });
+
+        document.getElementById("kp-hit-formula").addEventListener("input", function (event) {
+          state.kpSettings.hitFormula = sanitizeFormula(event.target.value);
+          saveState();
+        });
+
+        document.getElementById("kp-damage-formula").addEventListener("input", function (event) {
+          state.kpSettings.damageFormula = sanitizeFormula(event.target.value);
+          saveState();
+        });
+
+        document.getElementById("kp-trial-count").addEventListener("input", function (event) {
+          state.kpSettings.trialCount = clampInteger(event.target.value, 1, 100);
+          event.target.value = String(state.kpSettings.trialCount);
+          saveState();
+        });
+
+        document.getElementById("kp-run-trial").addEventListener("click", handleKpTrial);
+
+        document.getElementById("copy-kp").addEventListener("click", handleKpCopy);
+
         document.getElementById("copy-player").addEventListener("click", function () {
           handleCopy(false);
         });
@@ -1555,6 +2541,17 @@
         });
 
         document.getElementById("reset-all").addEventListener("click", resetAll);
+
+        document.getElementById("preview-import").addEventListener("click", previewImport);
+
+        document.getElementById("cancel-import").addEventListener("click", function () {
+          pendingImportState = null;
+          pendingImportHasKpSettings = false;
+          document.getElementById("import-dialog").close();
+          setFeedback("Markdownの読込を取り消しました。", "");
+        });
+
+        document.getElementById("apply-import").addEventListener("click", applyPendingImport);
 
         document.getElementById("close-copy-dialog").addEventListener("click", function () {
           document.getElementById("manual-copy-dialog").close();
@@ -1580,10 +2577,25 @@
           return JSON.parse(JSON.stringify(state));
         },
         buildPlayerMarkdown: function () {
-          return buildMarkdown(false);
+          return buildMarkdown(false, true);
         },
         buildChappyMarkdown: function () {
-          return buildMarkdown(true);
+          return buildMarkdown(true, true);
+        },
+        buildKpMarkdown: buildKpMarkdown,
+        parseMarkdownState: parseMarkdownState,
+        applyImportedState: function (markdown) {
+          var result = parseMarkdownState(markdown);
+          pendingImportState = result.state;
+          pendingImportHasKpSettings = result.hasKpSettings;
+          return applyPendingImport();
+        },
+        evaluateFormula: evaluateFormula,
+        runAttackTrials: runAttackTrials,
+        tryEnterKpMode: tryEnterKpMode,
+        exitKpMode: exitKpMode,
+        isKpMode: function () {
+          return isKpMode;
         }
       });
 
