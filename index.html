@@ -115,19 +115,16 @@
     }
 
     .page-header {
-      position: relative;
-      padding-top: 3.7rem;
       margin-bottom: 1.25rem;
     }
 
     .kp-gate {
-      position: absolute;
-      top: 0;
-      left: 0;
       display: flex;
       align-items: center;
+      flex-wrap: wrap;
       gap: 0.45rem;
       max-width: 100%;
+      margin-top: 1.25rem;
     }
 
     .kp-gate input {
@@ -866,13 +863,6 @@
 <body>
   <main class="page-shell">
     <header class="page-header">
-      <div class="kp-gate" aria-label="KPモード切替">
-        <label class="visually-hidden" for="kp-passphrase">KPモードの合言葉</label>
-        <input id="kp-passphrase" type="password" maxlength="64" autocomplete="off"
-          placeholder="合言葉" aria-describedby="kp-mode-status">
-        <button id="kp-enter" type="button" aria-label="合言葉を確認してKPモードへ接続">✓</button>
-        <span id="kp-mode-status" class="kp-mode-status" aria-live="polite"></span>
-      </div>
       <p class="eyebrow">試作ツール</p>
       <h1>星みちTRPG キャラクターポイント入力</h1>
       <p class="lead">
@@ -1070,6 +1060,14 @@
       </div>
       <p id="feedback" class="feedback" aria-live="polite"></p>
     </section>
+
+    <div class="kp-gate" aria-label="KPモード切替">
+      <label class="visually-hidden" for="kp-passphrase">KPモードの合言葉</label>
+      <input id="kp-passphrase" type="text" maxlength="64" autocomplete="off" lang="ja"
+        placeholder="合言葉" aria-describedby="kp-mode-status">
+      <button id="kp-enter" type="button" aria-label="合言葉を確認してKPモードへ接続">✓</button>
+      <span id="kp-mode-status" class="kp-mode-status" aria-live="polite"></span>
+    </div>
   </main>
 
   <dialog id="manual-copy-dialog" aria-labelledby="manual-copy-heading">
@@ -2435,6 +2433,9 @@
         });
 
         document.getElementById("kp-passphrase").addEventListener("keydown", function (event) {
+          if (event.isComposing || event.keyCode === 229) {
+            return;
+          }
           if (event.key === "Enter") {
             tryEnterKpMode(event.target.value);
           }
