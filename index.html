@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="星みちTRPG用の試作キャラクターポイント入力ツール">
-  <title>星みちTRPG キャラクターポイント入力</title>
+  <meta name="description" content="星みちTRPG用の試作キャラクタービルダー">
+  <title>星みちTRPG キャラクタービルダー</title>
   <style>
     :root {
       color-scheme: light;
@@ -1036,7 +1036,7 @@
   <main class="page-shell">
     <header class="page-header">
       <p class="eyebrow">試作ツール</p>
-      <h1>星みちTRPG キャラクターポイント入力</h1>
+      <h1>星みちTRPG キャラクタービルダー</h1>
       <p class="lead">
         共通ポイントを基礎ステータス・潜在能力・実務技能へ配分し、
         チャットへ貼り付けられるキャラクターシートを作成します。
@@ -1069,12 +1069,14 @@
           <input id="total-points" type="number" min="0" max="999" step="1"
             inputmode="numeric" aria-describedby="total-points-hint">
           <span id="total-points-hint" class="field-hint">0～999の整数</span>
+          <span id="total-points-indicator" class="stage-name"></span>
         </div>
         <div class="field">
           <label for="build">体格</label>
           <input id="build" type="number" step="1" inputmode="numeric"
             aria-describedby="build-hint">
           <span id="build-hint" class="field-hint">クトゥルフのビルドと同義。人は1</span>
+          <span id="build-indicator" class="stage-name"></span>
         </div>
         <div id="monster-base-field" class="field" hidden>
           <label for="monster-base-success">モンスター基準成功値</label>
@@ -1257,7 +1259,7 @@
             <p id="skill-warning" class="field-error" aria-live="polite"></p>
           </div>
           <p class="adventure-note">
-            威力・命中・対象数から性能予算を自動計算し、選んだ消費の予算を超える設定は受け付けません。
+            威力・命中・対象数・追加効果から性能予算を自動計算し、選んだ消費の予算を超える設定は受け付けません。
           </p>
         </section>
 
@@ -1277,6 +1279,18 @@
         <pre id="sheet-preview" class="preview" aria-live="polite"></pre>
       </aside>
     </div>
+
+    <section class="panel section-panel" aria-labelledby="character-setting-heading">
+      <div class="section-heading">
+        <h2 id="character-setting-heading">10. キャラクター設定</h2>
+        <p class="section-note">性格・外見・経歴などを自由に入力</p>
+      </div>
+      <div class="field">
+        <label for="character-setting">キャラクター設定入力欄</label>
+        <textarea id="character-setting" maxlength="10000"
+          placeholder="性格、外見、経歴、話し方、大切にしていることなど（任意）"></textarea>
+      </div>
+    </section>
 
     <section id="kp-panel" class="panel section-panel kp-panel" aria-labelledby="kp-heading" hidden>
       <div class="section-heading">
@@ -1403,7 +1417,7 @@
 
     <section class="panel section-panel actions-panel" aria-labelledby="actions-heading">
       <div class="section-heading">
-        <h2 id="actions-heading">10. コピー・リセット操作</h2>
+        <h2 id="actions-heading">11. コピー・リセット操作</h2>
         <p class="section-note">ポイント超過中はコピーできません</p>
       </div>
       <div class="action-buttons">
@@ -1458,7 +1472,7 @@
       "use strict";
 
       var STORAGE_KEY = "hoshimichi-character-sheet-builder";
-      var STORAGE_VERSION = 4;
+      var STORAGE_VERSION = 5;
       var KP_PASSPHRASE_HASH = "6da948cc";
       var feedbackTimer = null;
       var loadNotice = "";
@@ -1610,22 +1624,51 @@
         return value <= 0 ? "使用不可" : "習得" + value + "・一日" + value;
       }
 
-      function getPowerIndicator(value) {
+      function getPowerIndicator(value, attackType) {
+        var definition = attackTypeDefinitions[attackType] || attackTypeDefinitions.standard;
+        var ratio = value / definition.power;
         if (value <= 0) return "威力なし";
-        if (value < 5) return "カテゴリ基準未満";
-        if (value === 5) return "多段型基準";
-        if (value === 6) return "連撃型基準";
-        if (value < 10) return "標準型基準";
-        if (value < 18) return "重撃型基準";
-        return "一撃型基準";
+        if (ratio < 0.75) return "簡素な武器";
+        if (ratio < 1.25) return "駆け出しの武器";
+        if (ratio < 1.75) return "一人前の武器";
+        if (ratio < 2.50) return "熟練者の武器";
+        return "達人級の武器";
       }
 
       function getProtectionIndicator(value) {
         if (value <= 0) return "無防護";
-        if (value <= 1) return "軽防護";
-        if (value <= 2) return "標準防護";
-        if (value <= 4) return "重防護";
-        return "高防護";
+        if (value <= 1) return "簡素な防具";
+        if (value <= 2) return "駆け出し防具相当";
+        if (value < 5) return "一人前手前の防御力";
+        if (value === 5) return "標準防御力";
+        if (value <= 7) return "高い防御力";
+        return "非常に高い防御力";
+      }
+
+      function getTotalPointsIndicator(value) {
+        if (value <= 0) return "ポイント未設定";
+        if (value <= 4) return "駆け出し";
+        if (value < 20) return "成長中";
+        if (value < 30) return "熟練者";
+        if (value < 40) return "銀級相当";
+        if (value === 40) return "銀級上位";
+        return "銀級上位以上";
+      }
+
+      function getBuildIndicator(value) {
+        if (value === "" || value === null || value === undefined) return "未入力";
+        var build = Number(value);
+        if (!Number.isFinite(build)) return "未入力";
+        if (build <= -2) return "非常に小柄";
+        if (build <= 0) return "小柄";
+        if (build === 1) return "標準的な人間";
+        if (build === 2) return "大柄な人間";
+        if (build === 3) return "巨体";
+        return "人間を超える巨体";
+      }
+
+      function getTargetShapeMinimumBudget(shape) {
+        return shape === "single" ? 0 : 50;
       }
 
       function makeNumberMap(items) {
@@ -1679,6 +1722,7 @@
           powerDisplay: 0,
           accuracy: 0,
           cost: 0,
+          effectBudget: 0,
           targetShape: "single",
           maxTargets: 1,
           description: ""
@@ -1698,6 +1742,7 @@
           potentialStats: makeNumberMap(definitions.potentialStats),
           practicalSkills: makeNumberMap(definitions.practicalSkills),
           uniqueAbility: "",
+          characterSetting: "",
           weapons: [createDefaultWeapon(), createDefaultWeapon()],
           armor: createDefaultArmor(),
           skills: [],
@@ -1749,14 +1794,16 @@
         var accuracyFactor = Math.max(0.40, 1 + skill.accuracy / 50);
         var targetFactor = 1 + 0.50 * (skill.maxTargets - 1);
         var performanceIndex = powerFactor * accuracyFactor * targetFactor;
-        var effectLoad = 0;
-        var performanceLoad = Math.max(0, performanceIndex - 1);
-        var requiredCost = Math.ceil(performanceLoad / 0.65);
+        var basePerformanceLoad = performanceIndex - 1;
+        var effectLoad = (Number(skill.effectBudget) || 0) / 100;
+        var performanceLoad = basePerformanceLoad + effectLoad;
+        var requiredCost = Math.ceil(Math.max(0, performanceLoad - 1e-9) / 0.65);
         return {
           powerFactor: powerFactor,
           accuracyFactor: accuracyFactor,
           targetFactor: targetFactor,
           performanceIndex: performanceIndex,
+          basePerformanceLoad: basePerformanceLoad,
           effectLoad: effectLoad,
           performanceLoad: performanceLoad,
           requiredCost: requiredCost
@@ -1772,10 +1819,11 @@
         clean.powerDisplay = clampInteger(source.powerDisplay, -100, 999);
         clean.accuracy = clampInteger(source.accuracy, -999, 999);
         clean.cost = clampInteger(source.cost, 0, 10);
+        clean.effectBudget = clampInteger(source.effectBudget, 0, 999);
         clean.targetShape = normalizeChoice(source.targetShape, targetShapeDefinitions, "single");
         clean.maxTargets = clean.targetShape === "single"
           ? 1
-          : clampInteger(source.maxTargets || 1, 1, 5);
+          : clampInteger(source.maxTargets || 2, 2, 5);
         clean.description = sanitizeText(source.description).slice(0, 2000);
         return clean;
       }
@@ -1813,6 +1861,7 @@
       function sanitizeState(raw) {
         if (!raw || typeof raw !== "object" ||
             (raw.version !== 1 && raw.version !== 2 && raw.version !== 3 &&
+              raw.version !== 4 &&
               raw.version !== STORAGE_VERSION)) {
           throw new Error("unsupported storage data");
         }
@@ -1838,6 +1887,7 @@
         freeFieldDefinitions.forEach(function (field) {
           clean[field.key] = sanitizeText(raw[field.key]);
         });
+        clean.characterSetting = sanitizeText(raw.characterSetting).slice(0, 10000);
 
         var sourceWeapons = Array.isArray(raw.weapons) ? raw.weapons.slice(0, 2) : [raw.weapon];
         clean.weapons = [
@@ -2097,6 +2147,17 @@
         select.value = selectedValue;
       }
 
+      function appendTargetShapeOptions(select, selectedValue) {
+        Object.keys(targetShapeDefinitions).forEach(function (key) {
+          var option = document.createElement("option");
+          option.value = key;
+          option.textContent = targetShapeDefinitions[key] +
+            "（最小消費予算 " + getTargetShapeMinimumBudget(key) + "）";
+          select.appendChild(option);
+        });
+        select.value = selectedValue;
+      }
+
       function renderSkillControls() {
         var container = document.getElementById("skill-list");
         var fragment = document.createDocumentFragment();
@@ -2145,7 +2206,8 @@
           for (var cost = 1; cost <= resourceValue; cost += 1) {
             var costOption = document.createElement("option");
             costOption.value = String(cost);
-            costOption.textContent = resourceDefinitions[skill.resourceType].label + cost;
+            costOption.textContent = resourceDefinitions[skill.resourceType].label + cost +
+              "（性能予算 " + (cost * 65) + "）";
             costSelect.appendChild(costOption);
           }
           costSelect.value = String(skill.cost);
@@ -2170,18 +2232,42 @@
           grid.appendChild(createSkillField("命中補正", skill, "accuracy", accuracyInput));
 
           var targetSelect = document.createElement("select");
-          appendOptions(targetSelect, targetShapeDefinitions, skill.targetShape);
+          appendTargetShapeOptions(targetSelect, skill.targetShape);
           targetSelect.disabled = !unlocked;
-          grid.appendChild(createSkillField("対象形状", skill, "targetShape", targetSelect));
+          var targetShapeField = createSkillField(
+            "対象形状（選択式）", skill, "targetShape", targetSelect
+          );
+          var targetShapeHint = document.createElement("span");
+          targetShapeHint.className = "field-hint";
+          targetShapeHint.textContent = "選択中の最小消費予算：" +
+            getTargetShapeMinimumBudget(skill.targetShape);
+          targetShapeField.appendChild(targetShapeHint);
+          grid.appendChild(targetShapeField);
 
           var targetsInput = document.createElement("input");
           targetsInput.type = "number";
-          targetsInput.min = "1";
+          targetsInput.min = skill.targetShape === "single" ? "1" : "2";
           targetsInput.max = "5";
           targetsInput.step = "1";
           targetsInput.value = String(skill.maxTargets);
           targetsInput.disabled = !unlocked || skill.targetShape === "single";
           grid.appendChild(createSkillField("最大対象数", skill, "maxTargets", targetsInput));
+
+          var effectBudgetInput = document.createElement("input");
+          effectBudgetInput.type = "number";
+          effectBudgetInput.min = "0";
+          effectBudgetInput.max = "999";
+          effectBudgetInput.step = "1";
+          effectBudgetInput.value = String(skill.effectBudget);
+          effectBudgetInput.disabled = !unlocked;
+          var effectBudgetField = createSkillField(
+            "追加効果予算（KP相談値）", skill, "effectBudget", effectBudgetInput
+          );
+          var effectBudgetHint = document.createElement("span");
+          effectBudgetHint.className = "field-hint";
+          effectBudgetHint.textContent = "追加効果を付ける場合、KPと相談した予算を入力";
+          effectBudgetField.appendChild(effectBudgetHint);
+          grid.appendChild(effectBudgetField);
 
           var description = document.createElement("textarea");
           description.value = skill.description;
@@ -2194,11 +2280,22 @@
           var metrics = document.createElement("p");
           metrics.className = "skill-metrics";
           var availableBudget = skill.cost * 65;
-          var usedBudget = performance.performanceLoad * 100;
+          var baseBudget = performance.basePerformanceLoad * 100;
+          var budgetIncrease = Math.max(0, -baseBudget);
+          var baseConsumedBudget = Math.max(0, baseBudget);
+          var consumedBudget = baseConsumedBudget + skill.effectBudget;
+          var remainingBudget = availableBudget + budgetIncrease - consumedBudget;
           metrics.textContent = unlocked
             ? "性能予算 " + formatNumber(availableBudget) +
-              " ／ 使用中 " + formatNumber(usedBudget) +
-              " ／ 残り " + formatNumber(Math.max(0, availableBudget - usedBudget)) +
+              (budgetIncrease > 0
+                ? " ／ マイナス補正による予算増加 " + formatNumber(budgetIncrease)
+                : "") +
+              " ／ 使用中 " + formatNumber(consumedBudget) +
+              (skill.effectBudget > 0
+                ? "（基本性能 " + formatNumber(baseConsumedBudget) +
+                  "＋追加効果 " + formatNumber(skill.effectBudget) + "）"
+                : "") +
+              " ／ 残り " + formatNumber(remainingBudget) +
               " ／ 必要消費 " + performance.requiredCost
             : "消費を選ぶと、威力・命中・対象数・効果を入力できます。";
           grid.appendChild(metrics);
@@ -2230,7 +2327,7 @@
           document.getElementById("weapon-" + number + "-accuracy-stat").value = weapon.accuracyStat;
           document.getElementById("weapon-" + number + "-description").value = weapon.description;
           document.getElementById("weapon-" + number + "-power-indicator").textContent =
-            getPowerIndicator(weapon.power);
+            getPowerIndicator(weapon.power, weapon.attackType);
         });
         document.getElementById("armor-name").value = state.armor.name;
         document.getElementById("armor-protection").value = String(state.armor.protection);
@@ -2390,7 +2487,8 @@
 
         state.weapons.forEach(function (weapon, index) {
           appendRow(["武器" + (index + 1) + "単発威力", formatNumber(weapon.power),
-            attackTypeDefinitions[weapon.attackType].label, getPowerIndicator(weapon.power)]);
+            attackTypeDefinitions[weapon.attackType].label,
+            getPowerIndicator(weapon.power, weapon.attackType)]);
           appendRow(["武器" + (index + 1) + "受け", defenseEquipmentDefinitions[weapon.defenseType].label,
             "×" + formatNumber(weapon.receiveMultiplier), "防御成功時"]);
         });
@@ -2415,6 +2513,7 @@
       function getConfiguredSkills() {
         return state.skills.filter(function (skill) {
           return skill.cost > 0 && skill.name.trim() &&
+            (!skill.description.trim() || skill.effectBudget > 0) &&
             getSkillPerformance(skill).requiredCost <= skill.cost;
         });
       }
@@ -2453,7 +2552,9 @@
             ? "個別設定 " + formatNumber(state.monsterHp)
             : "50 × (1＋頑健÷3) ＝ " + getMaximumHp()),
           "一命中の威力 ＝ 武器単発威力 × 攻撃技倍率 × 潜在倍率 × 成功段階倍率 × 状況倍率",
-          "スキル性能予算 ＝ 消費×65 ／ 使用中 ＝ max(0, 性能指数－1)×100",
+          "スキル性能予算 ＝ 消費×65 ／ 基本性能差 ＝ (性能指数－1)×100",
+          "基本性能差が正なら予算を使用し、負ならマイナス補正として予算が増加",
+          "総使用予算 ＝ 基本性能差＋追加効果予算（追加効果予算はKPと相談）",
           "防御損害 ＝ 一命中威力 × 防御結果倍率 × 武器受け倍率 − 防護点"
         ];
         document.getElementById("kp-rule-formulas").textContent = lines.join("\n");
@@ -3041,6 +3142,9 @@
             } else if (skill.cost > value) {
               issues.push(label + "は" + resource.label + skill.cost + "を使用できません");
             }
+            if (skill.description.trim() && skill.effectBudget <= 0) {
+              issues.push(label + "の追加効果予算が未入力");
+            }
             var required = getSkillPerformance(skill).requiredCost;
             if (skill.cost > 0 && skill.cost < required) {
               issues.push(label + "の必要消費は" + required);
@@ -3107,12 +3211,21 @@
         document.getElementById("creation-target").value = state.targetType;
         document.getElementById("total-points").value = String(state.totalPoints);
         document.getElementById("build").value = state.build;
+        document.getElementById("character-setting").value = state.characterSetting;
+        updateBasicIndicators();
         freeFieldDefinitions.forEach(function (field) {
           var textarea = document.querySelector("[data-free-field='" + field.key + "']");
           if (textarea) {
             textarea.value = state[field.key];
           }
         });
+      }
+
+      function updateBasicIndicators() {
+        document.getElementById("total-points-indicator").textContent =
+          getTotalPointsIndicator(state.totalPoints);
+        document.getElementById("build-indicator").textContent =
+          getBuildIndicator(state.build);
       }
 
       function updateMetrics() {
@@ -3227,7 +3340,7 @@
           lines.push("武器名：" + textOrNone(weapon.name));
           lines.push("武器攻撃型：" + attackTypeDefinitions[weapon.attackType].label);
           lines.push("単発威力：" + formatNumber(weapon.power) + "（" +
-            getPowerIndicator(weapon.power) + "）");
+            getPowerIndicator(weapon.power, weapon.attackType) + "）");
           lines.push("命中に使う能力：" + accuracyStat.label);
           lines.push("武器説明：" + textOrNone(weapon.description));
         });
@@ -3258,18 +3371,25 @@
           lines.push("消費：" + resource.label + skill.cost);
           lines.push("命中補正：" + formatSigned(skill.accuracy));
           lines.push("対象：" + targetShapeDefinitions[skill.targetShape] +
-            "（最大" + skill.maxTargets + "体）");
+            "（最大" + skill.maxTargets + "体／最小消費予算" +
+            getTargetShapeMinimumBudget(skill.targetShape) + "）");
+          lines.push("追加効果予算：" + skill.effectBudget);
           lines.push("効果：" + textOrNone(skill.description));
           if (includeInternal) {
             lines.push("威力倍率：×" + formatNumber(performance.powerFactor));
             lines.push("命中係数：×" + formatNumber(performance.accuracyFactor));
             lines.push("対象係数：×" + formatNumber(performance.targetFactor));
             lines.push("性能指数：" + formatNumber(performance.performanceIndex));
-            lines.push("性能負荷：" + formatNumber(performance.performanceLoad));
+            lines.push("基本性能差：" + formatNumber(performance.basePerformanceLoad));
+            lines.push("追加効果負荷：" + formatNumber(performance.effectLoad));
+            lines.push("性能負荷合計：" + formatNumber(performance.performanceLoad));
             lines.push("性能予算：" + formatNumber(skill.cost * 65));
-            lines.push("使用中予算：" + formatNumber(performance.performanceLoad * 100));
-            lines.push("残り予算：" + formatNumber(Math.max(0,
-              skill.cost * 65 - performance.performanceLoad * 100)));
+            lines.push("マイナス補正による予算増加：" + formatNumber(Math.max(0,
+              -performance.basePerformanceLoad * 100)));
+            lines.push("使用中予算：" + formatNumber(Math.max(0,
+              performance.basePerformanceLoad * 100) + skill.effectBudget));
+            lines.push("残り予算：" + formatNumber(
+              skill.cost * 65 - performance.performanceLoad * 100));
             lines.push("必要消費：" + performance.requiredCost);
             lines.push("潜在能力倍率：×" + formatNumber(getPotentialMultiplier(potential)));
           }
@@ -3300,7 +3420,7 @@
           delete weapon.receiveMultiplier;
           delete weapon.defenseType;
         });
-        return "<!-- HOSHIMICHI-PC-V3:" +
+        return "<!-- HOSHIMICHI-PC-V4:" +
           encodeURIComponent(JSON.stringify(publicState)) + " -->";
       }
 
@@ -3312,7 +3432,7 @@
           "# " + characterName,
           "",
           "作成対象：" + (state.targetType === "monster" ? "モンスター" : "キャラクター"),
-          "合計ポイント：" + totals.total,
+          "合計ポイント：" + totals.total + "（" + getTotalPointsIndicator(totals.total) + "）",
           "使用ポイント：" + totals.used,
           "残りポイント：" + totals.remaining
         ];
@@ -3321,7 +3441,7 @@
           lines.push("ポイント超過：" + totals.excess);
         }
 
-        lines.push("体格：" + buildText);
+        lines.push("体格：" + buildText + "（" + getBuildIndicator(state.build) + "）");
         lines.push("");
         lines.push("## 基礎ステータス");
         lines.push("");
@@ -3346,6 +3466,11 @@
           lines.push("");
           lines.push(textOrNone(state[field.key]));
         });
+
+        lines.push("");
+        lines.push("## キャラクター設定");
+        lines.push("");
+        lines.push(textOrNone(state.characterSetting));
 
         [
           ["legacySkills", "旧版スキルメモ"],
@@ -3395,12 +3520,12 @@
         ];
         appendSkillLines(lines, true, "KPスキル計算");
         lines.push("");
-        lines.push("<!-- HOSHIMICHI-KP-V3:" + encodeURIComponent(JSON.stringify(state)) + " -->");
+        lines.push("<!-- HOSHIMICHI-KP-V4:" + encodeURIComponent(JSON.stringify(state)) + " -->");
         return lines.join("\n");
       }
 
       function parseKpPayload(markdown) {
-        var match = sanitizeText(markdown).match(/<!--\s*HOSHIMICHI-KP-V(?:1|2|3):([\s\S]*?)-->/);
+        var match = sanitizeText(markdown).match(/<!--\s*HOSHIMICHI-KP-V(?:1|2|3|4):([\s\S]*?)-->/);
         if (!match) {
           return null;
         }
@@ -3412,7 +3537,7 @@
       }
 
       function parsePublicPayload(markdown) {
-        var match = sanitizeText(markdown).match(/<!--\s*HOSHIMICHI-PC-V(?:1|2|3):([\s\S]*?)-->/);
+        var match = sanitizeText(markdown).match(/<!--\s*HOSHIMICHI-PC-V(?:1|2|3|4):([\s\S]*?)-->/);
         if (!match) {
           return null;
         }
@@ -3457,7 +3582,7 @@
           recognized += 1;
         }
 
-        var totalMatch = text.match(/^合計ポイント：(-?\d+)$/m);
+        var totalMatch = text.match(/^合計ポイント：(-?\d+)(?:（.*）)?$/m);
         if (totalMatch) {
           imported.totalPoints = clampInteger(totalMatch[1], 0, 999);
           recognized += 1;
@@ -3465,7 +3590,8 @@
 
         var buildMatch = text.match(/^体格：(.*)$/m);
         if (buildMatch) {
-          imported.build = buildMatch[1].trim() === "未入力" ? "" : sanitizeBuild(buildMatch[1].trim());
+          var buildValue = buildMatch[1].trim().replace(/（.*$/, "");
+          imported.build = buildValue === "未入力" ? "" : sanitizeBuild(buildValue);
           recognized += 1;
         }
 
@@ -3484,6 +3610,7 @@
         freeLabels["旧版スキルメモ"] = "legacySkills";
         freeLabels["旧版武器メモ"] = "legacyWeapons";
         freeLabels["旧版装備メモ"] = "legacyEquipment";
+        freeLabels["キャラクター設定"] = "characterSetting";
         var freeBuffers = {};
         var currentSection = "";
         var lines = text.split("\n");
@@ -3550,6 +3677,7 @@
             ? Math.round(importedState.monsterHp)
             : Math.round(50 * (1 + importedState.baseStats.robustness / 3))),
           "登録スキル数：" + importedState.skills.length,
+          "キャラクター設定：" + (importedState.characterSetting.trim() ? "あり" : "なし"),
           "KP内部設定：" + (importResult.hasKpSettings ? "上書きします" : "現在の設定を維持します")
         ].join("\n");
       }
@@ -3603,6 +3731,7 @@
       }
 
       function updateView() {
+        updateBasicIndicators();
         updateMetrics();
         updateTargetPresentation();
         updateCombatInputs();
@@ -3711,6 +3840,8 @@
           candidate.powerDisplay = clampInteger(target.value, -100, 999);
         } else if (field === "accuracy") {
           candidate.accuracy = clampInteger(target.value, -999, 999);
+        } else if (field === "effectBudget") {
+          candidate.effectBudget = clampInteger(target.value, 0, 999);
         } else if (field === "targetShape") {
           candidate.targetShape = normalizeChoice(target.value, targetShapeDefinitions, "single");
           if (candidate.targetShape === "single") {
@@ -3721,7 +3852,7 @@
         } else if (field === "maxTargets") {
           candidate.maxTargets = candidate.targetShape === "single"
             ? 1
-            : clampInteger(target.value, 1, 5);
+            : clampInteger(target.value, 2, 5);
         }
 
         var required = getSkillPerformance(candidate).requiredCost;
@@ -3973,7 +4104,7 @@
             event.target.value = state.build;
           }
           saveState();
-          updatePreview();
+          updateView();
         });
 
         document.getElementById("free-fields").addEventListener("input", function (event) {
@@ -3982,6 +4113,12 @@
             return;
           }
           state[key] = event.target.value;
+          saveState();
+          updatePreview();
+        });
+
+        document.getElementById("character-setting").addEventListener("input", function (event) {
+          state.characterSetting = sanitizeText(event.target.value).slice(0, 10000);
           saveState();
           updatePreview();
         });
