@@ -563,6 +563,67 @@
       min-height: 5rem;
     }
 
+    .attack-type-reference {
+      min-width: 0;
+      padding: 0.9rem;
+      border: 1px solid var(--line);
+      border-radius: 11px;
+      background: var(--surface-soft);
+    }
+
+    .attack-type-reference h3 {
+      margin: 0 0 0.35rem;
+      font-size: 1rem;
+    }
+
+    .attack-type-reference p {
+      margin: 0 0 0.65rem;
+      color: var(--muted);
+      font-size: 0.8rem;
+    }
+
+    .attack-table-scroll {
+      overflow-x: auto;
+    }
+
+    .attack-type-table {
+      width: 100%;
+      min-width: 43rem;
+      border-collapse: collapse;
+      font-size: 0.78rem;
+      text-align: center;
+    }
+
+    .attack-type-table + .attack-type-table {
+      margin-top: 0.75rem;
+    }
+
+    .attack-type-table caption {
+      margin-bottom: 0.3rem;
+      color: var(--accent-dark);
+      font-weight: 800;
+      text-align: left;
+    }
+
+    .attack-type-table th,
+    .attack-type-table td {
+      padding: 0.38rem 0.45rem;
+      border: 1px solid var(--line);
+      white-space: nowrap;
+    }
+
+    .attack-type-table thead th,
+    .attack-type-table tbody th {
+      background: #edf5fc;
+    }
+
+    .attack-type-table tr.is-selected th,
+    .attack-type-table tr.is-selected td {
+      background: #fff2bf;
+      color: #4d3900;
+      font-weight: 800;
+    }
+
     .skill-capacity {
       margin: 0 0 0.8rem;
       color: var(--muted);
@@ -612,7 +673,8 @@
       min-height: 5rem;
     }
 
-    .skill-metrics {
+    .skill-metrics,
+    .skill-attack-preview {
       grid-column: 1 / -1;
       margin: 0;
       padding: 0.65rem 0.75rem;
@@ -1106,6 +1168,11 @@
           <label for="monster-hp">モンスター最大HP</label>
           <input id="monster-hp" type="number" min="0" max="99999" step="1" inputmode="numeric">
         </div>
+        <div id="monster-multiplier-field" class="field" hidden>
+          <label for="monster-multiplier">モンスター倍率</label>
+          <input id="monster-multiplier" type="number" min="0" max="99" step="0.01" inputmode="decimal">
+          <span class="field-hint">通常攻撃・スキル攻撃の最終威力に使用</span>
+        </div>
       </div>
     </section>
 
@@ -1206,25 +1273,27 @@
                 <div class="field">
                   <label for="weapon-1-attack-type">武器攻撃型</label>
                   <select id="weapon-1-attack-type">
-                    <option value="heavy">重撃型（両手剣・戦斧・長柄武器）</option>
-                    <option value="single">一撃型（大剣・大斧・大槌）</option>
+                    <option value="heavy">重撃型（大槌・超重量武器）</option>
+                    <option value="single">一撃型（大剣・大斧・長柄武器）</option>
                     <option value="standard">標準型（片手剣・槍・棍棒）</option>
                     <option value="combo">連撃型（軽剣・曲剣・短剣）</option>
                     <option value="multi">多段型（双剣・格闘・爪）</option>
                   </select>
                 </div>
                 <div class="field">
-                  <label for="weapon-1-power">単発威力</label>
-                  <input id="weapon-1-power" type="number" min="0" max="999" step="1" inputmode="numeric">
+                  <label for="weapon-1-power">基礎単発威力（型で決定）</label>
+                  <input id="weapon-1-power" type="number" readonly aria-readonly="true">
                   <span id="weapon-1-power-indicator" class="stage-name"></span>
                 </div>
                 <div class="field">
-                  <label for="weapon-1-enhancement-stage">武器強化段階</label>
-                  <select id="weapon-1-enhancement-stage">
-                    <option value="0">0</option><option value="1">1</option>
-                    <option value="2">2</option><option value="3">3</option>
+                  <label for="weapon-1-enhancement">強化段階</label>
+                  <select id="weapon-1-enhancement">
+                    <option value="0">＋0（基礎）</option>
+                    <option value="1">＋1（×4/3 ＋0.5）</option>
+                    <option value="2">＋2（×5/3 ＋1.5）</option>
+                    <option value="3">＋3（×2 ＋2）</option>
                   </select>
-                  <span id="weapon-1-enhanced-power" class="stage-name"></span>
+                  <span id="weapon-1-enhanced-power" class="field-hint"></span>
                 </div>
                 <div class="field">
                   <label for="weapon-1-accuracy-stat">命中に使う能力</label>
@@ -1254,25 +1323,27 @@
                 <div class="field">
                   <label for="weapon-2-attack-type">武器攻撃型</label>
                   <select id="weapon-2-attack-type">
-                    <option value="heavy">重撃型（両手剣・戦斧・長柄武器）</option>
-                    <option value="single">一撃型（大剣・大斧・大槌）</option>
+                    <option value="heavy">重撃型（大槌・超重量武器）</option>
+                    <option value="single">一撃型（大剣・大斧・長柄武器）</option>
                     <option value="standard">標準型（片手剣・槍・棍棒）</option>
                     <option value="combo">連撃型（軽剣・曲剣・短剣）</option>
                     <option value="multi">多段型（双剣・格闘・爪）</option>
                   </select>
                 </div>
                 <div class="field">
-                  <label for="weapon-2-power">単発威力</label>
-                  <input id="weapon-2-power" type="number" min="0" max="999" step="1" inputmode="numeric">
+                  <label for="weapon-2-power">基礎単発威力（型で決定）</label>
+                  <input id="weapon-2-power" type="number" readonly aria-readonly="true">
                   <span id="weapon-2-power-indicator" class="stage-name"></span>
                 </div>
                 <div class="field">
-                  <label for="weapon-2-enhancement-stage">武器強化段階</label>
-                  <select id="weapon-2-enhancement-stage">
-                    <option value="0">0</option><option value="1">1</option>
-                    <option value="2">2</option><option value="3">3</option>
+                  <label for="weapon-2-enhancement">強化段階</label>
+                  <select id="weapon-2-enhancement">
+                    <option value="0">＋0（基礎）</option>
+                    <option value="1">＋1（×4/3 ＋0.5）</option>
+                    <option value="2">＋2（×5/3 ＋1.5）</option>
+                    <option value="3">＋3（×2 ＋2）</option>
                   </select>
-                  <span id="weapon-2-enhanced-power" class="stage-name"></span>
+                  <span id="weapon-2-enhanced-power" class="field-hint"></span>
                 </div>
                 <div class="field">
                   <label for="weapon-2-accuracy-stat">命中に使う能力</label>
@@ -1288,6 +1359,34 @@
                 </div>
               </div>
             </fieldset>
+            <div class="attack-type-reference">
+              <h3>攻撃型ごとの成功段階表</h3>
+              <p>「－」は攻撃0回・威力倍率なし。選択中の武器型を黄色で表示します。</p>
+              <div class="attack-table-scroll">
+                <table class="attack-type-table">
+                  <caption>攻撃回数</caption>
+                  <thead><tr><th>攻撃型</th><th>武器カテゴリ目安</th><th>基礎威力</th><th>限定</th><th>弱</th><th>通常</th><th>ハード</th><th>イクストリーム</th><th>クリティカル</th></tr></thead>
+                  <tbody>
+                    <tr id="attack-hit-heavy"><th>重撃型</th><td>大槌・超重量武器</td><td>18</td><td>－</td><td>－</td><td>1</td><td>1</td><td>1</td><td>1</td></tr>
+                    <tr id="attack-hit-single"><th>一撃型</th><td>大剣・大斧・長柄武器</td><td>13</td><td>－</td><td>1</td><td>1</td><td>1</td><td>1</td><td>1</td></tr>
+                    <tr id="attack-hit-standard"><th>標準型</th><td>片手剣・槍・棍棒</td><td>7</td><td>1</td><td>1</td><td>2</td><td>2</td><td>2</td><td>2</td></tr>
+                    <tr id="attack-hit-combo"><th>連撃型</th><td>軽剣・曲剣・短剣</td><td>6</td><td>－</td><td>1</td><td>2</td><td>4</td><td>4</td><td>4</td></tr>
+                    <tr id="attack-hit-multi"><th>多段型</th><td>双剣・格闘・爪</td><td>5</td><td>1</td><td>2</td><td>3</td><td>4</td><td>5</td><td>5</td></tr>
+                  </tbody>
+                </table>
+                <table class="attack-type-table">
+                  <caption>威力倍率</caption>
+                  <thead><tr><th>攻撃型</th><th>限定</th><th>弱</th><th>通常</th><th>ハード</th><th>イクストリーム</th><th>クリティカル</th></tr></thead>
+                  <tbody>
+                    <tr id="attack-power-heavy"><th>重撃型</th><td>－</td><td>－</td><td>×0.60</td><td>×1.50</td><td>×1.72</td><td>×3.00</td></tr>
+                    <tr id="attack-power-single"><th>一撃型</th><td>－</td><td>×0.75</td><td>×1.15</td><td>×1.55</td><td>×1.75</td><td>×2.50</td></tr>
+                    <tr id="attack-power-standard"><th>標準型</th><td>×0.63</td><td>×0.75</td><td>×1.00</td><td>×1.40</td><td>×1.90</td><td>×2.70</td></tr>
+                    <tr id="attack-power-combo"><th>連撃型</th><td>－</td><td>×0.75</td><td>×0.90</td><td>×1.20</td><td>×1.40</td><td>×2.50</td></tr>
+                    <tr id="attack-power-multi"><th>多段型</th><td>×1.00</td><td>×1.00</td><td>×1.00</td><td>×1.15</td><td>×1.25</td><td>×2.00</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
             <fieldset class="weapon-card armor-card">
               <legend>防具</legend>
               <div class="equipment-grid">
@@ -1297,8 +1396,18 @@
                 </div>
                 <div class="field">
                   <label for="armor-protection">防護点</label>
-                  <input id="armor-protection" type="number" min="0" max="999" step="1" inputmode="numeric">
+                  <input id="armor-protection" type="number" readonly aria-readonly="true">
                   <span id="armor-protection-indicator" class="stage-name"></span>
+                </div>
+                <div class="field">
+                  <label for="armor-enhancement">強化段階</label>
+                  <select id="armor-enhancement">
+                    <option value="0">＋0（基礎）</option>
+                    <option value="1">＋1（×4/3 ＋1）</option>
+                    <option value="2">＋2（×5/3 ＋2）</option>
+                    <option value="3">＋3（×2 ＋3）</option>
+                  </select>
+                  <span id="armor-enhanced-protection" class="field-hint"></span>
                 </div>
                 <div class="field weapon-description-field">
                   <label for="armor-description">防具説明</label>
@@ -1456,18 +1565,40 @@
               <option value="intercept">迎撃</option>
             </select>
           </div>
-            <div class="field">
-              <label for="kp-goblin-protection">ゴブリン基礎防護点</label>
-              <input id="kp-goblin-protection" type="number" min="0" max="999" step="0.1">
-            </div>
-            <div class="field">
-              <label for="kp-goblin-defense-stage">ゴブリン防護段階</label>
-              <select id="kp-goblin-defense-stage">
-                <option value="0">0</option><option value="1">1</option>
-                <option value="2">2</option><option value="3">3</option>
-              </select>
-              <span id="kp-goblin-enhanced-protection" class="stage-name"></span>
-            </div>
+          <div class="field">
+            <label for="kp-goblin-attack-type">ゴブリン攻撃型</label>
+            <select id="kp-goblin-attack-type">
+              <option value="heavy">重撃型</option><option value="single">一撃型</option>
+              <option value="standard">標準型</option><option value="combo">連撃型</option>
+              <option value="multi">多段型</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="kp-goblin-attack-power">ゴブリン基礎攻撃力</label>
+            <input id="kp-goblin-attack-power" type="number" min="0" max="999" step="0.1">
+          </div>
+          <div class="field">
+            <label for="kp-goblin-weapon-enhancement">ゴブリン武器強化</label>
+            <select id="kp-goblin-weapon-enhancement">
+              <option value="0">＋0</option><option value="1">＋1</option>
+              <option value="2">＋2</option><option value="3">＋3</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="kp-goblin-multiplier">ゴブリン倍率</label>
+            <input id="kp-goblin-multiplier" type="number" min="0" max="99" step="0.01">
+          </div>
+          <div class="field">
+            <label for="kp-goblin-protection">ゴブリン基礎防護点</label>
+            <input id="kp-goblin-protection" type="number" min="0" max="999" step="0.1">
+          </div>
+          <div class="field">
+            <label for="kp-goblin-armor-enhancement">ゴブリン防具強化</label>
+            <select id="kp-goblin-armor-enhancement">
+              <option value="0">＋0</option><option value="1">＋1</option>
+              <option value="2">＋2</option><option value="3">＋3</option>
+            </select>
+          </div>
           <div class="field">
             <label for="kp-goblin-receive">ゴブリン武器受け倍率</label>
             <input id="kp-goblin-receive" type="number" min="0.07" max="1" step="0.01">
@@ -1636,42 +1767,46 @@
       };
 
       var attackTypeDefinitions = {
-        heavy: { label: "重撃型", power: 18 },
-        single: { label: "一撃型", power: 13 },
-        standard: { label: "標準型", power: 7 },
-        combo: { label: "連撃型", power: 6 },
-        multi: { label: "多段型", power: 5 }
+        heavy: {
+          label: "重撃型", power: 18,
+          hits: { limited: 0, weak: 0, regular: 1, hard: 1, extreme: 1, critical: 1 },
+          multipliers: { limited: 0, weak: 0, regular: 0.60, hard: 1.50, extreme: 1.72, critical: 3.00 }
+        },
+        single: {
+          label: "一撃型", power: 13,
+          hits: { limited: 0, weak: 1, regular: 1, hard: 1, extreme: 1, critical: 1 },
+          multipliers: { limited: 0, weak: 0.75, regular: 1.15, hard: 1.55, extreme: 1.75, critical: 2.50 }
+        },
+        standard: {
+          label: "標準型", power: 7,
+          hits: { limited: 1, weak: 1, regular: 2, hard: 2, extreme: 2, critical: 2 },
+          multipliers: { limited: 0.63, weak: 0.75, regular: 1.00, hard: 1.40, extreme: 1.90, critical: 2.70 }
+        },
+        combo: {
+          label: "連撃型", power: 6,
+          hits: { limited: 0, weak: 1, regular: 2, hard: 4, extreme: 4, critical: 4 },
+          multipliers: { limited: 0, weak: 0.75, regular: 0.90, hard: 1.20, extreme: 1.40, critical: 2.50 }
+        },
+        multi: {
+          label: "多段型", power: 5,
+          hits: { limited: 1, weak: 2, regular: 3, hard: 4, extreme: 5, critical: 5 },
+          multipliers: { limited: 1.00, weak: 1.00, regular: 1.00, hard: 1.15, extreme: 1.25, critical: 2.00 }
+        }
       };
 
-      var attackHitCounts = {
-        heavy: { limited: 0, weak: 0, regular: 1, hard: 1, extreme: 1, critical: 1 },
-        single: { limited: 0, weak: 1, regular: 1, hard: 1, extreme: 1, critical: 1 },
-        standard: { limited: 1, weak: 1, regular: 2, hard: 2, extreme: 2, critical: 2 },
-        combo: { limited: 0, weak: 1, regular: 2, hard: 4, extreme: 4, critical: 4 },
-        multi: { limited: 1, weak: 2, regular: 3, hard: 4, extreme: 5, critical: 5 }
-      };
+      var weaponEnhancementDefinitions = [
+        { multiplier: 1, fixed: 0 },
+        { multiplier: 4 / 3, fixed: 0.5 },
+        { multiplier: 5 / 3, fixed: 1.5 },
+        { multiplier: 2, fixed: 2 }
+      ];
 
-      var attackTypeGradeMultipliers = {
-        heavy: { limited: 0.50, weak: 0.75, regular: 0.60, hard: 1.50, extreme: 1.72, critical: 3.00 },
-        single: { limited: 0.50, weak: 0.75, regular: 1.15, hard: 1.55, extreme: 1.75, critical: 2.50 },
-        standard: { limited: 0.63, weak: 0.75, regular: 1.00, hard: 1.40, extreme: 1.90, critical: 2.70 },
-        combo: { limited: 0.50, weak: 0.75, regular: 0.90, hard: 1.20, extreme: 1.40, critical: 2.50 },
-        multi: { limited: 1.00, weak: 1.00, regular: 1.00, hard: 1.15, extreme: 1.25, critical: 2.00 }
-      };
-
-      var weaponEnhancementStages = {
-        0: { multiplier: 1, fixed: 0 },
-        1: { multiplier: 4 / 3, fixed: 0.50 },
-        2: { multiplier: 5 / 3, fixed: 1.50 },
-        3: { multiplier: 2, fixed: 2.00 }
-      };
-
-      var defenseEnhancementStages = {
-        0: { multiplier: 1, fixed: 0 },
-        1: { multiplier: 4 / 3, fixed: 1 },
-        2: { multiplier: 5 / 3, fixed: 2 },
-        3: { multiplier: 2, fixed: 3 }
-      };
+      var armorEnhancementDefinitions = [
+        { multiplier: 1, fixed: 0 },
+        { multiplier: 4 / 3, fixed: 1 },
+        { multiplier: 5 / 3, fixed: 2 },
+        { multiplier: 2, fixed: 3 }
+      ];
 
       var defenseEquipmentDefinitions = {
         none: { label: "なし", minimum: 1, maximum: 1, defaultValue: 1 },
@@ -1708,17 +1843,25 @@
         extreme: 0.35,
         hard: 0.50,
         regular: 0.70,
-        failure: 1.00
+        weak: 0.85,
+        limited: 0.95,
+        automaticSuccess: 0.70,
+        failure: 1.00,
+        fumble: 1.00,
+        automaticFailure: 1.00
       };
 
       var successGradeLabels = {
+        automaticSuccess: "自動成功",
         critical: "クリティカル",
         extreme: "イクストリーム成功",
         hard: "ハード成功",
         regular: "レギュラー成功",
         weak: "弱成功",
         limited: "限定成功",
-        failure: "失敗"
+        failure: "失敗",
+        fumble: "ファンブル",
+        automaticFailure: "自動失敗"
       };
 
       var goblinTemplate = {
@@ -1736,7 +1879,8 @@
           spirit: 0
         },
         weaponPower: 7,
-        attackType: "standard"
+        attackType: "standard",
+        multiplier: 0.66
       };
 
       var stageNames = ["未習得", "心得あり", "得意", "熟練"];
@@ -1762,21 +1906,6 @@
         return "達人級の武器";
       }
 
-      function getEnhancedWeaponPower(weapon) {
-        var stage = weaponEnhancementStages[clampInteger(weapon.enhancementStage, 0, 3)];
-        return Number(weapon.power) * stage.multiplier + stage.fixed;
-      }
-
-      function getEnhancedProtection(baseProtection, defenseStage) {
-        var stage = defenseEnhancementStages[clampInteger(defenseStage, 0, 3)];
-        return Number(baseProtection) * stage.multiplier + stage.fixed;
-      }
-
-      function getWeaponDisplayName(weapon, fallback) {
-        var name = weapon.name.trim() || fallback;
-        return weapon.enhancementStage > 0 ? name + "＋" + weapon.enhancementStage : name;
-      }
-
       function getProtectionIndicator(value) {
         if (value <= 0) return "無防護";
         if (value <= 1) return "簡素な防具";
@@ -1785,6 +1914,64 @@
         if (value === 5) return "標準防御力";
         if (value <= 7) return "高い防御力";
         return "非常に高い防御力";
+      }
+
+      function getEnhancementSuffix(stage) {
+        var normalized = clampInteger(stage, 0, 3);
+        return normalized > 0 ? "＋" + normalized : "";
+      }
+
+      function getEnhancedWeaponPower(weapon) {
+        var enhancement = weaponEnhancementDefinitions[
+          clampInteger(weapon.enhancementStage, 0, 3)
+        ];
+        return weapon.power * enhancement.multiplier + enhancement.fixed;
+      }
+
+      function getEnhancedArmorProtection(armor) {
+        var enhancement = armorEnhancementDefinitions[
+          clampInteger(armor.enhancementStage, 0, 3)
+        ];
+        return armor.protection * enhancement.multiplier + enhancement.fixed;
+      }
+
+      function getDisplayedWeaponPower(weapon) {
+        return Math.floor(getEnhancedWeaponPower(weapon));
+      }
+
+      function getDisplayedArmorProtection(armor) {
+        return Math.floor(getEnhancedArmorProtection(armor));
+      }
+
+      function normalizeAttackGrade(grade) {
+        return grade === "automaticSuccess" ? "regular" : grade;
+      }
+
+      function getAttackStageMultiplier(attackType, grade) {
+        var definition = attackTypeDefinitions[attackType] || attackTypeDefinitions.standard;
+        var normalized = normalizeAttackGrade(grade);
+        return Object.prototype.hasOwnProperty.call(definition.multipliers, normalized)
+          ? definition.multipliers[normalized]
+          : 0;
+      }
+
+      function getHitCount(attackType, grade) {
+        var definition = attackTypeDefinitions[attackType] || attackTypeDefinitions.standard;
+        var normalized = normalizeAttackGrade(grade);
+        return Object.prototype.hasOwnProperty.call(definition.hits, normalized)
+          ? definition.hits[normalized]
+          : 0;
+      }
+
+      function getAttackTypePreview(attackType) {
+        var definition = attackTypeDefinitions[attackType] || attackTypeDefinitions.standard;
+        return "回数目安：限定" + (definition.hits.limited || "－") +
+          "／弱" + (definition.hits.weak || "－") +
+          "／通常" + (definition.hits.regular || "－") +
+          "／ハード" + (definition.hits.hard || "－") +
+          "／イクストリーム" + (definition.hits.extreme || "－") +
+          "／クリティカル" + (definition.hits.critical || "－") +
+          "（範囲攻撃は対象ごと）";
       }
 
       function getTotalPointsIndicator(value) {
@@ -1852,8 +2039,12 @@
           simulationCount: 100,
           simulationWeaponIndex: 0,
           goblinProtection: 1,
-          goblinDefenseStage: 0,
+          goblinArmorEnhancement: 0,
           goblinReceiveMultiplier: 0.95,
+          goblinAttackType: "standard",
+          goblinAttackPower: 7,
+          goblinWeaponEnhancement: 0,
+          goblinMultiplier: 0.66,
           simulationAttack: "normal",
           simulationSkillId: "",
           simulationDefense: "defense"
@@ -1877,7 +2068,8 @@
         return {
           name: "",
           description: "",
-          protection: 2
+          protection: 2,
+          enhancementStage: 0
         };
       }
 
@@ -1886,6 +2078,7 @@
           id: id || ("skill-" + Date.now() + "-" + Math.floor(Math.random() * 100000)),
           name: "",
           resourceType: "willpower",
+          attackType: "standard",
           powerDisplay: 0,
           accuracy: 0,
           cost: 0,
@@ -1909,6 +2102,7 @@
           build: "1",
           monsterBaseSuccess: 40,
           monsterHp: 25,
+          monsterMultiplier: 1,
           baseStats: makeNumberMap(definitions.baseStats),
           potentialStats: makeNumberMap(definitions.potentialStats),
           practicalSkills: makeNumberMap(definitions.practicalSkills),
@@ -1997,6 +2191,7 @@
         var clean = createDefaultSkill(safeId || ("skill-import-" + index));
         clean.name = sanitizeText(source.name).slice(0, 100);
         clean.resourceType = normalizeChoice(source.resourceType, resourceDefinitions, "willpower");
+        clean.attackType = normalizeChoice(source.attackType, attackTypeDefinitions, "standard");
         clean.powerDisplay = clampInteger(source.powerDisplay, -100, 999);
         clean.accuracy = clampInteger(source.accuracy, -999, 999);
         clean.cost = clampInteger(source.cost, 0, 10);
@@ -2053,8 +2248,7 @@
         return Boolean(sanitizeText(raw.name).trim() || sanitizeText(raw.description).trim() ||
           raw.attackType && raw.attackType !== defaultWeapon.attackType ||
           Number.isFinite(Number(raw.power)) && Number(raw.power) !== defaultWeapon.power ||
-          Number.isFinite(Number(raw.enhancementStage)) &&
-            Number(raw.enhancementStage) !== defaultWeapon.enhancementStage ||
+          Number.isFinite(Number(raw.enhancementStage)) && Number(raw.enhancementStage) !== 0 ||
           raw.accuracyStat && raw.accuracyStat !== defaultWeapon.accuracyStat ||
           raw.defenseType && raw.defenseType !== defaultWeapon.defenseType ||
           Number.isFinite(Number(raw.receiveMultiplier)) &&
@@ -2066,7 +2260,8 @@
         return {
           name: sanitizeText(source.name).slice(0, 100),
           description: sanitizeText(source.description).slice(0, 2000),
-          protection: clampDecimal(source.protection, 0, 999, 2)
+          protection: clampDecimal(source.protection, 0, 999, 2),
+          enhancementStage: clampInteger(source.enhancementStage, 0, 3)
         };
       }
 
@@ -2086,6 +2281,7 @@
         clean.build = sanitizeBuild(raw.build);
         clean.monsterBaseSuccess = clampDecimal(raw.monsterBaseSuccess, 0, 999, 40);
         clean.monsterHp = clampDecimal(raw.monsterHp, 0, 99999, 25);
+        clean.monsterMultiplier = clampDecimal(raw.monsterMultiplier, 0, 99, 1);
 
         Object.keys(definitions).forEach(function (groupName) {
           var sourceGroup = raw[groupName];
@@ -2132,9 +2328,23 @@
           clean.kpSettings.simulationWeaponIndex = 0;
         }
         clean.kpSettings.goblinProtection = clampDecimal(sourceKp.goblinProtection, 0, 999, 1);
-        clean.kpSettings.goblinDefenseStage = clampInteger(sourceKp.goblinDefenseStage, 0, 3);
+        clean.kpSettings.goblinArmorEnhancement = clampInteger(
+          sourceKp.goblinArmorEnhancement, 0, 3
+        );
         clean.kpSettings.goblinReceiveMultiplier = clampDecimal(
           sourceKp.goblinReceiveMultiplier, 0.07, 1, 0.95
+        );
+        clean.kpSettings.goblinAttackType = normalizeChoice(
+          sourceKp.goblinAttackType, attackTypeDefinitions, "standard"
+        );
+        clean.kpSettings.goblinAttackPower = clampDecimal(
+          sourceKp.goblinAttackPower, 0, 999, 7
+        );
+        clean.kpSettings.goblinWeaponEnhancement = clampInteger(
+          sourceKp.goblinWeaponEnhancement, 0, 3
+        );
+        clean.kpSettings.goblinMultiplier = clampDecimal(
+          sourceKp.goblinMultiplier, 0, 99, 0.66
         );
         clean.kpSettings.simulationAttack = Object.prototype.hasOwnProperty.call(
           simulationAttackMethods, sourceKp.simulationAttack
@@ -2452,6 +2662,16 @@
           costSelect.value = String(skill.cost);
           grid.appendChild(createSkillField("消費", skill, "cost", costSelect));
 
+          var attackTypeSelect = document.createElement("select");
+          appendOptions(attackTypeSelect, attackTypeDefinitions, skill.attackType);
+          attackTypeSelect.disabled = !unlocked;
+          grid.appendChild(createSkillField("スキル攻撃型", skill, "attackType", attackTypeSelect));
+
+          var attackTypeNote = document.createElement("p");
+          attackTypeNote.className = "skill-attack-preview";
+          attackTypeNote.textContent = getAttackTypePreview(skill.attackType);
+          grid.appendChild(attackTypeNote);
+
           var powerInput = document.createElement("input");
           powerInput.type = "number";
           powerInput.min = "-100";
@@ -2690,6 +2910,7 @@
           state.potentialStats.holy > 0 ? String(state.potentialStats.holy) : "―";
         document.getElementById("monster-base-success").value = String(state.monsterBaseSuccess);
         document.getElementById("monster-hp").value = String(state.monsterHp);
+        document.getElementById("monster-multiplier").value = String(state.monsterMultiplier);
         document.getElementById("has-weapon-2").checked = state.hasWeapon2;
         document.getElementById("weapon-2-card").hidden = !state.hasWeapon2;
         state.weapons.forEach(function (weapon, index) {
@@ -2697,20 +2918,37 @@
           document.getElementById("weapon-" + number + "-name").value = weapon.name;
           document.getElementById("weapon-" + number + "-attack-type").value = weapon.attackType;
           document.getElementById("weapon-" + number + "-power").value = String(weapon.power);
-          document.getElementById("weapon-" + number + "-enhancement-stage").value =
+          document.getElementById("weapon-" + number + "-enhancement").value =
             String(weapon.enhancementStage);
+          document.getElementById("weapon-" + number + "-enhanced-power").textContent =
+            "強化後単発威力：" + getDisplayedWeaponPower(weapon);
           document.getElementById("weapon-" + number + "-accuracy-stat").value = weapon.accuracyStat;
           document.getElementById("weapon-" + number + "-description").value = weapon.description;
           document.getElementById("weapon-" + number + "-power-indicator").textContent =
-            getPowerIndicator(weapon.power, weapon.attackType);
-          document.getElementById("weapon-" + number + "-enhanced-power").textContent =
-            "強化後単発威力：" + formatNumber(getEnhancedWeaponPower(weapon));
+            getPowerIndicator(getDisplayedWeaponPower(weapon), weapon.attackType);
         });
         document.getElementById("armor-name").value = state.armor.name;
         document.getElementById("armor-protection").value = String(state.armor.protection);
+        document.getElementById("armor-enhancement").value = String(state.armor.enhancementStage);
+        document.getElementById("armor-enhanced-protection").textContent =
+          "強化後防護点：" + getDisplayedArmorProtection(state.armor);
         document.getElementById("armor-description").value = state.armor.description;
         document.getElementById("armor-protection-indicator").textContent =
-          getProtectionIndicator(state.armor.protection);
+          getProtectionIndicator(getDisplayedArmorProtection(state.armor));
+
+        Object.keys(attackTypeDefinitions).forEach(function (attackType) {
+          var selected = state.weapons.some(function (weapon, index) {
+            return (index === 0 || state.hasWeapon2) && weapon.attackType === attackType;
+          });
+          ["attack-hit-", "attack-power-"].forEach(function (prefix) {
+            var row = document.getElementById(prefix + attackType);
+            if (selected) {
+              row.classList.add("is-selected");
+            } else {
+              row.classList.remove("is-selected");
+            }
+          });
+        });
       }
 
       function findDefinition(groupName, key) {
@@ -2873,13 +3111,36 @@
             return;
           }
           appendRow(["武器" + (index + 1) + "単発威力", formatNumber(weapon.power),
-            attackTypeDefinitions[weapon.attackType].label + "／強化" + weapon.enhancementStage,
-            formatNumber(getEnhancedWeaponPower(weapon))]);
+            attackTypeDefinitions[weapon.attackType].label + "・強化＋" + weapon.enhancementStage,
+            formatNumber(getEnhancedWeaponPower(weapon)) +
+              "（表示" + getDisplayedWeaponPower(weapon) + "）"]);
           appendRow(["武器" + (index + 1) + "受け", defenseEquipmentDefinitions[weapon.defenseType].label,
             "×" + formatNumber(weapon.receiveMultiplier), "防御成功時"]);
         });
-        appendRow(["防具防護点", formatNumber(state.armor.protection), "一命中ごと減算",
-          formatNumber(state.armor.protection)]);
+        appendRow(["防具防護点", formatNumber(state.armor.protection),
+          "強化＋" + state.armor.enhancementStage + "・一命中ごと減算",
+          formatNumber(getEnhancedArmorProtection(state.armor)) +
+            "（表示" + getDisplayedArmorProtection(state.armor) + "）"]);
+        var kpGoblinWeapon = {
+          power: state.kpSettings.goblinAttackPower,
+          enhancementStage: state.kpSettings.goblinWeaponEnhancement
+        };
+        var kpGoblinArmor = {
+          protection: state.kpSettings.goblinProtection,
+          enhancementStage: state.kpSettings.goblinArmorEnhancement
+        };
+        appendRow(["ゴブリン攻撃力", formatNumber(kpGoblinWeapon.power),
+          attackTypeDefinitions[state.kpSettings.goblinAttackType].label +
+            "・強化＋" + kpGoblinWeapon.enhancementStage +
+            "・倍率×" + formatNumber(state.kpSettings.goblinMultiplier),
+          formatNumber(getEnhancedWeaponPower(kpGoblinWeapon))]);
+        appendRow(["ゴブリン防護点", formatNumber(kpGoblinArmor.protection),
+          "強化＋" + kpGoblinArmor.enhancementStage,
+          formatNumber(getEnhancedArmorProtection(kpGoblinArmor))]);
+        if (state.targetType === "monster") {
+          appendRow(["モンスター倍率", formatNumber(state.monsterMultiplier),
+            "通常・スキル共通", "×" + formatNumber(state.monsterMultiplier)]);
+        }
 
         state.skills.forEach(function (skill, index) {
           var performance = getSkillPerformance(skill);
@@ -2889,7 +3150,7 @@
             "消費" + skill.cost,
             "威力×" + formatNumber(performance.powerFactor) +
               "／潜在×" + formatNumber(getPotentialMultiplier(potential)),
-            "必要" + performance.requiredCost
+            attackTypeDefinitions[skill.attackType].label + "・必要" + performance.requiredCost
           ]);
         });
 
@@ -2940,13 +3201,16 @@
             ? "個別設定 " + formatNumber(state.monsterHp)
             : "50 × (1＋頑健÷3) ＝ " + getMaximumHp()),
           "最大AP ＝ 10 × (1＋持久÷3) ＝ " + getMaximumAp(),
-          "一命中の威力 ＝ 強化後単発威力 × 攻撃技倍率 × 潜在倍率 × 攻撃型別成功段階倍率 × 状況倍率",
+          "通常一命中 ＝ 強化後武器威力 × 攻撃方法倍率 × 攻撃型成功段階倍率 × モンスター倍率",
+          "スキル一命中 ＝ 強化後武器威力 × 潜在倍率 × スキル倍率 × 攻撃型成功段階倍率 × モンスター倍率",
+          "強化後武器威力は内部小数を保持し、表示だけ切り捨て",
           "スキル性能予算 ＝ 消費×65 ／ 基本性能差 ＝ (性能指数－1)×100",
           "基本性能差が正なら予算を使用し、負ならマイナス補正として予算が増加",
           "総使用予算 ＝ 基本性能差＋対象予算＋範囲予算＋追加効果予算",
           "対象予算は追加1体25／直線3m15／扇状90°・3m20／周囲半径1.5m20",
           "範囲下限は距離・半径1m／角度15°／範囲予算5（地点範囲10）",
-          "防御損害 ＝ 一命中威力 × 防御結果倍率 × 武器受け倍率 − 強化後防護点"
+          "防御損害 ＝ 一命中威力 × 防御結果倍率 × 武器受け倍率 − 強化後防護点",
+          "防護点は一命中ごとに減算し、全命中分を合算して最後に四捨五入"
         ];
         document.getElementById("kp-rule-formulas").textContent = lines.join("\n");
       }
@@ -2967,14 +3231,17 @@
         }
         document.getElementById("kp-sim-weapon").value = String(state.kpSettings.simulationWeaponIndex);
         document.getElementById("kp-goblin-protection").value = String(state.kpSettings.goblinProtection);
-        document.getElementById("kp-goblin-defense-stage").value =
-          String(state.kpSettings.goblinDefenseStage);
-        document.getElementById("kp-goblin-enhanced-protection").textContent =
-          "強化後防護点：" + formatNumber(getEnhancedProtection(
-            state.kpSettings.goblinProtection,
-            state.kpSettings.goblinDefenseStage
-          ));
+        document.getElementById("kp-goblin-armor-enhancement").value =
+          String(state.kpSettings.goblinArmorEnhancement);
         document.getElementById("kp-goblin-receive").value = String(state.kpSettings.goblinReceiveMultiplier);
+        document.getElementById("kp-goblin-attack-type").value =
+          state.kpSettings.goblinAttackType;
+        document.getElementById("kp-goblin-attack-power").value =
+          String(state.kpSettings.goblinAttackPower);
+        document.getElementById("kp-goblin-weapon-enhancement").value =
+          String(state.kpSettings.goblinWeaponEnhancement);
+        document.getElementById("kp-goblin-multiplier").value =
+          String(state.kpSettings.goblinMultiplier);
         document.getElementById("kp-sim-attack").value = state.kpSettings.simulationAttack;
         document.getElementById("kp-sim-defense").value = state.kpSettings.simulationDefense;
         state.weapons.forEach(function (weapon, index) {
@@ -3306,23 +3573,46 @@
       }
 
       function getSuccessGrade(successValue, roll) {
-        var succeeded = successValue >= 100 || roll <= successValue;
-        if (!succeeded) {
-          return "failure";
+        if (successValue <= 0) {
+          return "automaticFailure";
         }
         if (roll <= getCriticalLimit(successValue)) {
           return "critical";
         }
-        if (roll <= successValue / 5) {
+        if (roll <= Math.floor(successValue / 5)) {
           return "extreme";
         }
-        if (roll <= successValue / 2) {
+        if (roll <= Math.floor(successValue / 2)) {
           return "hard";
         }
-        return "regular";
+        if (successValue >= 100) {
+          return "automaticSuccess";
+        }
+        if (roll <= successValue) {
+          return "regular";
+        }
+        if ((successValue <= 49 && roll >= 96) || (successValue >= 50 && roll === 100)) {
+          return "fumble";
+        }
+        if (roll <= successValue + 10) {
+          return "weak";
+        }
+        if (roll <= successValue + 20) {
+          return "limited";
+        }
+        return "failure";
       }
 
       function resolveD100(successValue, penaltyDice, randomFunction) {
+        if (successValue <= 0) {
+          return {
+            successValue: successValue,
+            rolls: [],
+            roll: null,
+            grade: "automaticFailure",
+            succeeded: false
+          };
+        }
         var rolls = [];
         for (var index = 0; index < 1 + penaltyDice; index += 1) {
           rolls.push(rollD100(randomFunction));
@@ -3334,15 +3624,8 @@
           rolls: rolls,
           roll: adopted,
           grade: grade,
-          succeeded: grade !== "failure"
+          succeeded: ["failure", "fumble", "automaticFailure"].indexOf(grade) < 0
         };
-      }
-
-      function getHitCount(attackType, grade) {
-        if (grade === "failure" || !attackHitCounts[attackType]) {
-          return 0;
-        }
-        return attackHitCounts[attackType][grade] || 0;
       }
 
       function getSimulationAttackConfig() {
@@ -3361,6 +3644,7 @@
             powerDisplay: skill.powerDisplay,
             accuracy: skill.accuracy,
             potentialMultiplier: getPotentialMultiplier(potentialValue),
+            attackType: skill.attackType,
             resourceLabel: resourceDefinitions[skill.resourceType].label + skill.cost
           };
         }
@@ -3371,6 +3655,7 @@
           powerDisplay: method.powerDisplay,
           accuracy: method.accuracy,
           potentialMultiplier: 1,
+          attackType: null,
           resourceLabel: "消費なし"
         };
       }
@@ -3384,29 +3669,42 @@
 
       function calculatePcRawHitDamage(config, attackGrade) {
         var weapon = getSimulationWeapon();
+        var attackType = config.attackType || weapon.attackType;
+        var monsterMultiplier = state.targetType === "monster" ? state.monsterMultiplier : 1;
         return getEnhancedWeaponPower(weapon) *
           (1 + config.powerDisplay / 100) *
           config.potentialMultiplier *
-          attackTypeGradeMultipliers[weapon.attackType][attackGrade];
+          getAttackStageMultiplier(attackType, attackGrade) *
+          monsterMultiplier;
       }
 
       function calculateGoblinCounterDamage(defenseResult) {
-        var rawPerHit = goblinTemplate.weaponPower *
-          attackTypeGradeMultipliers[goblinTemplate.attackType][defenseResult.grade];
-        var hitCount = getHitCount(goblinTemplate.attackType, defenseResult.grade);
-        return Math.round(Math.max(0, rawPerHit - state.armor.protection) * hitCount);
+        var kp = state.kpSettings;
+        var goblinWeapon = {
+          power: kp.goblinAttackPower,
+          enhancementStage: kp.goblinWeaponEnhancement
+        };
+        var rawPerHit = getEnhancedWeaponPower(goblinWeapon) *
+          getAttackStageMultiplier(kp.goblinAttackType, defenseResult.grade) *
+          kp.goblinMultiplier;
+        var hitCount = getHitCount(kp.goblinAttackType, defenseResult.grade);
+        return Math.round(
+          Math.max(0, rawPerHit - getEnhancedArmorProtection(state.armor)) * hitCount
+        );
+      }
+
+      function isRegularOrBetter(grade) {
+        return ["automaticSuccess", "critical", "extreme", "hard", "regular"]
+          .indexOf(grade) >= 0;
       }
 
       function runCombatSimulation(randomFunction) {
         var config = getSimulationAttackConfig();
         var weapon = getSimulationWeapon();
+        var attackType = config.attackType || weapon.attackType;
         var attackSuccess = getFinalSuccessValue(weapon.accuracyStat, config.accuracy);
         var defenseMethod = state.kpSettings.simulationDefense;
         var defenseSuccess = getGoblinDefenseSuccessValue(defenseMethod);
-        var goblinProtection = getEnhancedProtection(
-          state.kpSettings.goblinProtection,
-          state.kpSettings.goblinDefenseStage
-        );
         var count = state.kpSettings.simulationCount;
         var damageTotal = 0;
         var counterDamageTotal = 0;
@@ -3416,6 +3714,11 @@
         var severeInjuryCount = 0;
         var stoppedCount = 0;
         var details = [];
+        var goblinArmor = {
+          protection: state.kpSettings.goblinProtection,
+          enhancementStage: state.kpSettings.goblinArmorEnhancement
+        };
+        var goblinProtection = getEnhancedArmorProtection(goblinArmor);
 
         for (var trial = 0; trial < count; trial += 1) {
           var attack = resolveD100(attackSuccess, 0, randomFunction);
@@ -3423,18 +3726,21 @@
           var damage = 0;
           var counterDamage = 0;
           var outcome = "双方不発";
-          var hits = getHitCount(weapon.attackType, attack.grade);
+          var hits = getHitCount(attackType, attack.grade);
           var rawPerHit = attack.succeeded ? calculatePcRawHitDamage(config, attack.grade) : 0;
+          var attackerConnects = attack.succeeded && hits > 0;
 
           if (defenseMethod === "intercept") {
             defense = resolveD100(defenseSuccess, 1, randomFunction);
+            var defenderHits = getHitCount(state.kpSettings.goblinAttackType, defense.grade);
+            var defenderConnects = defense.succeeded && defenderHits > 0;
             var attackerWins = false;
             var defenderWins = false;
-            if (attack.succeeded && !defense.succeeded) {
+            if (attackerConnects && !defenderConnects) {
               attackerWins = true;
-            } else if (!attack.succeeded && defense.succeeded) {
+            } else if (!attackerConnects && defenderConnects) {
               defenderWins = true;
-            } else if (attack.succeeded && defense.succeeded) {
+            } else if (attackerConnects && defenderConnects) {
               if (attack.roll < defense.roll) {
                 attackerWins = true;
               } else if (defense.roll < attack.roll) {
@@ -3450,7 +3756,7 @@
               counterDamage = calculateGoblinCounterDamage(defense);
               outcome = "ゴブリンの迎撃が命中";
             }
-          } else if (attack.succeeded) {
+          } else if (attackerConnects) {
             defense = resolveD100(defenseSuccess, 0, randomFunction);
             if ((defenseMethod === "dodge" || defenseMethod === "parry") && defense.succeeded) {
               stoppedCount += 1;
@@ -3460,7 +3766,9 @@
               var receiveFactor = 1;
               if (defenseMethod === "defense" && defense.succeeded) {
                 defenseFactor = defenseResultMultipliers[defense.grade];
-                receiveFactor = state.kpSettings.goblinReceiveMultiplier;
+                receiveFactor = isRegularOrBetter(defense.grade)
+                  ? state.kpSettings.goblinReceiveMultiplier
+                  : 1;
                 stoppedCount += 1;
                 outcome = "防御成功";
               } else {
@@ -3471,6 +3779,8 @@
                 rawPerHit * defenseFactor * receiveFactor - goblinProtection
               ) * hits);
             }
+          } else if (attack.succeeded) {
+            outcome = "攻撃型により有効打なし";
           } else {
             outcome = "PCの攻撃失敗";
           }
@@ -3486,10 +3796,12 @@
           }
 
           if (trial < 5) {
-            details.push((trial + 1) + "回目：攻撃" + attack.roll +
+            details.push((trial + 1) + "回目：攻撃" +
+              (attack.roll === null ? "－" : attack.roll) +
               "（" + successGradeLabels[attack.grade] + "）" +
               (defense ? "／防御" + defense.rolls.join("・") +
-                "→" + defense.roll + "（" + successGradeLabels[defense.grade] + "）" : "") +
+                "→" + (defense.roll === null ? "－" : defense.roll) +
+                "（" + successGradeLabels[defense.grade] + "）" : "") +
               "／" + outcome + "／ゴブリン損害" + formatNumber(damage) +
               (counterDamage > 0 ? "／PC損害" + formatNumber(counterDamage) : ""));
           }
@@ -3507,19 +3819,19 @@
           "攻撃成功値：" + formatNumber(attackSuccess) + "（" + stat.label + "）",
           "攻撃倍率：×" + formatNumber(1 + config.powerDisplay / 100) +
             "／潜在倍率：×" + formatNumber(config.potentialMultiplier),
+          "攻撃型：" + attackTypeDefinitions[attackType].label,
           "防御：" + defenseLabel + "／成功値" + formatNumber(defenseSuccess),
-          "武器：" + getWeaponDisplayName(
-            weapon,
-            "武器" + (state.kpSettings.simulationWeaponIndex + 1)
-          ) +
+          "武器：" + (weapon.name || "武器" + (state.kpSettings.simulationWeaponIndex + 1)) +
             "／" + attackTypeDefinitions[weapon.attackType].label +
-            "・基礎単発威力" + formatNumber(weapon.power) +
-            "・強化後単発威力" + formatNumber(getEnhancedWeaponPower(weapon)),
-          "ゴブリン：HP" + goblinTemplate.hp + "・基礎防護" +
-            formatNumber(state.kpSettings.goblinProtection) + "・防護段階" +
-            state.kpSettings.goblinDefenseStage + "・強化後防護" +
-            formatNumber(goblinProtection) + "・武器受け×" +
-            formatNumber(state.kpSettings.goblinReceiveMultiplier),
+            "・基礎" + formatNumber(weapon.power) +
+            "・強化＋" + weapon.enhancementStage +
+            "・強化後" + getDisplayedWeaponPower(weapon),
+          "ゴブリン：HP" + goblinTemplate.hp + "・防護" +
+            getDisplayedArmorProtection(goblinArmor) +
+            "・" + attackTypeDefinitions[state.kpSettings.goblinAttackType].label +
+            "・攻撃力" + formatNumber(state.kpSettings.goblinAttackPower) +
+            "・倍率×" + formatNumber(state.kpSettings.goblinMultiplier) +
+            "・武器受け×" + formatNumber(state.kpSettings.goblinReceiveMultiplier),
           "",
           "試験回数：" + count,
           "ゴブリンへ損害あり：" + damagedCount + "/" + count,
@@ -3718,6 +4030,7 @@
         practicalSection.hidden = isMonster;
         document.getElementById("monster-base-field").hidden = !isMonster;
         document.getElementById("monster-hp-field").hidden = !isMonster;
+        document.getElementById("monster-multiplier-field").hidden = !isMonster;
         targetHint.textContent = isMonster
           ? "実務技能は非表示・ポイント計算対象外です"
           : "実務技能を表示・ポイント計算します";
@@ -3745,6 +4058,9 @@
         lines.push("基準成功値：" + formatNumber(getBaseSuccessValue()));
         lines.push("最大HP：" + getMaximumHp());
         lines.push("最大AP：" + getMaximumAp());
+        if (state.targetType === "monster") {
+          lines.push("モンスター倍率：×" + formatNumber(state.monsterMultiplier));
+        }
         if (state.potentialStats.willpower > 0) {
           lines.push("SP：" + state.potentialStats.willpower);
         }
@@ -3763,21 +4079,27 @@
             return;
           }
           var accuracyStat = findDefinition("baseStats", weapon.accuracyStat);
-          lines.push("武器名：" + getWeaponDisplayName(weapon, "（武器名未入力）"));
+          lines.push((weapon.name.trim() || "（武器名未入力）") +
+            getEnhancementSuffix(weapon.enhancementStage));
           lines.push("武器攻撃型：" + attackTypeDefinitions[weapon.attackType].label);
           lines.push("基礎単発威力：" + formatNumber(weapon.power));
-          lines.push("武器強化段階：" + weapon.enhancementStage);
-          lines.push("強化後単発威力：" + formatNumber(getEnhancedWeaponPower(weapon)));
-          lines.push("単発威力の目安：" + getPowerIndicator(weapon.power, weapon.attackType));
+          lines.push("強化段階：＋" + weapon.enhancementStage);
+          lines.push("強化後単発威力：" + getDisplayedWeaponPower(weapon));
+          lines.push("単発威力の目安：" +
+            getPowerIndicator(getDisplayedWeaponPower(weapon), weapon.attackType));
           lines.push("命中に使う能力：" + accuracyStat.label);
           lines.push("武器説明：" + textOrNone(weapon.description));
         });
         lines.push("");
         lines.push("### 防具");
         lines.push("");
-        lines.push("防具名：" + (state.armor.name.trim() || "（防具名未入力）"));
-        lines.push("防護点：" + formatNumber(state.armor.protection));
-        lines.push("防護点の目安：" + getProtectionIndicator(state.armor.protection));
+        lines.push((state.armor.name.trim() || "（防具名未入力）") +
+          getEnhancementSuffix(state.armor.enhancementStage));
+        lines.push("基礎防護点：" + formatNumber(state.armor.protection));
+        lines.push("強化段階：＋" + state.armor.enhancementStage);
+        lines.push("強化後防護点：" + getDisplayedArmorProtection(state.armor));
+        lines.push("防護点の目安：" +
+          getProtectionIndicator(getDisplayedArmorProtection(state.armor)));
         lines.push("防具説明：" + textOrNone(state.armor.description));
       }
 
@@ -3807,13 +4129,14 @@
         var weapons = state.weapons.filter(function (weapon, index) {
           return (index === 0 || state.hasWeapon2) && weapon.name.trim();
         }).map(function (weapon) {
-          return getWeaponDisplayName(weapon, "武器");
+          return weapon.name.trim() + getEnhancementSuffix(weapon.enhancementStage);
         });
         if (weapons.length) {
           lines.push("武器：" + weapons.join("　"));
         }
         if (state.armor.name.trim()) {
-          lines.push("防具：" + state.armor.name.trim());
+          lines.push("防具：" + state.armor.name.trim() +
+            getEnhancementSuffix(state.armor.enhancementStage));
         }
         var skills = state.skills.filter(function (skill) {
           return skill.name.trim();
@@ -3887,6 +4210,7 @@
             "【" + skill.powerDisplay + "】");
           lines.push("");
           lines.push("消費：" + resource.label + skill.cost);
+          lines.push("攻撃型：" + attackTypeDefinitions[skill.attackType].label);
           lines.push("命中補正：" + formatSigned(skill.accuracy));
           if (skill.targetMode === "single") {
             lines.push("対象指定：単体（対象予算0）");
@@ -3930,6 +4254,7 @@
               skill.cost * 65 - performance.performanceLoad * 100));
             lines.push("必要消費：" + performance.requiredCost);
             lines.push("潜在能力倍率：×" + formatNumber(getPotentialMultiplier(potential)));
+            lines.push(getAttackTypePreview(skill.attackType));
           }
           if (index < state.skills.length - 1) {
             lines.push("");
@@ -3958,7 +4283,7 @@
           delete weapon.receiveMultiplier;
           delete weapon.defenseType;
         });
-        return "<!-- HOSHIMICHI-PC-V8:" +
+        return "<!-- HOSHIMICHI-PC-V7:" +
           encodeURIComponent(JSON.stringify(publicState)) + " -->";
       }
 
@@ -4046,14 +4371,20 @@
           "実務技能補正：技能値×20",
           "武器1受けカテゴリ：" + defenseEquipmentDefinitions[state.weapons[0].defenseType].label,
           "武器1受け倍率：" + formatNumber(state.weapons[0].receiveMultiplier),
+          "武器1内部強化後威力：" + formatNumber(getEnhancedWeaponPower(state.weapons[0])),
           "武器2受けカテゴリ：" + (state.hasWeapon2
             ? defenseEquipmentDefinitions[state.weapons[1].defenseType].label : "なし"),
           "武器2受け倍率：" + (state.hasWeapon2
             ? formatNumber(state.weapons[1].receiveMultiplier) : "なし"),
+          "武器2内部強化後威力：" + (state.hasWeapon2
+            ? formatNumber(getEnhancedWeaponPower(state.weapons[1])) : "なし"),
+          "防具内部強化後防護点：" + formatNumber(getEnhancedArmorProtection(state.armor)),
+          "ゴブリン攻撃型：" + attackTypeDefinitions[kp.goblinAttackType].label,
+          "ゴブリン基礎攻撃力：" + formatNumber(kp.goblinAttackPower),
+          "ゴブリン武器強化：＋" + kp.goblinWeaponEnhancement,
+          "ゴブリン倍率：" + formatNumber(kp.goblinMultiplier),
           "ゴブリン基礎防護点：" + formatNumber(kp.goblinProtection),
-          "ゴブリン防護段階：" + kp.goblinDefenseStage,
-          "ゴブリン強化後防護点：" +
-            formatNumber(getEnhancedProtection(kp.goblinProtection, kp.goblinDefenseStage)),
+          "ゴブリン防具強化：＋" + kp.goblinArmorEnhancement,
           "ゴブリン武器受け倍率：" + formatNumber(kp.goblinReceiveMultiplier),
           "シミュレーション攻撃：" + kp.simulationAttack,
           "シミュレーション防御：" + kp.simulationDefense,
@@ -4064,12 +4395,12 @@
         ];
         appendSkillLines(lines, true, "KPスキル計算");
         lines.push("");
-        lines.push("<!-- HOSHIMICHI-KP-V8:" + encodeURIComponent(JSON.stringify(state)) + " -->");
+        lines.push("<!-- HOSHIMICHI-KP-V7:" + encodeURIComponent(JSON.stringify(state)) + " -->");
         return lines.join("\n");
       }
 
       function parseKpPayload(markdown) {
-        var match = sanitizeText(markdown).match(/<!--\s*HOSHIMICHI-KP-V(?:1|2|3|4|5|6|7|8):([\s\S]*?)-->/);
+        var match = sanitizeText(markdown).match(/<!--\s*HOSHIMICHI-KP-V(?:1|2|3|4|5|6|7):([\s\S]*?)-->/);
         if (!match) {
           return null;
         }
@@ -4081,7 +4412,7 @@
       }
 
       function parsePublicPayload(markdown) {
-        var match = sanitizeText(markdown).match(/<!--\s*HOSHIMICHI-PC-V(?:1|2|3|4|5|6|7|8):([\s\S]*?)-->/);
+        var match = sanitizeText(markdown).match(/<!--\s*HOSHIMICHI-PC-V(?:1|2|3|4|5|6|7):([\s\S]*?)-->/);
         if (!match) {
           return null;
         }
@@ -4383,6 +4714,8 @@
         } else if (field === "cost") {
           var resourceValue = state.potentialStats[resourceDefinitions[skill.resourceType].statKey];
           candidate.cost = clampInteger(target.value, 0, resourceValue);
+        } else if (field === "attackType") {
+          candidate.attackType = normalizeChoice(target.value, attackTypeDefinitions, "standard");
         } else if (field === "powerDisplay") {
           candidate.powerDisplay = clampInteger(target.value, -100, 999);
         } else if (field === "accuracy") {
@@ -4714,6 +5047,13 @@
           updateView();
         });
 
+        document.getElementById("monster-multiplier").addEventListener("input", function (event) {
+          state.monsterMultiplier = clampDecimal(event.target.value, 0, 99, 1);
+          event.target.value = String(state.monsterMultiplier);
+          saveState();
+          updateView();
+        });
+
         state.weapons.forEach(function (weapon, index) {
           var number = index + 1;
           document.getElementById("weapon-" + number + "-name").addEventListener("input", function (event) {
@@ -4731,21 +5071,15 @@
               event.target.value, attackTypeDefinitions, "standard"
             );
             state.weapons[index].power = attackTypeDefinitions[state.weapons[index].attackType].power;
+            state.weapons[index].enhancementStage = 0;
             saveState();
             updateView();
           });
-          document.getElementById("weapon-" + number + "-power").addEventListener("input", function (event) {
-            state.weapons[index].power = clampDecimal(event.target.value, 0, 999, 0);
-            event.target.value = String(state.weapons[index].power);
+          document.getElementById("weapon-" + number + "-enhancement").addEventListener("change", function (event) {
+            state.weapons[index].enhancementStage = clampInteger(event.target.value, 0, 3);
             saveState();
             updateView();
           });
-          document.getElementById("weapon-" + number + "-enhancement-stage")
-            .addEventListener("change", function (event) {
-              state.weapons[index].enhancementStage = clampInteger(event.target.value, 0, 3);
-              saveState();
-              updateView();
-            });
           document.getElementById("weapon-" + number + "-accuracy-stat").addEventListener("change", function (event) {
             state.weapons[index].accuracyStat = definitions.baseStats.some(function (item) {
               return item.key === event.target.value;
@@ -4761,9 +5095,8 @@
           updatePreview();
         });
 
-        document.getElementById("armor-protection").addEventListener("input", function (event) {
-          state.armor.protection = clampDecimal(event.target.value, 0, 999, 2);
-          event.target.value = String(state.armor.protection);
+        document.getElementById("armor-enhancement").addEventListener("change", function (event) {
+          state.armor.enhancementStage = clampInteger(event.target.value, 0, 3);
           saveState();
           updateView();
         });
@@ -4852,13 +5185,40 @@
           state.kpSettings.goblinProtection = clampDecimal(event.target.value, 0, 999, 1);
           event.target.value = String(state.kpSettings.goblinProtection);
           saveState();
+        });
+
+        document.getElementById("kp-goblin-armor-enhancement").addEventListener("change", function (event) {
+          state.kpSettings.goblinArmorEnhancement = clampInteger(event.target.value, 0, 3);
+          saveState();
           updateKpInputs();
         });
 
-        document.getElementById("kp-goblin-defense-stage").addEventListener("change", function (event) {
-          state.kpSettings.goblinDefenseStage = clampInteger(event.target.value, 0, 3);
+        document.getElementById("kp-goblin-attack-type").addEventListener("change", function (event) {
+          state.kpSettings.goblinAttackType = normalizeChoice(
+            event.target.value, attackTypeDefinitions, "standard"
+          );
           saveState();
           updateKpInputs();
+        });
+
+        document.getElementById("kp-goblin-attack-power").addEventListener("input", function (event) {
+          state.kpSettings.goblinAttackPower = clampDecimal(event.target.value, 0, 999, 7);
+          event.target.value = String(state.kpSettings.goblinAttackPower);
+          saveState();
+          renderInternalValues();
+        });
+
+        document.getElementById("kp-goblin-weapon-enhancement").addEventListener("change", function (event) {
+          state.kpSettings.goblinWeaponEnhancement = clampInteger(event.target.value, 0, 3);
+          saveState();
+          updateKpInputs();
+        });
+
+        document.getElementById("kp-goblin-multiplier").addEventListener("input", function (event) {
+          state.kpSettings.goblinMultiplier = clampDecimal(event.target.value, 0, 99, 0.66);
+          event.target.value = String(state.kpSettings.goblinMultiplier);
+          saveState();
+          renderInternalValues();
         });
 
         document.getElementById("kp-goblin-receive").addEventListener("input", function (event) {
@@ -4914,11 +5274,6 @@
 
       window.characterSheetBuilder = Object.freeze({
         definitions: definitions,
-        attackTypeDefinitions: attackTypeDefinitions,
-        attackHitCounts: attackHitCounts,
-        attackTypeGradeMultipliers: attackTypeGradeMultipliers,
-        weaponEnhancementStages: weaponEnhancementStages,
-        defenseEnhancementStages: defenseEnhancementStages,
         marksFor: marksFor,
         getTotals: getTotals,
         getState: function () {
@@ -4945,9 +5300,9 @@
         getSuccessGrade: getSuccessGrade,
         getCriticalLimit: getCriticalLimit,
         getHitCount: getHitCount,
+        getAttackStageMultiplier: getAttackStageMultiplier,
         getEnhancedWeaponPower: getEnhancedWeaponPower,
-        getEnhancedProtection: getEnhancedProtection,
-        getWeaponDisplayName: getWeaponDisplayName,
+        getEnhancedArmorProtection: getEnhancedArmorProtection,
         getSkillPerformance: function (skill) {
           return JSON.parse(JSON.stringify(getSkillPerformance(skill)));
         },
