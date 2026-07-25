@@ -233,6 +233,54 @@
       gap: 1rem;
     }
 
+    .monster-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 1rem;
+    }
+
+    .monster-grid .field-wide {
+      grid-column: 1 / -1;
+    }
+
+    .choice-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.55rem 1rem;
+      padding: 0.75rem;
+      border: 1px solid var(--line);
+      border-radius: 0.7rem;
+      background: var(--surface-soft);
+    }
+
+    .choice-list label {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      margin: 0;
+      font-weight: 700;
+    }
+
+    .drop-grid {
+      display: grid;
+      gap: 0.75rem;
+    }
+
+    .drop-row {
+      display: grid;
+      grid-template-columns: minmax(9rem, 0.8fr) minmax(12rem, 1.5fr) minmax(9rem, 0.6fr);
+      gap: 0.75rem;
+      padding: 0.8rem;
+      border: 1px solid var(--line);
+      border-radius: 0.7rem;
+    }
+
+    .price-preview {
+      grid-column: 1 / -1;
+      color: var(--muted);
+      font-size: 0.82rem;
+    }
+
     .field {
       min-width: 0;
     }
@@ -1006,6 +1054,16 @@
     }
 
     @media (max-width: 720px) {
+      .monster-grid,
+      .drop-row {
+        grid-template-columns: 1fr;
+      }
+
+      .monster-grid .field-wide,
+      .price-preview {
+        grid-column: auto;
+      }
+
       .page-shell {
         width: min(100% - 1rem, 1180px);
         padding-top: 1rem;
@@ -1176,6 +1234,79 @@
       </div>
     </section>
 
+    <section id="monster-details" class="panel section-panel" aria-labelledby="monster-details-heading" hidden>
+      <div class="section-heading">
+        <h2 id="monster-details-heading">モンスター固有設定</h2>
+        <p class="section-note">個体の知性・行動・素材を設定</p>
+      </div>
+      <div class="monster-grid">
+        <div class="field">
+          <label for="monster-intelligence">知能</label>
+          <select id="monster-intelligence">
+            <option value="">指定なし</option>
+            <option value="instinct">反射・本能のみ</option>
+            <option value="animal">動物並み</option>
+            <option value="low">低知能</option>
+            <option value="human">人並み</option>
+            <option value="high">高知能</option>
+            <option value="supernatural">超常的知性</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="monster-behavior">行動傾向</label>
+          <textarea id="monster-behavior" rows="3" placeholder="指定なし"></textarea>
+        </div>
+        <div class="field field-wide">
+          <label>行動し得る攻撃目的</label>
+          <div id="monster-attack-purposes" class="choice-list">
+            <label><input type="checkbox" value="direct">直撃</label>
+            <label><input type="checkbox" value="harry">牽制</label>
+            <label><input type="checkbox" value="break">崩し</label>
+            <label><input type="checkbox" value="coordinate">連携</label>
+            <label><input type="checkbox" value="push">押し込み</label>
+          </div>
+        </div>
+        <div class="field field-wide">
+          <label>行動し得る防御方法</label>
+          <div id="monster-defense-methods" class="choice-list">
+            <label><input type="checkbox" value="dodge">回避</label>
+            <label><input type="checkbox" value="parry">受け流し</label>
+            <label><input type="checkbox" value="defense">防御</label>
+            <label><input type="checkbox" value="intercept">迎撃</label>
+          </div>
+        </div>
+        <div class="field">
+          <label for="monster-morale">士気・撤退条件</label>
+          <textarea id="monster-morale" rows="4" placeholder="例：群れの半数が倒れると撤退する"></textarea>
+        </div>
+        <div class="field">
+          <label for="monster-traits">特殊能力・体質</label>
+          <textarea id="monster-traits" rows="4" placeholder="例：夜目が利く、水中呼吸"></textarea>
+        </div>
+        <div class="field">
+          <label for="monster-weaknesses">弱点</label>
+          <textarea id="monster-weaknesses" rows="3" placeholder="指定なし"></textarea>
+        </div>
+        <div class="field">
+          <label for="monster-resistances">耐性</label>
+          <textarea id="monster-resistances" rows="3" placeholder="指定なし"></textarea>
+        </div>
+        <div class="field">
+          <label for="monster-immunities">無効</label>
+          <textarea id="monster-immunities" rows="3" placeholder="指定なし"></textarea>
+        </div>
+        <div class="field">
+          <label for="monster-proof">討伐証明</label>
+          <textarea id="monster-proof" rows="3" placeholder="例：右耳、角、魔核"></textarea>
+        </div>
+        <div class="field field-wide">
+          <label>採取・ドロップ品</label>
+          <span class="field-hint">標準店頭価格は銀貨単位。品質倍率と買取半額を自動計算します。</span>
+          <div id="monster-drops" class="drop-grid"></div>
+        </div>
+      </div>
+    </section>
+
     <section class="panel points-panel" aria-labelledby="points-heading">
       <div class="points-layout">
         <div class="points-title">
@@ -1192,7 +1323,7 @@
             <strong id="summary-used">0</strong>
           </div>
           <div class="point-card">
-            <span>残りポイント</span>
+            <span id="summary-remaining-label">残りポイント</span>
             <strong id="summary-remaining">4</strong>
           </div>
         </div>
@@ -1684,7 +1815,7 @@
       "use strict";
 
       var STORAGE_KEY = "hoshimichi-character-sheet-builder";
-      var STORAGE_VERSION = 8;
+      var STORAGE_VERSION = 9;
       var KP_PASSPHRASE_HASH = "6da948cc";
       var feedbackTimer = null;
       var loadNotice = "";
@@ -2093,6 +2224,10 @@
         };
       }
 
+      function createDefaultMonsterDrop() {
+        return { name: "", description: "", standardPrice: 0 };
+      }
+
       function createInitialState() {
         return {
           version: STORAGE_VERSION,
@@ -2103,6 +2238,17 @@
           monsterBaseSuccess: 40,
           monsterHp: 25,
           monsterMultiplier: 1,
+          monsterIntelligence: "",
+          monsterBehavior: "",
+          monsterAttackPurposes: ["direct", "harry", "break", "coordinate", "push"],
+          monsterDefenseMethods: ["dodge", "parry", "defense", "intercept"],
+          monsterMorale: "",
+          monsterTraits: "",
+          monsterWeaknesses: "",
+          monsterResistances: "",
+          monsterImmunities: "",
+          monsterProof: "",
+          monsterDrops: [createDefaultMonsterDrop(), createDefaultMonsterDrop(), createDefaultMonsterDrop()],
           baseStats: makeNumberMap(definitions.baseStats),
           potentialStats: makeNumberMap(definitions.potentialStats),
           practicalSkills: makeNumberMap(definitions.practicalSkills),
@@ -2129,6 +2275,25 @@
 
       function sanitizeText(value) {
         return typeof value === "string" ? value : "";
+      }
+
+      function sanitizeChoiceArray(value, allowed, fallback) {
+        if (!Array.isArray(value)) {
+          return fallback.slice();
+        }
+        var clean = value.filter(function (item, index) {
+          return allowed.indexOf(item) >= 0 && value.indexOf(item) === index;
+        });
+        return clean.length ? clean : fallback.slice();
+      }
+
+      function sanitizeMonsterDrop(raw) {
+        var source = raw && typeof raw === "object" ? raw : {};
+        return {
+          name: sanitizeText(source.name).slice(0, 100),
+          description: sanitizeText(source.description).slice(0, 1000),
+          standardPrice: clampDecimal(source.standardPrice, 0, 999999, 0)
+        };
       }
 
       function clampDecimal(value, minimum, maximum, fallback) {
@@ -2269,7 +2434,7 @@
         if (!raw || typeof raw !== "object" ||
             (raw.version !== 1 && raw.version !== 2 && raw.version !== 3 &&
               raw.version !== 4 && raw.version !== 5 && raw.version !== 6 &&
-              raw.version !== 7 &&
+              raw.version !== 7 && raw.version !== 8 &&
               raw.version !== STORAGE_VERSION)) {
           throw new Error("unsupported storage data");
         }
@@ -2282,6 +2447,27 @@
         clean.monsterBaseSuccess = clampDecimal(raw.monsterBaseSuccess, 0, 999, 40);
         clean.monsterHp = clampDecimal(raw.monsterHp, 0, 99999, 25);
         clean.monsterMultiplier = clampDecimal(raw.monsterMultiplier, 0, 99, 1);
+        clean.monsterIntelligence =
+          ["", "instinct", "animal", "low", "human", "high", "supernatural"]
+            .indexOf(raw.monsterIntelligence) >= 0 ? raw.monsterIntelligence : "";
+        clean.monsterBehavior = sanitizeText(raw.monsterBehavior).slice(0, 3000);
+        clean.monsterAttackPurposes = sanitizeChoiceArray(raw.monsterAttackPurposes,
+          ["direct", "harry", "break", "coordinate", "push"],
+          ["direct", "harry", "break", "coordinate", "push"]);
+        clean.monsterDefenseMethods = sanitizeChoiceArray(raw.monsterDefenseMethods,
+          ["dodge", "parry", "defense", "intercept"],
+          ["dodge", "parry", "defense", "intercept"]);
+        clean.monsterMorale = sanitizeText(raw.monsterMorale).slice(0, 3000);
+        clean.monsterTraits = sanitizeText(raw.monsterTraits).slice(0, 5000);
+        clean.monsterWeaknesses = sanitizeText(raw.monsterWeaknesses).slice(0, 3000);
+        clean.monsterResistances = sanitizeText(raw.monsterResistances).slice(0, 3000);
+        clean.monsterImmunities = sanitizeText(raw.monsterImmunities).slice(0, 3000);
+        clean.monsterProof = sanitizeText(raw.monsterProof).slice(0, 3000);
+        clean.monsterDrops = (Array.isArray(raw.monsterDrops) ? raw.monsterDrops : [])
+          .slice(0, 3).map(sanitizeMonsterDrop);
+        while (clean.monsterDrops.length < 3) {
+          clean.monsterDrops.push(createDefaultMonsterDrop());
+        }
 
         Object.keys(definitions).forEach(function (groupName) {
           var sourceGroup = raw[groupName];
@@ -3996,6 +4182,8 @@
         document.getElementById("summary-total").textContent = String(totals.total);
         document.getElementById("summary-used").textContent = String(totals.used);
         document.getElementById("summary-remaining").textContent = String(totals.remaining);
+        document.getElementById("summary-remaining-label").textContent =
+          state.targetType === "monster" ? "ランダムポイント" : "残りポイント";
 
         status.className = "allocation-status";
         if (totals.excess > 0) {
@@ -4010,7 +4198,9 @@
           banner.hidden = true;
           banner.textContent = "";
         } else {
-          status.textContent = "残り" + totals.remaining + "ポイント";
+          status.textContent = state.targetType === "monster"
+            ? "ランダムポイント：" + totals.remaining
+            : "残り" + totals.remaining + "ポイント";
           banner.hidden = true;
           banner.textContent = "";
         }
@@ -4031,9 +4221,108 @@
         document.getElementById("monster-base-field").hidden = !isMonster;
         document.getElementById("monster-hp-field").hidden = !isMonster;
         document.getElementById("monster-multiplier-field").hidden = !isMonster;
+        document.getElementById("monster-details").hidden = !isMonster;
         targetHint.textContent = isMonster
           ? "実務技能は非表示・ポイント計算対象外です"
           : "実務技能を表示・ポイント計算します";
+      }
+
+      function formatSilver(value) {
+        var amount = Math.round(Number(value) * 1000000) / 1000000;
+        var silver = Math.trunc(amount);
+        var copper = Math.round((amount - silver) * 10 * 1000000) / 1000000;
+        var parts = [];
+        if (silver > 0) {
+          parts.push("銀貨" + silver + "枚");
+        }
+        if (copper > 0) {
+          parts.push(Number.isInteger(copper)
+            ? "銅貨" + copper + "枚"
+            : "銅貨" + formatNumber(copper) + "枚相当");
+        }
+        return parts.length ? parts.join("・") : "銀貨0枚";
+      }
+
+      function getMonsterIntelligenceLabel(value) {
+        return {
+          "": "指定なし", instinct: "反射・本能のみ", animal: "動物並み",
+          low: "低知能", human: "人並み", high: "高知能", supernatural: "超常的知性"
+        }[value] || "指定なし";
+      }
+
+      function renderMonsterSettings() {
+        document.getElementById("monster-intelligence").value = state.monsterIntelligence;
+        ["Behavior", "Morale", "Traits", "Weaknesses", "Resistances", "Immunities", "Proof"]
+          .forEach(function (suffix) {
+            var key = "monster" + suffix;
+            document.getElementById("monster-" + suffix.toLowerCase()).value = state[key];
+          });
+        document.querySelectorAll("#monster-attack-purposes input").forEach(function (input) {
+          input.checked = state.monsterAttackPurposes.indexOf(input.value) >= 0;
+        });
+        document.querySelectorAll("#monster-defense-methods input").forEach(function (input) {
+          input.checked = state.monsterDefenseMethods.indexOf(input.value) >= 0;
+        });
+        var container = document.getElementById("monster-drops");
+        container.innerHTML = "";
+        state.monsterDrops.forEach(function (drop, index) {
+          var row = document.createElement("div");
+          row.className = "drop-row";
+          row.dataset.dropIndex = String(index);
+          row.innerHTML =
+            '<div class="field"><label>品名 ' + (index + 1) +
+            '</label><input data-drop-key="name" maxlength="100"></div>' +
+            '<div class="field"><label>説明</label><input data-drop-key="description" maxlength="1000"></div>' +
+            '<div class="field"><label>標準店頭価格（銀貨）</label>' +
+            '<input data-drop-key="standardPrice" type="number" min="0" max="999999" step="0.1"></div>' +
+            '<div class="price-preview"></div>';
+          row.querySelector("[data-drop-key='name']").value = drop.name;
+          row.querySelector("[data-drop-key='description']").value = drop.description;
+          row.querySelector("[data-drop-key='standardPrice']").value = String(drop.standardPrice);
+          row.querySelector(".price-preview").textContent =
+            "劣化品 " + formatSilver(drop.standardPrice * 0.6) +
+            "（買取 " + formatSilver(drop.standardPrice * 0.6 * 0.5) + "）／ " +
+            "標準品 " + formatSilver(drop.standardPrice) +
+            "（買取 " + formatSilver(drop.standardPrice * 0.5) + "）／ " +
+            "★良品 " + formatSilver(drop.standardPrice * 1.5) +
+            "（買取 " + formatSilver(drop.standardPrice * 1.5 * 0.5) + "）";
+          container.appendChild(row);
+        });
+      }
+
+      function appendMonsterLines(lines) {
+        var attackLabels = { direct: "直撃", harry: "牽制", break: "崩し", coordinate: "連携", push: "押し込み" };
+        var defenseLabels = { dodge: "回避", parry: "受け流し", defense: "防御", intercept: "迎撃" };
+        lines.push("", "## モンスター固有設定", "");
+        lines.push("知能：" + getMonsterIntelligenceLabel(state.monsterIntelligence));
+        lines.push("行動傾向：" + textOrNone(state.monsterBehavior));
+        lines.push("行動し得る攻撃目的：" +
+          state.monsterAttackPurposes.map(function (key) { return attackLabels[key]; }).join("／"));
+        lines.push("行動し得る防御方法：" +
+          state.monsterDefenseMethods.map(function (key) { return defenseLabels[key]; }).join("／"));
+        lines.push("士気・撤退条件：" + textOrNone(state.monsterMorale));
+        lines.push("特殊能力・体質：" + textOrNone(state.monsterTraits));
+        lines.push("弱点：" + textOrNone(state.monsterWeaknesses));
+        lines.push("耐性：" + textOrNone(state.monsterResistances));
+        lines.push("無効：" + textOrNone(state.monsterImmunities));
+        lines.push("討伐証明：" + textOrNone(state.monsterProof));
+        lines.push("", "### 採取・ドロップ品", "");
+        var hasDrop = false;
+        state.monsterDrops.forEach(function (drop) {
+          if (!drop.name.trim()) {
+            return;
+          }
+          hasDrop = true;
+          lines.push("- " + drop.name + "：標準店頭価格 " + formatSilver(drop.standardPrice) +
+            "（標準買取 " + formatSilver(drop.standardPrice * 0.5) + "）" +
+            (drop.description.trim() ? "／" + drop.description.trim() : ""));
+        });
+        if (!hasDrop) {
+          lines.push("なし");
+        }
+        lines.push("");
+        lines.push("品質倍率：劣化品×0.6／標準品×1.0／★良品×1.5");
+        lines.push("買取価格：品質反映後の店頭価格×0.5");
       }
 
       function textOrNone(value) {
@@ -4283,7 +4572,7 @@
           delete weapon.receiveMultiplier;
           delete weapon.defenseType;
         });
-        return "<!-- HOSHIMICHI-PC-V7:" +
+        return "<!-- HOSHIMICHI-PC-V8:" +
           encodeURIComponent(JSON.stringify(publicState)) + " -->";
       }
 
@@ -4297,7 +4586,7 @@
           "作成対象：" + (state.targetType === "monster" ? "モンスター" : "キャラクター"),
           "合計ポイント：" + totals.total + "（" + getTotalPointsIndicator(totals.total) + "）",
           "使用ポイント：" + totals.used,
-          "残りポイント：" + totals.remaining
+          (state.targetType === "monster" ? "ランダムポイント：" : "残りポイント：") + totals.remaining
         ];
 
         if (totals.excess > 0) {
@@ -4322,6 +4611,9 @@
 
         appendEquipmentLines(lines);
         appendSkillLines(lines, false);
+        if (state.targetType === "monster") {
+          appendMonsterLines(lines);
+        }
 
         freeFieldDefinitions.forEach(function (field) {
           lines.push("");
@@ -4395,12 +4687,12 @@
         ];
         appendSkillLines(lines, true, "KPスキル計算");
         lines.push("");
-        lines.push("<!-- HOSHIMICHI-KP-V7:" + encodeURIComponent(JSON.stringify(state)) + " -->");
+        lines.push("<!-- HOSHIMICHI-KP-V8:" + encodeURIComponent(JSON.stringify(state)) + " -->");
         return lines.join("\n");
       }
 
       function parseKpPayload(markdown) {
-        var match = sanitizeText(markdown).match(/<!--\s*HOSHIMICHI-KP-V(?:1|2|3|4|5|6|7):([\s\S]*?)-->/);
+        var match = sanitizeText(markdown).match(/<!--\s*HOSHIMICHI-KP-V(?:1|2|3|4|5|6|7|8):([\s\S]*?)-->/);
         if (!match) {
           return null;
         }
@@ -4412,7 +4704,7 @@
       }
 
       function parsePublicPayload(markdown) {
-        var match = sanitizeText(markdown).match(/<!--\s*HOSHIMICHI-PC-V(?:1|2|3|4|5|6|7):([\s\S]*?)-->/);
+        var match = sanitizeText(markdown).match(/<!--\s*HOSHIMICHI-PC-V(?:1|2|3|4|5|6|7|8):([\s\S]*?)-->/);
         if (!match) {
           return null;
         }
@@ -4613,6 +4905,7 @@
         updateMetrics();
         updateTargetPresentation();
         updateCombatInputs();
+        renderMonsterSettings();
         renderSkillControls();
         updatePointSummary();
         updatePreview();
@@ -5052,6 +5345,69 @@
           event.target.value = String(state.monsterMultiplier);
           saveState();
           updateView();
+        });
+
+        document.getElementById("monster-intelligence").addEventListener("change", function (event) {
+          state.monsterIntelligence = event.target.value;
+          saveState();
+          updatePreview();
+        });
+
+        [
+          ["monster-behavior", "monsterBehavior", 3000],
+          ["monster-morale", "monsterMorale", 3000],
+          ["monster-traits", "monsterTraits", 5000],
+          ["monster-weaknesses", "monsterWeaknesses", 3000],
+          ["monster-resistances", "monsterResistances", 3000],
+          ["monster-immunities", "monsterImmunities", 3000],
+          ["monster-proof", "monsterProof", 3000]
+        ].forEach(function (config) {
+          document.getElementById(config[0]).addEventListener("input", function (event) {
+            state[config[1]] = sanitizeText(event.target.value).slice(0, config[2]);
+            saveState();
+            updatePreview();
+          });
+        });
+
+        [["monster-attack-purposes", "monsterAttackPurposes"],
+          ["monster-defense-methods", "monsterDefenseMethods"]].forEach(function (config) {
+          document.getElementById(config[0]).addEventListener("change", function (event) {
+            if (!event.target.matches("input[type='checkbox']")) {
+              return;
+            }
+            var selected = Array.from(this.querySelectorAll("input:checked"))
+              .map(function (input) { return input.value; });
+            if (!selected.length) {
+              event.target.checked = true;
+              return;
+            }
+            state[config[1]] = selected;
+            saveState();
+            updatePreview();
+          });
+        });
+
+        document.getElementById("monster-drops").addEventListener("input", function (event) {
+          var row = event.target.closest("[data-drop-index]");
+          var key = event.target.dataset.dropKey;
+          if (!row || !key) {
+            return;
+          }
+          var index = Number(row.dataset.dropIndex);
+          state.monsterDrops[index][key] = key === "standardPrice"
+            ? clampDecimal(event.target.value, 0, 999999, 0)
+            : sanitizeText(event.target.value).slice(0, key === "name" ? 100 : 1000);
+          saveState();
+          var preview = row.querySelector(".price-preview");
+          var price = state.monsterDrops[index].standardPrice;
+          preview.textContent =
+            "劣化品 " + formatSilver(price * 0.6) +
+            "（買取 " + formatSilver(price * 0.6 * 0.5) + "）／ " +
+            "標準品 " + formatSilver(price) +
+            "（買取 " + formatSilver(price * 0.5) + "）／ " +
+            "★良品 " + formatSilver(price * 1.5) +
+            "（買取 " + formatSilver(price * 1.5 * 0.5) + "）";
+          updatePreview();
         });
 
         state.weapons.forEach(function (weapon, index) {
