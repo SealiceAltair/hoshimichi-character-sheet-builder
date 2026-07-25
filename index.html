@@ -1223,7 +1223,7 @@
           <input id="monster-base-success" type="number" min="0" max="999" step="1" inputmode="numeric">
         </div>
         <div id="monster-hp-field" class="field" hidden>
-          <label for="monster-hp">モンスター最大HP</label>
+          <label for="monster-hp">モンスター基礎HP</label>
           <input id="monster-hp" type="number" min="0" max="99999" step="1" inputmode="numeric">
         </div>
         <div id="monster-multiplier-field" class="field" hidden>
@@ -1319,7 +1319,7 @@
             <strong id="summary-total">4</strong>
           </div>
           <div class="point-card">
-            <span>使用ポイント</span>
+            <span id="summary-used-label">使用ポイント</span>
             <strong id="summary-used">0</strong>
           </div>
           <div class="point-card">
@@ -3203,7 +3203,7 @@
 
       function getMaximumHp() {
         if (state.targetType === "monster") {
-          return Math.round(state.monsterHp);
+          return Math.round(state.monsterHp * (1 + state.baseStats.robustness / 3));
         }
         return Math.round(50 * (1 + state.baseStats.robustness / 3));
       }
@@ -3254,7 +3254,7 @@
         appendRow(["項目", "生値", "内部倍率等", "結果"], true);
         appendRow(["基準成功値", formatNumber(getBaseSuccessValue()), "固定", formatNumber(getBaseSuccessValue())]);
         appendRow(["最大HP", String(state.baseStats.robustness),
-          state.targetType === "monster" ? "個別設定" : "×" + formatNumber(1 + state.baseStats.robustness / 3),
+          "×" + formatNumber(1 + state.baseStats.robustness / 3),
           String(getMaximumHp())]);
         appendRow(["最大AP", String(state.baseStats.endurance),
           "×" + formatNumber(1 + state.baseStats.endurance / 3), String(getMaximumAp())]);
@@ -3384,7 +3384,7 @@
             formatNumber(getBaseStatMultiplier(state.baseStats[weapon.accuracyStat])) +
             "（" + stat.label + "）＝ " + formatNumber(getFinalSuccessValue(weapon.accuracyStat, 0)),
           "最大HP ＝ " + (state.targetType === "monster"
-            ? "個別設定 " + formatNumber(state.monsterHp)
+            ? formatNumber(state.monsterHp) + " × (1＋頑健÷3) ＝ " + getMaximumHp()
             : "50 × (1＋頑健÷3) ＝ " + getMaximumHp()),
           "最大AP ＝ 10 × (1＋持久÷3) ＝ " + getMaximumAp(),
           "通常一命中 ＝ 強化後武器威力 × 攻撃方法倍率 × 攻撃型成功段階倍率 × モンスター倍率",
@@ -4182,6 +4182,8 @@
         document.getElementById("summary-total").textContent = String(totals.total);
         document.getElementById("summary-used").textContent = String(totals.used);
         document.getElementById("summary-remaining").textContent = String(totals.remaining);
+        document.getElementById("summary-used-label").textContent =
+          state.targetType === "monster" ? "固定使用ポイント" : "使用ポイント";
         document.getElementById("summary-remaining-label").textContent =
           state.targetType === "monster" ? "ランダムポイント" : "残りポイント";
 
@@ -4348,6 +4350,7 @@
         lines.push("最大HP：" + getMaximumHp());
         lines.push("最大AP：" + getMaximumAp());
         if (state.targetType === "monster") {
+          lines.push("モンスター基礎HP：" + formatNumber(state.monsterHp));
           lines.push("モンスター倍率：×" + formatNumber(state.monsterMultiplier));
         }
         if (state.potentialStats.willpower > 0) {
@@ -4479,6 +4482,17 @@
           lines.push("");
           lines.push("割り振り能力");
           Array.prototype.push.apply(lines, allocated);
+        }
+        if (state.targetType === "monster") {
+          lines.push("");
+          lines.push("知能：" + getMonsterIntelligenceLabel(state.monsterIntelligence));
+          lines.push("行動傾向：" + textOrNone(state.monsterBehavior));
+          lines.push("士気・撤退条件：" + textOrNone(state.monsterMorale));
+          lines.push("特殊能力・体質：" + textOrNone(state.monsterTraits));
+          lines.push("弱点：" + textOrNone(state.monsterWeaknesses));
+          lines.push("耐性：" + textOrNone(state.monsterResistances));
+          lines.push("無効：" + textOrNone(state.monsterImmunities));
+          lines.push("討伐証明：" + textOrNone(state.monsterProof));
         }
         return lines.join("\n");
       }
@@ -4656,7 +4670,9 @@
           "## KP内部設定",
           "",
           "PC基準成功値：50",
-          "最大HP式：50×（1＋頑健÷3）",
+          "最大HP式：" + (state.targetType === "monster"
+            ? "モンスター基礎HP×（1＋頑健÷3）"
+            : "50×（1＋頑健÷3）"),
           "最大AP式：10×（1＋持久÷3）",
           "基礎ステータス倍率：1＋能力値÷10",
           "潜在能力倍率：1＋潜在能力値×0.15",
@@ -4837,11 +4853,12 @@
           "名前：" + (importedState.name || "（名前未入力）"),
           "作成対象：" + (importedState.targetType === "monster" ? "モンスター" : "キャラクター"),
           "合計ポイント：" + importedState.totalPoints,
-          "使用ポイント：" + totals.used,
-          "残りポイント：" + totals.remaining,
+          (importedState.targetType === "monster" ? "固定使用ポイント：" : "使用ポイント：") + totals.used,
+          (importedState.targetType === "monster" ? "ランダムポイント：" : "残りポイント：") + totals.remaining,
           "体格：" + (importedState.build || "未入力"),
           "最大HP：" + (importedState.targetType === "monster"
-            ? Math.round(importedState.monsterHp)
+            ? Math.round(importedState.monsterHp *
+              (1 + importedState.baseStats.robustness / 3))
             : Math.round(50 * (1 + importedState.baseStats.robustness / 3))),
           "最大AP：" + Math.round(10 * (1 + importedState.baseStats.endurance / 3)),
           "武器2：" + (importedState.hasWeapon2 ? "あり" : "なし"),
