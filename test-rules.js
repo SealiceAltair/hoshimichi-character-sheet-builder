@@ -51,6 +51,9 @@ function readArray(name) {
 }
 
 const attackTypes = readObject("attackTypeDefinitions");
+const attackMethods = readObject("simulationAttackMethods");
+const attackPurposes = readObject("attackPurposeDefinitions");
+const defenseMultipliers = readObject("defenseResultMultipliers");
 const weaponStages = readArray("weaponEnhancementDefinitions");
 const defenseStages = readArray("armorEnhancementDefinitions");
 
@@ -69,10 +72,10 @@ const expectedHits = {
   multi: [1, 2, 3, 4, 5, 5]
 };
 const expectedMultipliers = {
-  heavy: [0, 0, 0.60, 1.50, 1.72, 3.00],
-  single: [0, 0.75, 1.15, 1.55, 1.75, 2.50],
+  heavy: [0.50, 0.75, 0.60, 1.50, 1.72, 3.00],
+  single: [0.50, 0.75, 1.15, 1.55, 1.75, 2.50],
   standard: [0.63, 0.75, 1.00, 1.40, 1.90, 2.70],
-  combo: [0, 0.75, 0.90, 1.20, 1.40, 2.50],
+  combo: [0.50, 0.75, 0.90, 1.20, 1.40, 2.50],
   multi: [1.00, 1.00, 1.00, 1.15, 1.25, 2.00]
 };
 const grades = ["limited", "weak", "regular", "hard", "extreme", "critical"];
@@ -110,16 +113,70 @@ Object.keys(stage3Powers).forEach((type) => {
 assertClose(enhanced(1, defenseStages[1]), 7 / 3, "standard protection 1 stage 1");
 assertClose(enhanced(2, defenseStages[3]), 7, "heavy protection 2 stage 3");
 
-assert(/var STORAGE_VERSION = 9;/.test(source), "storage version is not V9");
-assert(/raw\.version !== 8/.test(source), "V8 migration is not accepted");
+const expectedAttackMethods = {
+  harry: [-30, 15],
+  steady: [-20, 10],
+  careful: [-10, 5],
+  normal: [0, 0],
+  step: [10, -5],
+  strong: [20, -10],
+  allout: [25, -15]
+};
+assert(Object.keys(attackMethods).length === 7, "attack method count is not 7");
+Object.keys(expectedAttackMethods).forEach((method) => {
+  assertClose(attackMethods[method].powerDisplay, expectedAttackMethods[method][0],
+    `${method} power correction`);
+  assertClose(attackMethods[method].accuracy, expectedAttackMethods[method][1],
+    `${method} accuracy correction`);
+});
+
+["direct", "harry", "break", "coordinate", "push"].forEach((purpose) => {
+  assert(attackPurposes[purpose], `${purpose} attack purpose missing`);
+  assertClose(attackPurposes[purpose].multiplier, purpose === "direct" ? 1 : 0.7,
+    `${purpose} attack purpose multiplier`);
+});
+
+const expectedDefenseMultipliers = {
+  critical: 0,
+  extreme: 0.10,
+  hard: 0.25,
+  regular: 0.40,
+  weak: 0.65,
+  limited: 0.85,
+  automaticSuccess: 0.40,
+  failure: 1,
+  fumble: 1,
+  automaticFailure: 1
+};
+Object.keys(expectedDefenseMultipliers).forEach((grade) => {
+  assertClose(defenseMultipliers[grade], expectedDefenseMultipliers[grade],
+    `${grade} defense multiplier`);
+});
+
+assert(/var STORAGE_VERSION = 10;/.test(source), "storage version is not V10");
+assert(/raw\.version !== 9/.test(source), "V9 migration is not accepted");
 assert(/enhancementStage:\s*0/.test(source), "new weapon enhancement stage is not 0");
 assert(/goblinArmorEnhancement:\s*0/.test(source), "new enemy defense stage is not 0");
-assert(/HOSHIMICHI-PC-V8:/.test(source), "public restore marker is not V8");
-assert(/HOSHIMICHI-KP-V8:/.test(source), "KP restore marker is not V8");
+assert(/HOSHIMICHI-PC-V10:/.test(source), "public restore marker is not V10");
+assert(/HOSHIMICHI-KP-V10:/.test(source), "KP restore marker is not V10");
 
 assert(/return normalized > 0 \? "＋" \+ normalized : ""/.test(source),
   "weapon summary suffix missing");
 assert(!/attackStageMultipliers/.test(source), "old uniform stage multiplier remains");
+assert(!/defenseEquipmentDefinitions/.test(source), "abolished weapon-receive categories remain");
+assert(!/receiveMultiplier/.test(source), "abolished weapon-receive multiplier remains");
+assert(/defenseMethod === "parry" \? -15 : 0/.test(source),
+  "parry success correction is not -15");
+assert(/config\.methodPowerFactor \*\s*config\.skillPowerFactor/.test(source),
+  "attack method and attack skill power factors are not multiplied separately");
+assert(/Math\.max\(0, rawPerHit - goblinProtection\) \* hits/.test(source),
+  "protection is not subtracted per hit before defense reduction");
+assert(/compareOpposedResults\(attack, defense\)/.test(source),
+  "dodge/parry opposed-result comparison is missing");
+assert(/Math\.round\(getEnhancedWeaponPower\(weapon\) \* 100\) \/ 100/.test(source),
+  "weapon display is not rounded to two decimal places");
+assert(/Math\.round\(getEnhancedArmorProtection\(armor\) \* 100\) \/ 100/.test(source),
+  "armor display is not rounded to two decimal places");
 assert(/state\.monsterHp \* \(1 \+ state\.baseStats\.robustness \/ 3\)/.test(source),
   "monster maximum HP does not use base HP and robustness");
 assert(/固定使用ポイント/.test(source), "monster fixed-point label missing");
