@@ -1876,6 +1876,7 @@
         magic: { label: "魔力", statKey: "magic" },
         holy: { label: "聖力", statKey: "holy" }
       };
+      var SKILL_BUDGET_FACTOR_MINIMUM = 0.40;
 
       var attackTypeDefinitions = {
         heavy: {
@@ -2307,9 +2308,16 @@
       }
 
       function getSkillPerformance(skill) {
-        var powerFactor = 1 + skill.powerDisplay / 100;
-        var accuracyFactor = Math.max(0.40, 1 + skill.accuracy / 50);
-        var performanceIndex = powerFactor * accuracyFactor;
+        var powerFactor = Math.max(0, 1 + skill.powerDisplay / 100);
+        var budgetPowerFactor = Math.max(SKILL_BUDGET_FACTOR_MINIMUM, powerFactor);
+        var accuracyFactor = Math.max(
+          SKILL_BUDGET_FACTOR_MINIMUM,
+          1 + skill.accuracy / 50
+        );
+        var performanceIndex = Math.max(
+          SKILL_BUDGET_FACTOR_MINIMUM,
+          budgetPowerFactor * accuracyFactor
+        );
         var basePerformanceLoad = performanceIndex - 1;
         var targetBudget = getTargetBudget(skill);
         var rangeBudget = getRangeBudget(skill);
@@ -2319,6 +2327,7 @@
         var requiredCost = Math.ceil(Math.max(0, performanceLoad - 1e-9) / 0.65);
         return {
           powerFactor: powerFactor,
+          budgetPowerFactor: budgetPowerFactor,
           accuracyFactor: accuracyFactor,
           performanceIndex: performanceIndex,
           basePerformanceLoad: basePerformanceLoad,
@@ -3026,7 +3035,8 @@
           metrics.textContent = unlocked
             ? "性能予算 " + formatNumber(availableBudget) +
               (budgetIncrease > 0
-                ? " ／ マイナス補正による予算増加 " + formatNumber(budgetIncrease)
+                ? " ／ マイナス補正による予算増加（上限60） " +
+                  formatNumber(budgetIncrease)
                 : "") +
               " ／ 使用中 " + formatNumber(consumedBudget) +
               (performance.targetBudget > 0 || performance.rangeBudget > 0 || skill.effectBudget > 0
@@ -3362,7 +3372,8 @@
           "一命中威力 ＝ 強化後武器威力 × 攻撃方法倍率 × スキル倍率 × 潜在倍率 × 攻撃型成功段階倍率 × モンスター倍率",
           "攻撃方法と攻撃スキルは別枠で、命中補正は加算・威力倍率は乗算",
           "強化後の威力・防護点は内部小数を保持し、小数第2位まで表示",
-          "スキル性能予算 ＝ 消費×65 ／ 基本性能差 ＝ (性能指数－1)×100",
+          "スキル性能予算 ＝ 消費×65 ／ 予算計算用の威力・性能指数下限 ＝ 0.40",
+          "基本性能差 ＝ (性能指数－1)×100 ／ マイナス補正の予算増加は最大60",
           "基本性能差が正なら予算を使用し、負ならマイナス補正として予算が増加",
           "総使用予算 ＝ 基本性能差＋対象予算＋範囲予算＋追加効果予算",
           "対象予算は追加1体25／直線3m15／扇状90°・3m20／周囲半径1.5m20",
@@ -4577,6 +4588,8 @@
           lines.push("効果：" + textOrNone(skill.description));
           if (includeInternal) {
             lines.push("威力倍率：×" + formatNumber(performance.powerFactor));
+            lines.push("予算計算用威力係数：×" +
+              formatNumber(performance.budgetPowerFactor));
             lines.push("命中係数：×" + formatNumber(performance.accuracyFactor));
             lines.push("性能指数：" + formatNumber(performance.performanceIndex));
             lines.push("基本性能差：" + formatNumber(performance.basePerformanceLoad));
@@ -4585,8 +4598,8 @@
             lines.push("追加効果負荷：" + formatNumber(performance.effectLoad));
             lines.push("性能負荷合計：" + formatNumber(performance.performanceLoad));
             lines.push("性能予算：" + formatNumber(skill.cost * 65));
-            lines.push("マイナス補正による予算増加：" + formatNumber(Math.max(0,
-              -performance.basePerformanceLoad * 100)));
+            lines.push("マイナス補正による予算増加（上限60）：" +
+              formatNumber(Math.max(0, -performance.basePerformanceLoad * 100)));
             lines.push("使用中予算：" + formatNumber(Math.max(0,
               performance.basePerformanceLoad * 100) + performance.targetBudget +
               performance.rangeBudget + skill.effectBudget));

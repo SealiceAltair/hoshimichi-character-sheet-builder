@@ -50,6 +50,27 @@ function readArray(name) {
   return vm.runInNewContext(`(${source.slice(arrayStart, end + 1)})`);
 }
 
+function readFunction(name, context) {
+  const marker = `function ${name}(`;
+  const start = source.indexOf(marker);
+  assert(start >= 0, `${name} not found`);
+  const bodyStart = source.indexOf("{", start + marker.length);
+  let depth = 0;
+  let end = -1;
+  for (let index = bodyStart; index < source.length; index += 1) {
+    if (source[index] === "{") depth += 1;
+    if (source[index] === "}") {
+      depth -= 1;
+      if (depth === 0) {
+        end = index + 1;
+        break;
+      }
+    }
+  }
+  assert(end > bodyStart, `${name} function is incomplete`);
+  return vm.runInNewContext(`(${source.slice(start, end)})`, context);
+}
+
 const attackTypes = readObject("attackTypeDefinitions");
 const attackMethods = readObject("simulationAttackMethods");
 const attackPurposes = readObject("attackPurposeDefinitions");
@@ -112,6 +133,28 @@ Object.keys(stage3Powers).forEach((type) => {
 });
 assertClose(enhanced(1, defenseStages[1]), 7 / 3, "standard protection 1 stage 1");
 assertClose(enhanced(2, defenseStages[3]), 7, "heavy protection 2 stage 3");
+
+const getSkillPerformance = readFunction("getSkillPerformance", {
+  SKILL_BUDGET_FACTOR_MINIMUM: 0.40,
+  getTargetBudget: () => 0,
+  getRangeBudget: () => 0
+});
+const exploitSkill = getSkillPerformance({
+  powerDisplay: -95,
+  accuracy: 740,
+  effectBudget: 17
+});
+assertClose(exploitSkill.powerFactor, 0.05, "actual power factor for exploit case");
+assertClose(exploitSkill.budgetPowerFactor, 0.40, "budget power factor minimum");
+assertClose(exploitSkill.performanceIndex, 6.32, "exploit case performance index");
+assert(exploitSkill.requiredCost === 9, "exploit case should require cost 9");
+const maximumRefundSkill = getSkillPerformance({
+  powerDisplay: -100,
+  accuracy: -999,
+  effectBudget: 0
+});
+assertClose(maximumRefundSkill.basePerformanceLoad, -0.60,
+  "negative correction refund should be capped at 60");
 
 const expectedAttackMethods = {
   harry: [-30, 15],
