@@ -1876,7 +1876,8 @@
         magic: { label: "魔力", statKey: "magic" },
         holy: { label: "聖力", statKey: "holy" }
       };
-      var SKILL_BUDGET_FACTOR_MINIMUM = 0.40;
+      var SKILL_ACCURACY_RATE = 1.4;
+      var SKILL_SELL_RATE = 0.7;
 
       var attackTypeDefinitions = {
         heavy: {
@@ -2119,20 +2120,22 @@
       function getRangeBudget(skill) {
         if (skill.targetMode !== "range") return 0;
         var distance = Math.max(1, Number(skill.rangeDistance) || 1);
-        var angle = Math.max(15, Number(skill.rangeAngle) || 15);
+        var angle = Math.min(180, Math.max(15, Number(skill.rangeAngle) || 15));
         var radius = Math.max(1, Number(skill.areaRadius) || 1);
         if (skill.rangeShape === "line") {
-          return Math.max(5, Math.ceil(distance / 3 * 15));
+          return Math.max(10, Math.ceil(distance / 3 * 20));
         }
         if (skill.rangeShape === "cone") {
-          return Math.max(5, Math.ceil(20 * (angle / 90) * Math.pow(distance / 3, 2)));
+          return Math.max(10, Math.ceil(
+            20 * (angle / 90) * Math.pow(distance / 3, 1.5)
+          ));
         }
         if (skill.rangeShape === "around") {
-          return Math.max(5, Math.ceil(20 * Math.pow(radius / 1.5, 2)));
+          return Math.max(10, Math.ceil(20 * Math.pow(radius / 1.5, 1.5)));
         }
         if (skill.rangeShape === "area") {
           return Math.max(10,
-            Math.ceil(distance / 3 * 10 + 20 * Math.pow(radius / 1.5, 2)));
+            Math.ceil(distance / 3 * 10 + 20 * Math.pow(radius / 1.5, 1.5)));
         }
         return 0;
       }
@@ -2308,33 +2311,28 @@
       }
 
       function getSkillPerformance(skill) {
-        var powerFactor = Math.max(0, 1 + skill.powerDisplay / 100);
-        var budgetPowerFactor = Math.max(SKILL_BUDGET_FACTOR_MINIMUM, powerFactor);
-        var accuracyFactor = Math.max(
-          SKILL_BUDGET_FACTOR_MINIMUM,
-          1 + skill.accuracy / 50
-        );
-        var performanceIndex = Math.max(
-          SKILL_BUDGET_FACTOR_MINIMUM,
-          budgetPowerFactor * accuracyFactor
-        );
-        var basePerformanceLoad = performanceIndex - 1;
+        var power = Number(skill.powerDisplay) || 0;
+        var accuracy = Number(skill.accuracy) || 0;
+        var powerFactor = Math.max(0, 1 + power / 100);
         var targetBudget = getTargetBudget(skill);
         var rangeBudget = getRangeBudget(skill);
-        var effectLoad = (Number(skill.effectBudget) || 0) / 100;
-        var performanceLoad = basePerformanceLoad +
-          (targetBudget + rangeBudget) / 100 + effectLoad;
-        var requiredCost = Math.ceil(Math.max(0, performanceLoad - 1e-9) / 0.65);
+        var effectBudget = Number(skill.effectBudget) || 0;
+        var buyBudget = Math.max(0, power) +
+          Math.max(0, accuracy) * SKILL_ACCURACY_RATE +
+          targetBudget + rangeBudget + effectBudget;
+        var sellBudget = (Math.abs(Math.min(0, power)) +
+          Math.abs(Math.min(0, accuracy)) * SKILL_ACCURACY_RATE) * SKILL_SELL_RATE;
+        var netBudget = buyBudget - sellBudget;
+        var requiredCost = Math.max(1,
+          Math.ceil(Math.max(0, netBudget - 1e-9) / 65));
         return {
           powerFactor: powerFactor,
-          budgetPowerFactor: budgetPowerFactor,
-          accuracyFactor: accuracyFactor,
-          performanceIndex: performanceIndex,
-          basePerformanceLoad: basePerformanceLoad,
           targetBudget: targetBudget,
           rangeBudget: rangeBudget,
-          effectLoad: effectLoad,
-          performanceLoad: performanceLoad,
+          effectBudget: effectBudget,
+          buyBudget: buyBudget,
+          sellBudget: sellBudget,
+          netBudget: netBudget,
           requiredCost: requiredCost
         };
       }
@@ -2346,8 +2344,8 @@
         clean.name = sanitizeText(source.name).slice(0, 100);
         clean.resourceType = normalizeChoice(source.resourceType, resourceDefinitions, "willpower");
         clean.attackType = normalizeChoice(source.attackType, attackTypeDefinitions, "standard");
-        clean.powerDisplay = clampInteger(source.powerDisplay, -100, 999);
-        clean.accuracy = clampInteger(source.accuracy, -999, 999);
+        clean.powerDisplay = clampInteger(source.powerDisplay, -90, 999);
+        clean.accuracy = clampInteger(source.accuracy, -999, 80);
         clean.cost = clampInteger(source.cost, 0, 10);
         clean.effectBudget = clampInteger(source.effectBudget, 0, 999);
         var legacyShape = sanitizeText(source.targetShape);
@@ -2365,7 +2363,7 @@
         clean.rangeAngle = clampInteger(
           source.rangeAngle === undefined || source.rangeAngle === null ? 90 : source.rangeAngle,
           15,
-          360
+          180
         );
         clean.areaRadius = clampSteppedDecimal(source.areaRadius, 1, 999, 1.5, 0.5);
         clean.description = sanitizeText(source.description).slice(0, 2000);
@@ -2839,7 +2837,7 @@
 
           var powerInput = document.createElement("input");
           powerInput.type = "number";
-          powerInput.min = "-100";
+          powerInput.min = "-90";
           powerInput.max = "999";
           powerInput.step = "1";
           powerInput.value = String(skill.powerDisplay);
@@ -2849,7 +2847,7 @@
           var accuracyInput = document.createElement("input");
           accuracyInput.type = "number";
           accuracyInput.min = "-999";
-          accuracyInput.max = "999";
+          accuracyInput.max = "80";
           accuracyInput.step = "1";
           accuracyInput.value = String(skill.accuracy);
           accuracyInput.disabled = !unlocked;
@@ -2903,17 +2901,17 @@
               var distancePreset = document.createElement("select");
               var distancePresets = skill.rangeShape === "line"
                 ? [
-                    { value: 1, label: "1m（範囲予算5）" },
-                    { value: 3, label: "3m（範囲予算15）" },
-                    { value: 6, label: "6m（範囲予算30）" },
-                    { value: 9, label: "9m（範囲予算45）" }
+                    { value: 1, label: "1m（範囲予算10）" },
+                    { value: 3, label: "3m（範囲予算20）" },
+                    { value: 6, label: "6m（範囲予算40）" },
+                    { value: 9, label: "9m（範囲予算60）" }
                   ]
                 : skill.rangeShape === "cone"
                   ? [
-                      { value: 1, label: "1m（90°なら予算5）" },
+                      { value: 1, label: "1m（90°なら予算10）" },
                       { value: 3, label: "3m（90°なら予算20）" },
-                      { value: 6, label: "6m（90°なら予算80）" },
-                      { value: 9, label: "9m（90°なら予算180）" }
+                      { value: 6, label: "6m（90°なら予算57）" },
+                      { value: 9, label: "9m（90°なら予算104）" }
                     ]
                     : [
                       { value: 1, label: "1m（指定距離予算4）" },
@@ -2944,11 +2942,10 @@
             if (skill.rangeShape === "cone") {
               var anglePreset = document.createElement("select");
               appendPresetOptions(anglePreset, [
-                { value: 15, label: "15°（距離3mなら予算5）" },
+                { value: 15, label: "15°（距離3mなら予算10）" },
                 { value: 45, label: "45°（距離3mなら予算10）" },
                 { value: 90, label: "90°（距離3mなら予算20）" },
-                { value: 180, label: "180°（距離3mなら予算40）" },
-                { value: 360, label: "360°（距離3mなら予算80）" }
+                { value: 180, label: "180°（距離3mなら予算40）" }
               ], skill.rangeAngle);
               anglePreset.disabled = !unlocked;
               grid.appendChild(createSkillField(
@@ -2958,7 +2955,7 @@
               var angleInput = document.createElement("input");
               angleInput.type = "number";
               angleInput.min = "15";
-              angleInput.max = "360";
+              angleInput.max = "180";
               angleInput.step = "1";
               angleInput.value = String(skill.rangeAngle);
               angleInput.disabled = !unlocked;
@@ -2970,10 +2967,10 @@
             if (skill.rangeShape === "around" || skill.rangeShape === "area") {
               var radiusPreset = document.createElement("select");
               appendPresetOptions(radiusPreset, [
-                { value: 1, label: "半径1m（範囲予算9）" },
+                { value: 1, label: "半径1m（範囲予算11）" },
                 { value: 1.5, label: "半径1.5m（範囲予算20）" },
-                { value: 3, label: "半径3m（範囲予算80）" },
-                { value: 4.5, label: "半径4.5m（範囲予算180）" }
+                { value: 3, label: "半径3m（範囲予算57）" },
+                { value: 4.5, label: "半径4.5m（範囲予算104）" }
               ], skill.areaRadius);
               radiusPreset.disabled = !unlocked;
               grid.appendChild(createSkillField(
@@ -3026,25 +3023,12 @@
           var metrics = document.createElement("p");
           metrics.className = "skill-metrics";
           var availableBudget = skill.cost * 65;
-          var baseBudget = performance.basePerformanceLoad * 100;
-          var budgetIncrease = Math.max(0, -baseBudget);
-          var baseConsumedBudget = Math.max(0, baseBudget);
-          var consumedBudget = baseConsumedBudget + performance.targetBudget +
-            performance.rangeBudget + skill.effectBudget;
-          var remainingBudget = availableBudget + budgetIncrease - consumedBudget;
+          var remainingBudget = availableBudget - performance.netBudget;
           metrics.textContent = unlocked
             ? "性能予算 " + formatNumber(availableBudget) +
-              (budgetIncrease > 0
-                ? " ／ マイナス補正による予算増加（上限60） " +
-                  formatNumber(budgetIncrease)
-                : "") +
-              " ／ 使用中 " + formatNumber(consumedBudget) +
-              (performance.targetBudget > 0 || performance.rangeBudget > 0 || skill.effectBudget > 0
-                ? "（基本性能 " + formatNumber(baseConsumedBudget) +
-                  "＋対象 " + formatNumber(performance.targetBudget) +
-                  "＋範囲 " + formatNumber(performance.rangeBudget) +
-                  "＋追加効果 " + formatNumber(skill.effectBudget) + "）"
-                : "") +
+              " ／ 買い " + formatNumber(performance.buyBudget) +
+              " ／ 売り " + formatNumber(performance.sellBudget) +
+              " ／ 正味 " + formatNumber(performance.netBudget) +
               " ／ 残り " + formatNumber(remainingBudget) +
               " ／ 必要消費 " + performance.requiredCost
             : "消費を選ぶと、威力・命中・対象・範囲・効果を入力できます。";
@@ -3372,12 +3356,12 @@
           "一命中威力 ＝ 強化後武器威力 × 攻撃方法倍率 × スキル倍率 × 潜在倍率 × 攻撃型成功段階倍率 × モンスター倍率",
           "攻撃方法と攻撃スキルは別枠で、命中補正は加算・威力倍率は乗算",
           "強化後の威力・防護点は内部小数を保持し、小数第2位まで表示",
-          "スキル性能予算 ＝ 消費×65 ／ 予算計算用の威力・性能指数下限 ＝ 0.40",
-          "基本性能差 ＝ (性能指数－1)×100 ／ マイナス補正の予算増加は最大60",
-          "基本性能差が正なら予算を使用し、負ならマイナス補正として予算が増加",
-          "総使用予算 ＝ 基本性能差＋対象予算＋範囲予算＋追加効果予算",
-          "対象予算は追加1体25／直線3m15／扇状90°・3m20／周囲半径1.5m20",
-          "範囲下限は距離・半径1m／角度15°／範囲予算5（地点範囲10）",
+          "スキル性能予算 ＝ 消費×65 ／ 最低消費1",
+          "買い ＝ max(0,威力)＋max(0,命中)×1.4＋対象予算＋範囲予算＋追加効果予算",
+          "売り ＝ (|威力マイナス分|＋|命中マイナス分|×1.4)×0.7",
+          "必要消費 ＝ max(1, ceil(max(0,買い－売り)÷65))",
+          "対象予算は追加1体25／直線3m20／扇状90°・3m20／周囲半径1.5m20",
+          "範囲は1.5乗。下限は距離・半径1m／角度15～180°／範囲予算10",
           "一命中損害 ＝ max(0, 一命中威力 − 強化後防護点)",
           "防御損害 ＝ 一命中損害 × 命中数 × 防御結果倍率",
           "攻撃目的倍率は防護点・命中数の後に適用。防御結果倍率との丸め順は未決定",
@@ -4588,23 +4572,14 @@
           lines.push("効果：" + textOrNone(skill.description));
           if (includeInternal) {
             lines.push("威力倍率：×" + formatNumber(performance.powerFactor));
-            lines.push("予算計算用威力係数：×" +
-              formatNumber(performance.budgetPowerFactor));
-            lines.push("命中係数：×" + formatNumber(performance.accuracyFactor));
-            lines.push("性能指数：" + formatNumber(performance.performanceIndex));
-            lines.push("基本性能差：" + formatNumber(performance.basePerformanceLoad));
             lines.push("対象予算：" + performance.targetBudget);
             lines.push("範囲予算：" + performance.rangeBudget);
-            lines.push("追加効果負荷：" + formatNumber(performance.effectLoad));
-            lines.push("性能負荷合計：" + formatNumber(performance.performanceLoad));
+            lines.push("買い予算：" + formatNumber(performance.buyBudget));
+            lines.push("売り予算：" + formatNumber(performance.sellBudget));
+            lines.push("正味予算：" + formatNumber(performance.netBudget));
             lines.push("性能予算：" + formatNumber(skill.cost * 65));
-            lines.push("マイナス補正による予算増加（上限60）：" +
-              formatNumber(Math.max(0, -performance.basePerformanceLoad * 100)));
-            lines.push("使用中予算：" + formatNumber(Math.max(0,
-              performance.basePerformanceLoad * 100) + performance.targetBudget +
-              performance.rangeBudget + skill.effectBudget));
             lines.push("残り予算：" + formatNumber(
-              skill.cost * 65 - performance.performanceLoad * 100));
+              skill.cost * 65 - performance.netBudget));
             lines.push("必要消費：" + performance.requiredCost);
             lines.push("潜在能力倍率：×" + formatNumber(getPotentialMultiplier(potential)));
             lines.push(getAttackTypePreview(skill.attackType));
@@ -5070,9 +5045,9 @@
         } else if (field === "attackType") {
           candidate.attackType = normalizeChoice(target.value, attackTypeDefinitions, "standard");
         } else if (field === "powerDisplay") {
-          candidate.powerDisplay = clampInteger(target.value, -100, 999);
+          candidate.powerDisplay = clampInteger(target.value, -90, 999);
         } else if (field === "accuracy") {
-          candidate.accuracy = clampInteger(target.value, -999, 999);
+          candidate.accuracy = clampInteger(target.value, -999, 80);
         } else if (field === "effectBudget") {
           candidate.effectBudget = clampInteger(target.value, 0, 999);
         } else if (field === "targetMode") {
@@ -5096,7 +5071,7 @@
           }
         } else if (field === "rangeAngle" || field === "rangeAnglePreset") {
           if (target.value !== "custom") {
-            candidate.rangeAngle = clampInteger(target.value, 15, 360);
+            candidate.rangeAngle = clampInteger(target.value, 15, 180);
           }
         } else if (field === "areaRadius" || field === "areaRadiusPreset") {
           if (target.value !== "custom") {

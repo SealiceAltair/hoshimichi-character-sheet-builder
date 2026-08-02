@@ -134,27 +134,68 @@ Object.keys(stage3Powers).forEach((type) => {
 assertClose(enhanced(1, defenseStages[1]), 7 / 3, "standard protection 1 stage 1");
 assertClose(enhanced(2, defenseStages[3]), 7, "heavy protection 2 stage 3");
 
+const getRangeBudget = readFunction("getRangeBudget", {});
+const getTargetBudget = (skill) => skill.targetMode === "multiple"
+  ? Math.max(0, skill.maxTargets - 1) * 25
+  : 0;
 const getSkillPerformance = readFunction("getSkillPerformance", {
-  SKILL_BUDGET_FACTOR_MINIMUM: 0.40,
-  getTargetBudget: () => 0,
-  getRangeBudget: () => 0
+  SKILL_ACCURACY_RATE: 1.4,
+  SKILL_SELL_RATE: 0.7,
+  getTargetBudget,
+  getRangeBudget
 });
-const exploitSkill = getSkillPerformance({
-  powerDisplay: -95,
-  accuracy: 740,
-  effectBudget: 17
+
+function skillBudget(overrides) {
+  return getSkillPerformance(Object.assign({
+    powerDisplay: 0,
+    accuracy: 0,
+    effectBudget: 0,
+    targetMode: "single",
+    maxTargets: 1,
+    rangeShape: "line",
+    rangeDistance: 3,
+    rangeAngle: 90,
+    areaRadius: 1.5
+  }, overrides));
+}
+
+assertClose(skillBudget({ powerDisplay: 65 }).netBudget, 65,
+  "power 65 net budget");
+assert(skillBudget({ powerDisplay: 65 }).requiredCost === 1,
+  "power 65 should require cost 1");
+const soldAccuracy = skillBudget({ powerDisplay: 123, accuracy: -60 });
+assertClose(soldAccuracy.buyBudget, 123, "power 123 buy budget");
+assertClose(soldAccuracy.sellBudget, 58.8, "accuracy -60 sell budget");
+assertClose(soldAccuracy.netBudget, 64.2, "power 123 accuracy -60 net budget");
+assert(soldAccuracy.requiredCost === 1,
+  "power 123 accuracy -60 should require cost 1");
+const minimumCost = skillBudget({
+  powerDisplay: -90,
+  targetMode: "multiple",
+  maxTargets: 3
 });
-assertClose(exploitSkill.powerFactor, 0.05, "actual power factor for exploit case");
-assertClose(exploitSkill.budgetPowerFactor, 0.40, "budget power factor minimum");
-assertClose(exploitSkill.performanceIndex, 6.32, "exploit case performance index");
-assert(exploitSkill.requiredCost === 9, "exploit case should require cost 9");
-const maximumRefundSkill = getSkillPerformance({
-  powerDisplay: -100,
-  accuracy: -999,
-  effectBudget: 0
-});
-assertClose(maximumRefundSkill.basePerformanceLoad, -0.60,
-  "negative correction refund should be capped at 60");
+assertClose(minimumCost.buyBudget, 50, "negative power buy budget");
+assertClose(minimumCost.sellBudget, 63, "negative power sell budget");
+assertClose(minimumCost.netBudget, -13, "negative power net budget");
+assert(minimumCost.requiredCost === 1, "minimum skill cost should be 1");
+assert(skillBudget({ powerDisplay: 130 }).requiredCost === 2,
+  "power 130 should require cost 2");
+
+assert(getRangeBudget({ targetMode: "range", rangeShape: "line", rangeDistance: 3 }) === 20,
+  "line 3m budget");
+assert(getRangeBudget({ targetMode: "range", rangeShape: "line", rangeDistance: 9 }) === 60,
+  "line 9m budget");
+assert(getRangeBudget({
+  targetMode: "range", rangeShape: "cone", rangeDistance: 6, rangeAngle: 90
+}) === 57, "cone 90 degrees 6m budget");
+assert(getRangeBudget({
+  targetMode: "range", rangeShape: "cone", rangeDistance: 3, rangeAngle: 360
+}) === 40, "cone angle should clamp to 180 degrees");
+assert(getRangeBudget({ targetMode: "range", rangeShape: "around", areaRadius: 3 }) === 57,
+  "around radius 3m budget");
+assert(getRangeBudget({
+  targetMode: "range", rangeShape: "area", rangeDistance: 6, areaRadius: 3
+}) === 77, "area distance 6m radius 3m budget");
 
 const expectedAttackMethods = {
   harry: [-30, 15],
