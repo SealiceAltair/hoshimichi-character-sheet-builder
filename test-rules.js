@@ -243,6 +243,11 @@ assert(/enhancementStage:\s*0/.test(source), "new weapon enhancement stage is no
 assert(/goblinArmorEnhancement:\s*0/.test(source), "new enemy defense stage is not 0");
 assert(/HOSHIMICHI-PC-V10:/.test(source), "public restore marker is not V10");
 assert(/HOSHIMICHI-KP-V10:/.test(source), "KP restore marker is not V10");
+assert(/<html lang="ja" data-theme="dark">/.test(source), "dark theme is not the default");
+assert(/id="theme-toggle"/.test(source), "theme toggle button is missing");
+assert(/localStorage\.setItem\(THEME_STORAGE_KEY, normalizedTheme\)/.test(source),
+  "theme selection is not persisted separately");
+assert(/:root\[data-theme="dark"\]/.test(source), "dark theme variables are missing");
 
 assert(/return normalized > 0 \? "＋" \+ normalized : ""/.test(source),
   "weapon summary suffix missing");
