@@ -115,12 +115,29 @@
     }
 
     .page-header {
+      position: relative;
       margin-bottom: 1.25rem;
+      padding-right: 15rem;
+    }
+
+    .usage-counter {
+      position: absolute;
+      top: 0;
+      right: 0;
+      margin: 0;
+      padding: 0.35rem 0.65rem;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: var(--surface);
+      color: var(--muted);
+      font-size: 0.78rem;
+      font-weight: 800;
+      white-space: nowrap;
     }
 
     .primary-tabs {
       display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: 0.75rem;
       margin-bottom: 1.25rem;
       padding: 0.45rem;
@@ -131,10 +148,14 @@
     }
 
     .primary-tab {
-      padding: 0.75rem 1rem;
+      min-height: 76px;
+      padding: 1rem 1.15rem;
       border-color: transparent;
       background: transparent;
       color: var(--muted);
+      font-size: clamp(1.05rem, 2vw, 1.35rem);
+      line-height: 1.35;
+      text-align: left;
     }
 
     .primary-tab:hover:not(:disabled) {
@@ -151,6 +172,159 @@
 
     .primary-tab-panel[hidden] {
       display: none;
+    }
+
+    .library-panel {
+      display: grid;
+      gap: 1rem;
+    }
+
+    .library-intro,
+    .library-empty,
+    .library-status,
+    .cloud-save-status {
+      margin: 0;
+      color: var(--muted);
+    }
+
+    .library-toolbar,
+    .cloud-save-bar,
+    .cloud-save-actions,
+    .character-card-actions,
+    .history-actions {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0.7rem;
+    }
+
+    .library-toolbar .field {
+      flex: 1 1 18rem;
+    }
+
+    .library-toolbar button,
+    .cloud-save-actions button,
+    .character-card-actions button,
+    .history-actions button {
+      padding: 0.65rem 0.9rem;
+    }
+
+    .cloud-connection-note {
+      margin: 0;
+      padding: 0.8rem 0.95rem;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: var(--surface-soft);
+      color: var(--muted);
+    }
+
+    .cloud-connection-note.is-error,
+    .library-status.is-error,
+    .cloud-save-status.is-error {
+      border-color: var(--danger);
+      color: var(--danger);
+    }
+
+    .library-status.is-success,
+    .cloud-save-status.is-success {
+      color: var(--success);
+      font-weight: 800;
+    }
+
+    .character-grid,
+    .local-backup-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 0.8rem;
+    }
+
+    .character-card {
+      display: grid;
+      align-content: start;
+      gap: 0.65rem;
+      min-width: 0;
+      padding: 1rem;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--surface);
+      box-shadow: 0 5px 16px rgba(27, 64, 102, 0.07);
+    }
+
+    .character-card h3,
+    .library-subheading {
+      margin: 0;
+    }
+
+    .character-card h3 {
+      overflow-wrap: anywhere;
+      font-size: 1.1rem;
+    }
+
+    .character-card-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.35rem 0.8rem;
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.82rem;
+    }
+
+    .character-card-actions {
+      margin-top: auto;
+    }
+
+    .character-card-actions button {
+      flex: 1 1 6.5rem;
+    }
+
+    .local-backup-section {
+      display: grid;
+      gap: 0.75rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--line);
+    }
+
+    .cloud-save-bar {
+      justify-content: space-between;
+      margin-bottom: 1rem;
+      padding: 0.9rem 1rem;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+
+    .cloud-save-copy {
+      display: grid;
+      gap: 0.15rem;
+      min-width: min(100%, 16rem);
+    }
+
+    .cloud-save-copy span {
+      color: var(--muted);
+      font-size: 0.8rem;
+      font-weight: 800;
+    }
+
+    .cloud-save-copy strong {
+      overflow-wrap: anywhere;
+    }
+
+    .history-list {
+      display: grid;
+      gap: 0.7rem;
+      margin: 1rem 0 0;
+    }
+
+    .history-entry {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 0.8rem;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: var(--surface-soft);
     }
 
     .play-intro {
@@ -1188,6 +1362,11 @@
     }
 
     @media (max-width: 900px) {
+      .character-grid,
+      .local-backup-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
       .basic-grid {
         grid-template-columns: 1fr 1fr;
       }
@@ -1214,6 +1393,26 @@
     }
 
     @media (max-width: 720px) {
+      .page-header {
+        padding-right: 0;
+      }
+
+      .usage-counter {
+        position: static;
+        width: fit-content;
+        margin: 0 0 0.8rem auto;
+      }
+
+      .primary-tabs,
+      .character-grid,
+      .local-backup-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .primary-tab {
+        min-height: 58px;
+      }
+
       .monster-grid,
       .drop-row {
         grid-template-columns: 1fr;
@@ -1335,23 +1534,79 @@
 <body>
   <main class="page-shell">
     <header class="page-header">
+      <p id="usage-counter" class="usage-counter" aria-live="polite">本日の通信回数：—回</p>
       <p class="eyebrow">試作ツール</p>
       <h1>星みちTRPG キャラクタービルダー</h1>
       <p class="lead">
         共通ポイントを基礎ステータス・潜在能力・実務技能へ配分し、
         チャットへ貼り付けられるキャラクターシートを作成します。
       </p>
-      <span class="privacy-note">入力内容はこのブラウザ内だけに保存され、外部へ送信されません。</span>
+      <span id="storage-note" class="privacy-note">
+        編集中の内容はこのブラウザにも自動保存されます。共有一覧の表示・読込・保存などを操作した時だけ通信します。
+      </span>
     </header>
 
     <nav class="primary-tabs" role="tablist" aria-label="キャラクタービルダーの機能">
-      <button id="builder-tab" class="primary-tab" type="button" role="tab"
-        aria-selected="true" aria-controls="builder-panel">キャラクター作成</button>
-      <button id="play-tab" class="primary-tab" type="button" role="tab"
-        aria-selected="false" aria-controls="play-panel">このキャラで遊ぶ</button>
+      <button id="library-tab" class="primary-tab" type="button" role="tab" data-primary-tab="library"
+        aria-selected="false" aria-controls="library-panel" tabindex="-1">キャラ一覧へ →</button>
+      <button id="builder-tab" class="primary-tab" type="button" role="tab" data-primary-tab="builder"
+        aria-selected="true" aria-controls="builder-panel">キャラ作成へ →</button>
+      <button id="play-tab" class="primary-tab" type="button" role="tab" data-primary-tab="play"
+        aria-selected="false" aria-controls="play-panel" tabindex="-1">シナリオ・RPへ →</button>
     </nav>
 
+    <section id="library-panel" class="primary-tab-panel panel section-panel library-panel" role="tabpanel"
+      aria-labelledby="library-tab" hidden>
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">みんなで使える共有保管庫</p>
+          <h2>キャラ一覧</h2>
+        </div>
+        <button id="refresh-character-list" type="button" class="secondary-button">一覧を更新</button>
+      </div>
+
+      <p class="library-intro">
+        保存済みのキャラクターを、PC・スマホなどどの環境からでも開けます。
+        編集中の内容はこの端末にもバックアップされます。
+      </p>
+
+      <div class="library-toolbar">
+        <div class="field">
+          <label for="character-search">キャラを探す</label>
+          <input id="character-search" type="search" maxlength="100" placeholder="名前で絞り込み" autocomplete="off">
+        </div>
+        <button id="new-character-from-list" type="button">新しいキャラを作る →</button>
+      </div>
+
+      <p id="cloud-connection-note" class="cloud-connection-note">
+        クラウド保存はまだ未接続です。GASのURLを設定すると共有一覧を利用できます。
+      </p>
+      <p id="library-status" class="library-status" aria-live="polite"></p>
+      <div id="character-list" class="character-grid" aria-live="polite"></div>
+
+      <section class="local-backup-section" aria-labelledby="local-backup-heading">
+        <div>
+          <h3 id="local-backup-heading" class="library-subheading">この端末のバックアップ</h3>
+          <p class="library-intro">クラウドから削除しても、このブラウザに残っている版から新規キャラとして復元できます。</p>
+        </div>
+        <div id="local-backup-list" class="local-backup-grid"></div>
+      </section>
+    </section>
+
     <div id="builder-panel" class="primary-tab-panel" role="tabpanel" aria-labelledby="builder-tab">
+
+    <section class="cloud-save-bar" aria-label="クラウド保存">
+      <div class="cloud-save-copy">
+        <span>クラウド保存状態</span>
+        <strong id="cloud-character-label">このキャラはまだクラウドへ保存されていません</strong>
+        <p id="cloud-save-status" class="cloud-save-status" aria-live="polite"></p>
+      </div>
+      <div class="cloud-save-actions">
+        <button id="save-character-cloud" type="button">このキャラを保存</button>
+        <button id="save-character-copy" type="button" class="secondary-button">別キャラとして保存</button>
+        <button id="show-current-history" type="button" class="secondary-button">過去2版を見る</button>
+      </div>
+    </section>
 
     <section class="panel section-panel" aria-labelledby="basic-heading">
       <div class="section-heading">
@@ -1967,7 +2222,7 @@
       </div>
 
       <p id="play-character-warning" class="play-notice is-warning" role="alert">
-        「キャラクター作成」タブで名前を入力すると、開始メッセージをコピーできます。
+        「キャラ作成へ →」タブで名前を入力すると、開始メッセージをコピーできます。
       </p>
 
       <fieldset class="play-fieldset">
@@ -2080,6 +2335,20 @@
       <button id="apply-import" type="button">上書きする</button>
     </div>
   </dialog>
+
+  <dialog id="history-dialog" aria-labelledby="history-dialog-heading">
+    <h2 id="history-dialog-heading">保存履歴</h2>
+    <p id="history-dialog-summary">過去2回分の保存を確認できます。</p>
+    <div id="history-list" class="history-list"></div>
+    <div class="dialog-actions">
+      <button id="close-history-dialog" type="button" class="secondary-button">閉じる</button>
+    </div>
+  </dialog>
+
+  <script>
+    // GASをウェブアプリとして公開した後、発行された /exec URLをここへ設定します。
+    window.HOSHIMICHI_CLOUD_API_URL = "";
+  </script>
 
   <script>
     (function () {
@@ -5218,6 +5487,7 @@
           dialog.close();
         }
         setFeedback("Markdownから設定を上書きしました。", "success", false);
+        window.dispatchEvent(new CustomEvent("hoshimichi:state-imported"));
         return true;
       }
 
@@ -5537,6 +5807,33 @@
         }
       }
 
+      function replaceState(raw) {
+        var source = raw && typeof raw === "object" ? JSON.parse(JSON.stringify(raw)) : raw;
+        if (source && typeof source === "object" && !Object.prototype.hasOwnProperty.call(source, "kpSettings")) {
+          source.kpSettings = JSON.parse(JSON.stringify(state.kpSettings));
+        }
+        state = sanitizeState(source);
+        state.version = STORAGE_VERSION;
+        saveState();
+        updateBasicInputs();
+        updateView();
+        document.getElementById("name-error").textContent = "";
+        document.getElementById("character-name").removeAttribute("aria-invalid");
+        return JSON.parse(JSON.stringify(state));
+      }
+
+      function startNewCharacter() {
+        state = createInitialState();
+        saveState();
+        updateBasicInputs();
+        updateView();
+        document.getElementById("name-error").textContent = "";
+        document.getElementById("character-name").removeAttribute("aria-invalid");
+        setFeedback("新しいキャラクターシートを開きました。", "success", false);
+        window.dispatchEvent(new CustomEvent("hoshimichi:state-new"));
+        return JSON.parse(JSON.stringify(state));
+      }
+
       function resetAll() {
         var confirmed = window.confirm(
           "名前、ポイント、すべての入力内容とブラウザ内の保存データを削除します。よろしいですか？"
@@ -5557,6 +5854,7 @@
         document.getElementById("name-error").textContent = "";
         document.getElementById("character-name").removeAttribute("aria-invalid");
         setFeedback("すべての入力内容をリセットしました。", "success");
+        window.dispatchEvent(new CustomEvent("hoshimichi:state-reset"));
       }
 
       function bindEvents() {
@@ -5937,6 +6235,13 @@
         getState: function () {
           return JSON.parse(JSON.stringify(state));
         },
+        getCloudState: function () {
+          var cloudState = JSON.parse(JSON.stringify(state));
+          delete cloudState.kpSettings;
+          return cloudState;
+        },
+        replaceState: replaceState,
+        startNewCharacter: startNewCharacter,
         buildPlayerMarkdown: function () {
           return buildMarkdown(false, true);
         },
@@ -5980,14 +6285,21 @@
     (function () {
       "use strict";
 
+      var libraryTab = document.getElementById("library-tab");
       var builderTab = document.getElementById("builder-tab");
       var playTab = document.getElementById("play-tab");
+      var libraryPanel = document.getElementById("library-panel");
       var builderPanel = document.getElementById("builder-panel");
       var playPanel = document.getElementById("play-panel");
       var preview = document.getElementById("play-request-preview");
       var copyButton = document.getElementById("copy-play-request");
       var status = document.getElementById("play-status");
-      var tabButtons = [builderTab, playTab];
+      var tabs = [
+        { name: "library", button: libraryTab, panel: libraryPanel },
+        { name: "builder", button: builderTab, panel: builderPanel },
+        { name: "play", button: playTab, panel: playPanel }
+      ];
+      var tabButtons = tabs.map(function (tab) { return tab.button; });
 
       var attackTypeLabels = {
         heavy: "重撃型の武器",
@@ -6106,8 +6418,8 @@
         document.getElementById("play-character-weapon").textContent = getMainWeapon(state);
         warning.hidden = Boolean(name && isCharacter);
         warning.textContent = !name
-          ? "「キャラクター作成」タブで名前を入力すると、開始メッセージをコピーできます。"
-          : "「キャラクター作成」タブで作成対象をキャラクターへ切り替えると、この機能を使用できます。";
+          ? "「キャラ作成へ →」タブで名前を入力すると、開始メッセージをコピーできます。"
+          : "「キャラ作成へ →」タブで作成対象をキャラクターへ切り替えると、この機能を使用できます。";
         copyButton.disabled = !name || !isCharacter;
         document.querySelectorAll(".play-trpg-only").forEach(function (element) {
           element.hidden = mode !== "trpg";
@@ -6118,18 +6430,21 @@
       }
 
       function activateTab(tabName, focusTab) {
-        var showPlay = tabName === "play";
-        builderTab.setAttribute("aria-selected", showPlay ? "false" : "true");
-        playTab.setAttribute("aria-selected", showPlay ? "true" : "false");
-        builderTab.tabIndex = showPlay ? -1 : 0;
-        playTab.tabIndex = showPlay ? 0 : -1;
-        builderPanel.hidden = showPlay;
-        playPanel.hidden = !showPlay;
-        if (showPlay) {
+        var activeTab = tabs.find(function (tab) { return tab.name === tabName; }) || tabs[1];
+        tabs.forEach(function (tab) {
+          var isActive = tab === activeTab;
+          tab.button.setAttribute("aria-selected", isActive ? "true" : "false");
+          tab.button.tabIndex = isActive ? 0 : -1;
+          tab.panel.hidden = !isActive;
+        });
+        if (activeTab.name === "play") {
           updatePlayPanel();
         }
+        if (activeTab.name === "library" && window.hoshimichiCloudLibrary) {
+          window.hoshimichiCloudLibrary.refresh(false);
+        }
         if (focusTab) {
-          (showPlay ? playTab : builderTab).focus();
+          activeTab.button.focus();
         }
       }
 
@@ -6169,7 +6484,7 @@
 
       tabButtons.forEach(function (tab, index) {
         tab.addEventListener("click", function () {
-          activateTab(tab === playTab ? "play" : "builder", false);
+          activateTab(tab.dataset.primaryTab, false);
         });
         tab.addEventListener("keydown", function (event) {
           var nextIndex = index;
@@ -6185,7 +6500,7 @@
             return;
           }
           event.preventDefault();
-          activateTab(nextIndex === 1 ? "play" : "builder", true);
+          activateTab(tabButtons[nextIndex].dataset.primaryTab, true);
         });
       });
 
@@ -6194,7 +6509,675 @@
       document.getElementById("refresh-play-request").addEventListener("click", updatePlayPanel);
       copyButton.addEventListener("click", copyPlayRequest);
 
+      window.hoshimichiNavigation = Object.freeze({
+        activateTab: activateTab
+      });
+
       activateTab("builder", false);
+    }());
+  </script>
+  <script>
+    (function () {
+      "use strict";
+
+      var CLOUD_CONTEXT_KEY = "hoshimichi-character-sheet-builder-cloud-context-v1";
+      var LOCAL_BACKUP_KEY = "hoshimichi-character-sheet-builder-cloud-backups-v1";
+      var apiUrl = String(window.HOSHIMICHI_CLOUD_API_URL || "").trim();
+      var loadedContext = loadJson(CLOUD_CONTEXT_KEY, {});
+      var currentContext = loadedContext && typeof loadedContext === "object" && !Array.isArray(loadedContext)
+        ? loadedContext
+        : {};
+      var cloudCharacters = [];
+      var lastListLoad = 0;
+      var backupTimer = null;
+      var listLoading = false;
+
+      var usageCounter = document.getElementById("usage-counter");
+      var connectionNote = document.getElementById("cloud-connection-note");
+      var libraryStatus = document.getElementById("library-status");
+      var characterList = document.getElementById("character-list");
+      var localBackupList = document.getElementById("local-backup-list");
+      var searchInput = document.getElementById("character-search");
+      var cloudCharacterLabel = document.getElementById("cloud-character-label");
+      var cloudSaveStatus = document.getElementById("cloud-save-status");
+      var saveButton = document.getElementById("save-character-cloud");
+      var saveCopyButton = document.getElementById("save-character-copy");
+      var currentHistoryButton = document.getElementById("show-current-history");
+      var historyDialog = document.getElementById("history-dialog");
+      var historyList = document.getElementById("history-list");
+
+      function loadJson(key, fallback) {
+        try {
+          var raw = window.localStorage.getItem(key);
+          return raw ? JSON.parse(raw) : fallback;
+        } catch (error) {
+          return fallback;
+        }
+      }
+
+      function saveJson(key, value) {
+        try {
+          window.localStorage.setItem(key, JSON.stringify(value));
+          return true;
+        } catch (error) {
+          return false;
+        }
+      }
+
+      function clone(value) {
+        return JSON.parse(JSON.stringify(value));
+      }
+
+      function createUuid() {
+        if (window.crypto && typeof window.crypto.randomUUID === "function") {
+          return window.crypto.randomUUID();
+        }
+        return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function (character) {
+          var random = Math.floor(Math.random() * 16);
+          var value = character === "x" ? random : (random & 3) | 8;
+          return value.toString(16);
+        });
+      }
+
+      function isConfigured() {
+        return /^https:\/\/script\.google\.com\/macros\/s\/.+\/exec(?:\?.*)?$/.test(apiUrl);
+      }
+
+      function getCurrentState() {
+        return window.characterSheetBuilder.getState();
+      }
+
+      function getCloudState() {
+        return window.characterSheetBuilder.getCloudState();
+      }
+
+      function setStatus(element, message, kind) {
+        element.textContent = message || "";
+        element.classList.toggle("is-error", kind === "error");
+        element.classList.toggle("is-success", kind === "success");
+      }
+
+      function updateUsage(usage) {
+        if (!usage) {
+          return;
+        }
+        var count = Number(usage.count);
+        if (Number.isFinite(count)) {
+          usageCounter.textContent = "本日の通信回数：" + count + "回";
+        }
+      }
+
+      function formatDate(value) {
+        var date = new Date(value);
+        if (Number.isNaN(date.getTime())) {
+          return "日時不明";
+        }
+        return new Intl.DateTimeFormat("ja-JP", {
+          timeZone: "Asia/Tokyo",
+          year: "numeric",
+          month: "numeric",
+          day: "numeric",
+          hour: "2-digit",
+          minute: "2-digit"
+        }).format(date);
+      }
+
+      function targetLabel(targetType) {
+        return targetType === "monster" ? "モンスター" : "キャラクター";
+      }
+
+      function persistContext() {
+        saveJson(CLOUD_CONTEXT_KEY, currentContext);
+        updateSaveBar();
+      }
+
+      function clearCloudContext(keepLocalBackupId) {
+        currentContext = keepLocalBackupId ? { localBackupId: keepLocalBackupId } : {};
+        persistContext();
+      }
+
+      function setCloudContext(character, localBackupId) {
+        currentContext = {
+          characterId: character.id,
+          revision: Number(character.revision) || 1,
+          name: character.name || "",
+          localBackupId: localBackupId || "cloud:" + character.id
+        };
+        persistContext();
+      }
+
+      function updateSaveBar() {
+        var state = getCurrentState();
+        var hasName = Boolean(String(state.name || "").trim());
+        var configured = isConfigured();
+        if (currentContext.characterId) {
+          cloudCharacterLabel.textContent =
+            (currentContext.name || state.name || "名前なし") + "／現在 v" + currentContext.revision;
+        } else {
+          cloudCharacterLabel.textContent = "このキャラはまだクラウドへ保存されていません";
+        }
+        saveButton.disabled = !configured || !hasName;
+        saveCopyButton.disabled = !configured || !hasName;
+        currentHistoryButton.disabled = !configured || !currentContext.characterId;
+      }
+
+      function readBackups() {
+        var backups = loadJson(LOCAL_BACKUP_KEY, {});
+        return backups && typeof backups === "object" ? backups : {};
+      }
+
+      function storeLocalBackup(state, backupId, cloudId, revision) {
+        var name = String(state.name || "").trim();
+        if (!name) {
+          return null;
+        }
+        var backups = readBackups();
+        var resolvedBackupId = backupId || "local:" + createUuid();
+        backups[resolvedBackupId] = {
+          backupId: resolvedBackupId,
+          cloudId: cloudId || "",
+          revision: Number(revision) || 0,
+          name: name,
+          targetType: state.targetType,
+          savedAt: new Date().toISOString(),
+          state: clone(state)
+        };
+        if (!saveJson(LOCAL_BACKUP_KEY, backups)) {
+          setStatus(cloudSaveStatus, "このブラウザのバックアップ容量が不足しています。", "error");
+          return null;
+        }
+        renderLocalBackups();
+        return resolvedBackupId;
+      }
+
+      function backupCurrentState() {
+        var backupId = currentContext.localBackupId ||
+          (currentContext.characterId ? "cloud:" + currentContext.characterId : "local:" + createUuid());
+        var storedId = storeLocalBackup(
+          getCurrentState(),
+          backupId,
+          currentContext.characterId || "",
+          currentContext.revision
+        );
+        if (storedId) {
+          currentContext.localBackupId = storedId;
+          saveJson(CLOUD_CONTEXT_KEY, currentContext);
+        }
+        return storedId;
+      }
+
+      function scheduleLocalBackup() {
+        window.clearTimeout(backupTimer);
+        backupTimer = window.setTimeout(function () {
+          backupCurrentState();
+          updateSaveBar();
+        }, 700);
+      }
+
+      function apiError(message, code, details) {
+        var error = new Error(message);
+        error.code = code || "CLOUD_ERROR";
+        error.details = details || {};
+        return error;
+      }
+
+      async function parseApiResponse(response) {
+        var text = await response.text();
+        var result;
+        try {
+          result = JSON.parse(text);
+        } catch (error) {
+          throw apiError(
+            "クラウドからJSON以外の応答が返りました。GASの公開設定と /exec URLを確認してください。",
+            "INVALID_RESPONSE",
+            { preview: text.slice(0, 120) }
+          );
+        }
+        updateUsage(result.usage);
+        if (!result.ok) {
+          var publicError = result.error || {};
+          throw apiError(publicError.message || "クラウド処理に失敗しました。", publicError.code, publicError);
+        }
+        return result.data || {};
+      }
+
+      async function apiGet(action, parameters) {
+        if (!isConfigured()) {
+          throw apiError("クラウド保存はまだ未接続です。", "NOT_CONFIGURED");
+        }
+        var url = new URL(apiUrl);
+        url.searchParams.set("action", action);
+        Object.keys(parameters || {}).forEach(function (key) {
+          if (parameters[key] !== undefined && parameters[key] !== null && parameters[key] !== "") {
+            url.searchParams.set(key, String(parameters[key]));
+          }
+        });
+        url.searchParams.set("_", String(Date.now()));
+        var response = await fetch(url.toString(), {
+          method: "GET",
+          redirect: "follow",
+          credentials: "omit",
+          cache: "no-store"
+        });
+        return parseApiResponse(response);
+      }
+
+      async function apiPost(request) {
+        if (!isConfigured()) {
+          throw apiError("クラウド保存はまだ未接続です。", "NOT_CONFIGURED");
+        }
+        var body = new URLSearchParams({ payload: JSON.stringify(request) });
+        var response = await fetch(apiUrl, {
+          method: "POST",
+          body: body,
+          redirect: "follow",
+          credentials: "omit",
+          cache: "no-store"
+        });
+        return parseApiResponse(response);
+      }
+
+      function createButton(label, className, handler) {
+        var button = document.createElement("button");
+        button.type = "button";
+        button.textContent = label;
+        if (className) {
+          button.className = className;
+        }
+        button.addEventListener("click", handler);
+        return button;
+      }
+
+      function createCharacterCard(character) {
+        var card = document.createElement("article");
+        card.className = "character-card";
+
+        var heading = document.createElement("h3");
+        heading.textContent = character.name || "名前なし";
+        card.appendChild(heading);
+
+        var meta = document.createElement("p");
+        meta.className = "character-card-meta";
+        var type = document.createElement("span");
+        type.textContent = targetLabel(character.targetType);
+        var revision = document.createElement("span");
+        revision.textContent = "v" + (Number(character.revision) || 1);
+        var updated = document.createElement("span");
+        updated.textContent = formatDate(character.updatedAt);
+        meta.append(type, revision, updated);
+        card.appendChild(meta);
+
+        var actions = document.createElement("div");
+        actions.className = "character-card-actions";
+        var openButton = createButton("開く", "", function () {
+          openCloudCharacter(character.id);
+        });
+        openButton.setAttribute("aria-label", "「" + (character.name || "名前なし") + "」を開く");
+        actions.appendChild(openButton);
+        var historyButton = createButton("過去2版", "secondary-button", function () {
+          showHistory(character.id);
+        });
+        historyButton.setAttribute("aria-label", "「" + (character.name || "名前なし") + "」の過去2版を見る");
+        actions.appendChild(historyButton);
+        var duplicateButton = createButton("複製して編集", "secondary-button", function () {
+          duplicateCloudCharacter(character.id);
+        });
+        duplicateButton.setAttribute("aria-label", "「" + (character.name || "名前なし") + "」を複製して編集する");
+        actions.appendChild(duplicateButton);
+        var deleteButton = createButton("一覧から削除", "danger-button", function () {
+          deleteCloudCharacter(character);
+        });
+        deleteButton.setAttribute("aria-label", "「" + (character.name || "名前なし") + "」を一覧から削除する");
+        actions.appendChild(deleteButton);
+        card.appendChild(actions);
+        return card;
+      }
+
+      function renderCloudCharacters() {
+        var query = String(searchInput.value || "").trim().toLocaleLowerCase("ja");
+        characterList.replaceChildren();
+        var filtered = cloudCharacters.filter(function (character) {
+          return !query || String(character.name || "").toLocaleLowerCase("ja").includes(query);
+        });
+        if (!filtered.length) {
+          var empty = document.createElement("p");
+          empty.className = "library-empty";
+          empty.textContent = cloudCharacters.length
+            ? "条件に合うキャラクターはいません。"
+            : "クラウドに保存されたキャラクターはまだありません。";
+          characterList.appendChild(empty);
+          return;
+        }
+        filtered.forEach(function (character) {
+          characterList.appendChild(createCharacterCard(character));
+        });
+      }
+
+      function createLocalBackupCard(backup) {
+        var card = document.createElement("article");
+        card.className = "character-card";
+        var heading = document.createElement("h3");
+        heading.textContent = backup.name || "名前なし";
+        var meta = document.createElement("p");
+        meta.className = "character-card-meta";
+        var type = document.createElement("span");
+        type.textContent = targetLabel(backup.targetType);
+        var local = document.createElement("span");
+        local.textContent = "この端末のみ";
+        var date = document.createElement("span");
+        date.textContent = formatDate(backup.savedAt);
+        meta.append(type, local, date);
+        var actions = document.createElement("div");
+        actions.className = "character-card-actions";
+        actions.appendChild(createButton("新規キャラとして復元", "secondary-button", function () {
+          backupCurrentState();
+          window.characterSheetBuilder.replaceState(backup.state);
+          clearCloudContext(backup.backupId);
+          setStatus(cloudSaveStatus, "ローカルバックアップを復元しました。クラウドへは新規保存されます。", "success");
+          window.hoshimichiNavigation.activateTab("builder", false);
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        }));
+        card.append(heading, meta, actions);
+        return card;
+      }
+
+      function renderLocalBackups() {
+        localBackupList.replaceChildren();
+        var backups = Object.values(readBackups()).sort(function (left, right) {
+          return String(right.savedAt).localeCompare(String(left.savedAt));
+        });
+        if (!backups.length) {
+          var empty = document.createElement("p");
+          empty.className = "library-empty";
+          empty.textContent = "この端末のバックアップはまだありません。";
+          localBackupList.appendChild(empty);
+          return;
+        }
+        backups.forEach(function (backup) {
+          localBackupList.appendChild(createLocalBackupCard(backup));
+        });
+      }
+
+      function upsertCharacterSummary(character) {
+        var index = cloudCharacters.findIndex(function (item) { return item.id === character.id; });
+        var summary = {
+          id: character.id,
+          name: character.name,
+          targetType: character.targetType,
+          revision: character.revision,
+          updatedAt: character.updatedAt
+        };
+        if (index >= 0) {
+          cloudCharacters[index] = summary;
+        } else {
+          cloudCharacters.unshift(summary);
+        }
+        cloudCharacters.sort(function (left, right) {
+          return String(right.updatedAt).localeCompare(String(left.updatedAt));
+        });
+        renderCloudCharacters();
+      }
+
+      async function refreshCharacters(force) {
+        renderLocalBackups();
+        updateSaveBar();
+        if (!isConfigured()) {
+          connectionNote.hidden = false;
+          usageCounter.textContent = "本日の通信回数：未接続";
+          renderCloudCharacters();
+          return;
+        }
+        connectionNote.hidden = true;
+        if (listLoading || (!force && cloudCharacters.length && Date.now() - lastListLoad < 30000)) {
+          return;
+        }
+        listLoading = true;
+        setStatus(libraryStatus, "キャラ一覧を読み込んでいます…", "");
+        try {
+          var data = await apiGet("list", {});
+          cloudCharacters = Array.isArray(data.characters) ? data.characters : [];
+          lastListLoad = Date.now();
+          renderCloudCharacters();
+          setStatus(libraryStatus, cloudCharacters.length + "件のキャラクターを表示しています。", "success");
+        } catch (error) {
+          setStatus(libraryStatus, error.message, "error");
+        } finally {
+          listLoading = false;
+        }
+      }
+
+      async function openCloudCharacter(characterId) {
+        setStatus(libraryStatus, "キャラクターを読み込んでいます…", "");
+        try {
+          var data = await apiGet("get", { id: characterId });
+          backupCurrentState();
+          window.characterSheetBuilder.replaceState(data.character.state);
+          setCloudContext(data.character);
+          backupCurrentState();
+          setStatus(cloudSaveStatus, "クラウドから最新版を読み込みました。", "success");
+          window.hoshimichiNavigation.activateTab("builder", false);
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        } catch (error) {
+          setStatus(libraryStatus, error.message, "error");
+        }
+      }
+
+      async function duplicateCloudCharacter(characterId) {
+        setStatus(libraryStatus, "複製元を読み込んでいます…", "");
+        try {
+          var data = await apiGet("get", { id: characterId });
+          backupCurrentState();
+          window.characterSheetBuilder.replaceState(data.character.state);
+          clearCloudContext();
+          backupCurrentState();
+          setStatus(cloudSaveStatus, "複製を開きました。保存すると新しいキャラになります。", "success");
+          window.hoshimichiNavigation.activateTab("builder", false);
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        } catch (error) {
+          setStatus(libraryStatus, error.message, "error");
+        }
+      }
+
+      async function saveToCloud(asCopy, force) {
+        var state = getCloudState();
+        var name = String(state.name || "").trim();
+        if (!name) {
+          setStatus(cloudSaveStatus, "先にキャラクター名を入力してください。", "error");
+          document.getElementById("character-name").focus();
+          return;
+        }
+        backupCurrentState();
+        saveButton.disabled = true;
+        saveCopyButton.disabled = true;
+        setStatus(cloudSaveStatus, asCopy ? "別キャラとして保存しています…" : "クラウドへ保存しています…", "");
+        try {
+          var request = {
+            action: "save",
+            requestId: createUuid(),
+            characterId: asCopy ? "" : (currentContext.characterId || ""),
+            baseRevision: asCopy ? 0 : (Number(currentContext.revision) || 0),
+            force: Boolean(force),
+            state: state
+          };
+          var data = await apiPost(request);
+          setCloudContext(data.character);
+          backupCurrentState();
+          upsertCharacterSummary(data.character);
+          setStatus(cloudSaveStatus, "クラウドへ v" + data.character.revision + " として保存しました。", "success");
+        } catch (error) {
+          if (error.code === "REVISION_CONFLICT" && !force && window.confirm(
+            "別の環境で先に更新されています。現在の内容を新しい版として強制保存しますか？"
+          )) {
+            await saveToCloud(asCopy, true);
+            return;
+          }
+          setStatus(cloudSaveStatus, error.message, "error");
+        } finally {
+          updateSaveBar();
+        }
+      }
+
+      function renderHistory(data) {
+        historyList.replaceChildren();
+        var history = Array.isArray(data.history) ? data.history : [];
+        document.getElementById("history-dialog-summary").textContent =
+          (data.name || "キャラクター") + "／現在 v" + data.currentRevision + "。過去版は復元しても新しい版として保存されます。";
+        if (!history.length) {
+          var empty = document.createElement("p");
+          empty.className = "library-empty";
+          empty.textContent = "戻せる過去版はまだありません。";
+          historyList.appendChild(empty);
+        } else {
+          history.forEach(function (entry) {
+            var row = document.createElement("div");
+            row.className = "history-entry";
+            var copy = document.createElement("div");
+            var strong = document.createElement("strong");
+            strong.textContent = "v" + entry.revision;
+            var date = document.createElement("p");
+            date.className = "character-card-meta";
+            date.textContent = formatDate(entry.savedAt);
+            copy.append(strong, date);
+            var restore = createButton("この版へ戻す", "secondary-button", function () {
+              restoreRevision(data.characterId, entry.revision, data.currentRevision);
+            });
+            row.append(copy, restore);
+            historyList.appendChild(row);
+          });
+        }
+        if (typeof historyDialog.showModal === "function") {
+          historyDialog.showModal();
+        } else {
+          historyDialog.setAttribute("open", "");
+        }
+      }
+
+      async function showHistory(characterId) {
+        setStatus(libraryStatus, "保存履歴を読み込んでいます…", "");
+        try {
+          var data = await apiGet("history", { id: characterId });
+          renderHistory(data);
+          setStatus(libraryStatus, "保存履歴を表示しました。", "success");
+        } catch (error) {
+          setStatus(libraryStatus, error.message, "error");
+          setStatus(cloudSaveStatus, error.message, "error");
+        }
+      }
+
+      async function restoreRevision(characterId, sourceRevision, baseRevision) {
+        if (!window.confirm("v" + sourceRevision + "の内容を、新しい最新版として復元しますか？")) {
+          return;
+        }
+        try {
+          var data = await apiPost({
+            action: "restore",
+            requestId: createUuid(),
+            characterId: characterId,
+            sourceRevision: Number(sourceRevision),
+            baseRevision: Number(baseRevision)
+          });
+          backupCurrentState();
+          window.characterSheetBuilder.replaceState(data.character.state);
+          setCloudContext(data.character);
+          backupCurrentState();
+          upsertCharacterSummary(data.character);
+          if (historyDialog.open) {
+            historyDialog.close();
+          }
+          setStatus(cloudSaveStatus, "v" + sourceRevision + "の内容をv" + data.character.revision + "として復元しました。", "success");
+          window.hoshimichiNavigation.activateTab("builder", false);
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        } catch (error) {
+          setStatus(libraryStatus, error.message, "error");
+        }
+      }
+
+      async function deleteCloudCharacter(character) {
+        if (!window.confirm(
+          "「" + (character.name || "名前なし") + "」を共有一覧から削除しますか？\nこの端末のバックアップは残ります。"
+        )) {
+          return;
+        }
+        try {
+          setStatus(libraryStatus, "削除前のローカルバックアップを作成しています…", "");
+          var snapshot = await apiGet("get", { id: character.id });
+          storeLocalBackup(
+            snapshot.character.state,
+            "cloud:" + snapshot.character.id,
+            snapshot.character.id,
+            snapshot.character.revision
+          );
+          await apiPost({
+            action: "delete",
+            requestId: createUuid(),
+            characterId: character.id,
+            baseRevision: Number(snapshot.character.revision) || 0
+          });
+          cloudCharacters = cloudCharacters.filter(function (item) { return item.id !== character.id; });
+          if (currentContext.characterId === character.id) {
+            clearCloudContext(currentContext.localBackupId);
+          }
+          renderCloudCharacters();
+          renderLocalBackups();
+          setStatus(libraryStatus, "共有一覧から削除しました。この端末のバックアップは残っています。", "success");
+        } catch (error) {
+          setStatus(libraryStatus, error.message, "error");
+        }
+      }
+
+      function startNewCharacter() {
+        var state = getCurrentState();
+        var name = String(state.name || "").trim();
+        if (name && !window.confirm(
+          "現在の「" + name + "」をこの端末へバックアップして、新しいキャラを作りますか？"
+        )) {
+          return;
+        }
+        backupCurrentState();
+        clearCloudContext();
+        window.characterSheetBuilder.startNewCharacter();
+        setStatus(cloudSaveStatus, "新しいキャラクターシートです。", "success");
+        window.hoshimichiNavigation.activateTab("builder", false);
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+
+      document.getElementById("refresh-character-list").addEventListener("click", function () {
+        refreshCharacters(true);
+      });
+      document.getElementById("new-character-from-list").addEventListener("click", startNewCharacter);
+      searchInput.addEventListener("input", renderCloudCharacters);
+      saveButton.addEventListener("click", function () { saveToCloud(false, false); });
+      saveCopyButton.addEventListener("click", function () { saveToCloud(true, false); });
+      currentHistoryButton.addEventListener("click", function () {
+        if (currentContext.characterId) {
+          showHistory(currentContext.characterId);
+        }
+      });
+      document.getElementById("close-history-dialog").addEventListener("click", function () {
+        historyDialog.close();
+      });
+      document.getElementById("builder-panel").addEventListener("input", scheduleLocalBackup);
+      document.getElementById("builder-panel").addEventListener("change", scheduleLocalBackup);
+      window.addEventListener("hoshimichi:state-reset", function () { clearCloudContext(); });
+      window.addEventListener("hoshimichi:state-new", function () { clearCloudContext(); });
+      window.addEventListener("hoshimichi:state-imported", function () {
+        clearCloudContext();
+        backupCurrentState();
+      });
+
+      connectionNote.hidden = isConfigured();
+      if (!isConfigured()) {
+        usageCounter.textContent = "本日の通信回数：未接続";
+      }
+      renderCloudCharacters();
+      renderLocalBackups();
+      updateSaveBar();
+
+      window.hoshimichiCloudLibrary = Object.freeze({
+        refresh: refreshCharacters,
+        backupCurrentState: backupCurrentState,
+        getCurrentContext: function () { return clone(currentContext); }
+      });
     }());
   </script>
 </body>
