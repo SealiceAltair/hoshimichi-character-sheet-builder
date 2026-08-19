@@ -1,0 +1,1554 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval' blob: data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://fonts.bunny.net https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com; style-src 'unsafe-inline' blob: data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://fonts.bunny.net https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com; img-src blob: data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://fonts.bunny.net https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com; font-src blob: data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://fonts.bunny.net https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com; media-src blob: data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://fonts.bunny.net https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com; worker-src blob:; connect-src blob: data:; frame-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<title>Rp Trpg Start Form</title>
+<style>:root{color-scheme:light dark;background:light-dark(rgb(255 255 255), rgb(24 24 24))}html,body{margin:0}body{box-sizing:border-box;padding:1rem;background:inherit}iframe{display:block;width:100%;height:calc(100vh - 2rem);margin:0 auto;border:0}</style>
+</head>
+<body>
+<iframe sandbox="allow-scripts" referrerpolicy="no-referrer" title="Rp Trpg Start Form" srcdoc="&lt;!doctype html&gt;
+&lt;html lang=&quot;en&quot;&gt;
+&lt;head&gt;
+&lt;meta charset=&quot;utf-8&quot;&gt;
+&lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1&quot;&gt;
+&lt;meta name=&quot;referrer&quot; content=&quot;no-referrer&quot;&gt;
+&lt;meta http-equiv=&quot;Content-Security-Policy&quot; content=&quot;default-src &#x27;none&#x27;; script-src &#x27;unsafe-inline&#x27; &#x27;unsafe-eval&#x27; &#x27;wasm-unsafe-eval&#x27; blob: data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://fonts.bunny.net https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com; style-src &#x27;unsafe-inline&#x27; blob: data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://fonts.bunny.net https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com; img-src blob: data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://fonts.bunny.net https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com; font-src blob: data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://fonts.bunny.net https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com; media-src blob: data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://fonts.bunny.net https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com; worker-src blob:; connect-src blob: data:; frame-src &#x27;none&#x27;; object-src &#x27;none&#x27;; base-uri &#x27;none&#x27;; form-action &#x27;none&#x27;&quot;&gt;
+&lt;title&gt;Rp Trpg Start Form&lt;/title&gt;
+&lt;style&gt;:root {
+  color-scheme: light dark;
+  background-color: var(
+    --background,
+    var(--color-background-primary, light-dark(rgb(255 255 255), rgb(24 24 24)))
+  ) !important;
+
+  /* Agent-facing contract; keep in sync with SKILL.md. */
+  --background: var(
+    --color-background-primary,
+    light-dark(rgb(255 255 255), rgb(24 24 24))
+  );
+  --foreground: var(
+    --color-text-primary,
+    light-dark(rgb(26 28 31), rgb(255 255 255))
+  );
+  --card: color-mix(in oklab, var(--foreground) 5%, var(--background));
+  --card-foreground: var(
+    --color-text-primary,
+    light-dark(rgb(26 28 31), rgb(255 255 255))
+  );
+  --popover: var(
+    --color-background-secondary,
+    light-dark(rgb(255 255 255), rgb(45 45 45))
+  );
+  --popover-foreground: var(
+    --color-text-primary,
+    light-dark(rgb(26 28 31), rgb(255 255 255))
+  );
+  --primary: var(
+    --color-text-info,
+    light-dark(rgb(51 156 255), rgb(131 195 255))
+  );
+  --primary-foreground: var(
+    --color-text-inverse,
+    light-dark(rgb(255 255 255), rgb(13 13 13))
+  );
+  --secondary: var(
+    --color-background-secondary,
+    light-dark(rgb(255 255 255 / 96%), rgb(54 54 54 / 96%))
+  );
+  --secondary-foreground: var(
+    --color-text-primary,
+    light-dark(rgb(26 28 31), rgb(255 255 255))
+  );
+  --muted: color-mix(in srgb, var(--foreground) 10%, transparent);
+  --muted-foreground: var(
+    --color-text-secondary,
+    light-dark(rgb(26 28 31 / 49.4%), rgb(255 255 255 / 49.8%))
+  );
+  --accent: var(
+    --color-background-info,
+    light-dark(rgb(229 242 255), rgb(13 39 63))
+  );
+  --accent-foreground: var(
+    --color-text-info,
+    light-dark(rgb(51 156 255), rgb(131 195 255))
+  );
+  --destructive: var(
+    --color-text-warning,
+    light-dark(rgb(226 85 7), rgb(255 133 73))
+  );
+  --border: var(
+    --color-border-secondary,
+    light-dark(rgb(26 28 31 / 8%), rgb(255 255 255 / 8.2%))
+  );
+  --input: var(
+    --color-border-primary,
+    light-dark(
+      rgb(26 28 31 / 11.8%),
+      color-mix(in oklab, rgb(0 0 0) 10%, transparent)
+    )
+  );
+  --ring: var(
+    --color-ring-primary,
+    light-dark(rgb(51 156 255), rgb(131 195 255 / 76%))
+  );
+  --font-size-base: var(--font-text-md-size, 14px);
+  --blue: light-dark(rgb(51 156 255), rgb(51 156 255));
+  --orange: light-dark(rgb(226 85 7), rgb(251 106 34));
+  --green: light-dark(rgb(0 162 64), rgb(64 201 119));
+  --red: light-dark(rgb(224 46 42), rgb(255 103 100));
+  --purple: light-dark(rgb(146 79 247), rgb(173 123 249));
+  --yellow: light-dark(rgb(255 195 0), rgb(255 210 64));
+  --viz-series-1: var(--primary);
+  --viz-series-2: light-dark(rgb(243 136 59), rgb(245 154 86));
+  --viz-series-3: light-dark(rgb(93 201 119), rgb(116 213 139));
+  --viz-series-4: light-dark(rgb(235 119 177), rgb(240 143 192));
+  --viz-series-5: light-dark(rgb(155 121 236), rgb(170 145 239));
+  --viz-series-6: light-dark(rgb(58 185 177), rgb(90 203 194));
+
+  /* Internal implementation variables; not part of the agent contract. */
+  --font-sans: -apple-system, system-ui, &quot;Segoe UI&quot;, sans-serif;
+  --font-mono:
+    ui-monospace, SFMono-Regular, &quot;SF Mono&quot;, Menlo, Consolas, &quot;Liberation Mono&quot;,
+    monospace;
+  --font-size-normal: max(11px, var(--font-size-base));
+  --font-size-tooltip: calc(var(--font-size-base) - 1px);
+  --font-size-small: max(11px, calc(var(--font-size-base) - 2px));
+  --font-size-h1: calc(var(--font-size-normal) * 1.7142857143);
+  --font-size-h2: calc(var(--font-size-normal) * 1.4285714286);
+  --font-size-h3: calc(var(--font-size-normal) * 1.2857142857);
+  --font-weight-normal: 430;
+  --font-weight-medium: 500;
+  --line-height-normal: calc(var(--font-size-normal) * 1.5);
+  --line-height-tooltip: calc(var(--font-size-tooltip) * 1.4285714286);
+  --line-height-small: calc(var(--font-size-small) + 4px);
+  --radius: var(--border-radius-lg, 12.5px);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-2xl: calc(var(--radius) * 1.6);
+  --radius-full: 9999px;
+  --shadow-sm: 0 1px 2px -1px rgb(0 0 0 / 8%);
+  --checkmark-image: url(&quot;data:image/svg+xml,%3Csvg xmlns=&#x27;http://www.w3.org/2000/svg&#x27; viewBox=&#x27;0 0 17 17&#x27;%3E%3Cpath d=&#x27;M12.8961 3.64101C13.1297 3.41418 13.4984 3.37523 13.7779 3.56581C14.0571 3.75635 14.1554 4.11331 14.0299 4.41347L13.9615 4.53847L7.71151 13.7045C7.59411 13.8767 7.4063 13.9877 7.19881 14.0072C6.99136 14.0267 6.78564 13.9533 6.63826 13.806L2.88826 10.056L2.79842 9.9457C2.6192 9.67407 2.64927 9.30496 2.88826 9.06581C3.12738 8.82669 3.49647 8.79676 3.76815 8.97597L3.8785 9.06581L7.03084 12.2182L12.8053 3.74941L12.8961 3.64101Z&#x27;/%3E%3C/svg%3E&quot;);
+
+  /* Legacy aliases; not part of the current agent contract. */
+  --viz-bg: transparent;
+  --viz-panel: var(--card);
+  --viz-border: var(--border);
+  --viz-text: var(--foreground);
+  --viz-muted: var(--muted-foreground);
+  --viz-accent: var(--primary);
+  --viz-accent-text: var(--primary-foreground);
+  --viz-accent-bg: var(--accent);
+  --viz-font-size: var(--font-size-base);
+  --viz-warning: var(--destructive);
+}
+
+:root[data-theme=&quot;light&quot;] {
+  color-scheme: light;
+}
+
+:root[data-theme=&quot;dark&quot;] {
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html &gt; body {
+  /* Preserve MCP aliases for older inline renderers without creating :root cycles. */
+  --color-background-primary: var(
+    --background,
+    light-dark(rgb(255 255 255), rgb(24 24 24))
+  );
+  --color-text-primary: var(
+    --foreground,
+    light-dark(rgb(26 28 31), rgb(255 255 255))
+  );
+  --color-border-secondary: var(
+    --border,
+    light-dark(rgb(26 28 31 / 8%), rgb(255 255 255 / 8.2%))
+  );
+
+  margin: 0;
+  padding: 5px;
+  color: var(--foreground);
+  background: transparent !important;
+  font-family: var(--font-sans);
+  font-size: var(--font-size-normal);
+  font-weight: var(--font-weight-normal);
+  line-height: var(--line-height-normal);
+}
+
+a {
+  color: color-mix(in srgb, var(--viz-accent) 80%, var(--viz-text) 20%);
+  cursor: pointer;
+  font-weight: var(--font-weight-medium, 500);
+  text-decoration: none;
+  text-underline-offset: 2px;
+}
+
+a:is(:hover, :focus-visible) {
+  text-decoration-line: underline;
+  text-decoration-style: dashed;
+  text-decoration-thickness: 0.5px;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p {
+  margin-block: 0;
+}
+
+h1 {
+  font-size: var(--font-size-h1);
+  font-weight: var(--font-weight-medium);
+  line-height: 1.25;
+}
+
+h2 {
+  font-size: var(--font-size-h2);
+  font-weight: var(--font-weight-medium);
+  line-height: 1.25;
+}
+
+h3,
+h4,
+h5,
+h6 {
+  font-size: var(--font-size-h3);
+  font-weight: var(--font-weight-medium);
+  line-height: 1.3;
+}
+
+b,
+strong,
+th {
+  font-weight: var(--font-weight-medium);
+}
+
+code:not(pre code) {
+  display: inline;
+  padding: 1px 6px;
+  border-radius: var(--radius-sm);
+  corner-shape: superellipse(1.5);
+  background: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 0.92em;
+  overflow-wrap: anywhere;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+  word-break: break-word;
+}
+
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  color: var(--foreground);
+  font: inherit;
+  text-align: start;
+}
+
+.table :is(th, td) {
+  padding-block: 10px;
+  padding-inline: 0 24px;
+  overflow-wrap: anywhere;
+  border-bottom: 1px solid var(--border);
+  text-align: start;
+  vertical-align: top;
+}
+
+.table-responsive &gt; .table :is(th, td) {
+  overflow-wrap: break-word;
+}
+
+.table :is(th, td):last-child {
+  padding-inline-end: 0;
+}
+
+.table :is(caption, thead th) {
+  font-weight: 600;
+}
+
+.table thead th {
+  padding-block: 8px;
+  border-bottom-color: color-mix(in srgb, var(--foreground) 16%, transparent);
+}
+
+.table tbody tr:last-child :is(th, td) {
+  border-bottom: 0;
+}
+
+.table.table-sm :is(th, td) {
+  padding-block: 6px;
+}
+
+.table.table-sm :is(th, td):not(:last-child) {
+  padding-inline-end: 16px;
+}
+
+.table :is(.text-end, [align=&quot;right&quot;]) {
+  text-align: end;
+  font-variant-numeric: tabular-nums;
+}
+
+.table :is(.text-center, [align=&quot;center&quot;]) {
+  text-align: center;
+}
+
+.table .text-nowrap {
+  white-space: nowrap;
+}
+
+#widget {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  padding: 0;
+  background: transparent !important;
+}
+
+.card {
+  min-width: 0;
+  padding: 12px;
+  overflow: hidden;
+  overflow-wrap: break-word;
+  border-radius: var(--radius-2xl);
+  corner-shape: superellipse(1.5);
+  color: var(--card-foreground);
+  background: var(--card);
+}
+
+#widget &gt; :not(.card, .progress) {
+  width: 100% !important;
+  max-width: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.tooltip {
+  position: fixed;
+  z-index: 50;
+  top: 0;
+  left: 0;
+  width: max-content;
+  max-width: min(
+    20rem,
+    var(--tooltip-available-width, calc(100vw - 10px)),
+    calc(100vw - 10px)
+  );
+  max-height: min(
+    var(--tooltip-available-height, calc(100vh - 10px)),
+    calc(100vh - 10px)
+  );
+  padding: 4px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  corner-shape: superellipse(1.5);
+  color: var(--popover-foreground);
+  background: var(--popover);
+  box-shadow: none;
+  font-size: var(--font-size-tooltip);
+  line-height: var(--line-height-tooltip);
+  overflow-wrap: break-word;
+  white-space: normal;
+  pointer-events: none;
+  user-select: none;
+}
+
+.viz-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(max(180px, 24%), 1fr));
+  gap: 10px;
+}
+
+.viz-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.viz-stat-value {
+  font-size: var(--font-size-h2);
+  font-weight: var(--font-weight-medium);
+  line-height: 1.25;
+}
+
+.viz-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.progress {
+  display: flex;
+  height: 6px;
+  overflow: hidden;
+  border: 0;
+  border-radius: var(--radius-full);
+  background: var(--muted);
+}
+
+.progress-bar {
+  height: 100%;
+  flex-shrink: 0;
+  border: 0;
+  background: var(--viz-series-1);
+}
+
+.viz-badge {
+  padding: 3px 8px;
+  border-radius: var(--radius-full);
+  color: var(--accent-foreground);
+  background: var(--accent);
+  font-weight: var(--font-weight-medium);
+}
+
+small,
+.text-small,
+.viz-badge {
+  font-size: var(--font-size-small);
+  line-height: var(--line-height-small);
+}
+
+.text-muted {
+  color: var(--muted-foreground);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.viz-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.viz-controls &gt; .form-label {
+  display: grid;
+  min-width: min(100%, 260px);
+  flex: 1 1 280px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 2px 12px;
+  margin-bottom: 0;
+}
+
+.viz-controls &gt; .form-label &gt; :is(.form-control, .form-range, .form-select) {
+  grid-column: 1 / -1;
+}
+
+.btn,
+.form-check-input,
+.form-control,
+.form-range,
+.form-select {
+  font: inherit;
+}
+
+.btn {
+  appearance: button;
+  display: inline-flex;
+  inline-size: fit-content;
+  max-inline-size: 100%;
+  min-height: 28px;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  margin: 0;
+  padding: 0 8px;
+  -webkit-app-region: no-drag;
+  border: 1px solid var(--input);
+  border-radius: var(--radius-lg);
+  corner-shape: superellipse(1.5);
+  color: var(--secondary-foreground);
+  background: var(--secondary);
+  cursor: var(--cursor-interaction, pointer);
+  text-align: center;
+  text-decoration: none;
+  white-space: nowrap;
+  user-select: none;
+  -webkit-font-smoothing: antialiased;
+}
+
+.btn:is(.btn-block, .viz-tile) {
+  inline-size: 100%;
+}
+
+.btn.viz-tile {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+a.btn {
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.btn:not(:disabled):hover {
+  background: color-mix(in srgb, var(--foreground) 6%, var(--secondary));
+}
+
+.btn-primary {
+  border-color: transparent;
+  color: var(--primary-foreground);
+  background: var(--foreground);
+  background-clip: padding-box;
+}
+
+.btn-primary .text-muted {
+  color: color-mix(in srgb, var(--primary-foreground) 50%, transparent);
+}
+
+.btn-primary:not(:disabled):hover {
+  background: color-mix(in srgb, var(--foreground) 80%, transparent);
+  background-clip: padding-box;
+}
+
+.btn-ghost {
+  border-color: transparent;
+  color: var(--muted-foreground);
+  background: transparent;
+}
+
+.btn-ghost:not(:disabled):hover {
+  color: var(--foreground);
+  background: color-mix(in srgb, var(--foreground) 6%, var(--secondary));
+}
+
+.btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+[data-lucide] {
+  stroke-width: 1.6;
+}
+
+.form-label {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--foreground);
+}
+
+.form-control {
+  display: block;
+  width: 100%;
+  min-height: 28px;
+  padding: 0 8px;
+  outline: none;
+  border: 1px solid var(--input);
+  border-radius: var(--radius-lg);
+  corner-shape: superellipse(1.5);
+  color: var(--foreground);
+  background: var(--secondary);
+}
+
+.form-control::placeholder {
+  color: var(--muted-foreground);
+}
+
+.form-control[type=&quot;file&quot;] {
+  padding: 0;
+  overflow: hidden;
+  cursor: var(--cursor-interaction, pointer);
+}
+
+.form-control[type=&quot;file&quot;]::file-selector-button {
+  min-height: 26px;
+  margin-right: 8px;
+  padding: 0 8px;
+  border: 0;
+  border-right: 1px solid var(--input);
+  color: var(--secondary-foreground);
+  background: var(--secondary);
+  cursor: inherit;
+  font: inherit;
+}
+
+.form-control[type=&quot;file&quot;]:not(:disabled):hover::file-selector-button {
+  background: color-mix(in srgb, var(--foreground) 6%, var(--secondary));
+}
+
+.form-control-color[type=&quot;color&quot;] {
+  width: 40px;
+  height: 28px;
+  padding: 3px;
+  cursor: var(--cursor-interaction, pointer);
+}
+
+.form-control-color[type=&quot;color&quot;]::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
+.form-control-color[type=&quot;color&quot;]::-webkit-color-swatch {
+  border: 0;
+  border-radius: calc(var(--radius-lg) - 4px);
+  corner-shape: superellipse(1.5);
+}
+
+textarea.form-control {
+  height: auto;
+  min-height: 72px;
+  padding: 8px 10px;
+  resize: vertical;
+}
+
+.form-control:focus-visible {
+  border-color: var(--ring);
+  box-shadow: inset 0 0 0 1px var(--ring);
+}
+
+.form-control:disabled,
+.form-select:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.form-select {
+  appearance: none;
+  display: block;
+  width: 100%;
+  min-height: 28px;
+  margin: 0;
+  padding: 0 32px 0 8px;
+  outline: none;
+  border: 1px solid var(--input);
+  border-radius: var(--radius-lg);
+  corner-shape: superellipse(1.5);
+  color: var(--foreground);
+  background-color: var(--secondary);
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--muted-foreground) 50%),
+    linear-gradient(135deg, var(--muted-foreground) 50%, transparent 50%);
+  background-position:
+    calc(100% - 14px) 50%,
+    calc(100% - 10px) 50%;
+  background-repeat: no-repeat;
+  background-size: 4px 4px;
+  cursor: var(--cursor-interaction, default);
+}
+
+.form-select:not(:disabled):hover {
+  background-color: color-mix(in srgb, var(--foreground) 6%, var(--secondary));
+}
+
+.form-select:focus-visible {
+  border-color: var(--ring);
+  box-shadow: inset 0 0 0 1px var(--ring);
+}
+
+.form-check {
+  display: flex;
+  min-height: 20px;
+  align-items: center;
+  gap: 6px;
+}
+
+.form-check-input {
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  flex: 0 0 auto;
+  margin: 0;
+  border: 1px solid var(--input);
+  color: var(--primary-foreground);
+  background-color: transparent;
+  cursor: var(--cursor-interaction, default);
+  transition:
+    background-color 150ms,
+    border-color 150ms,
+    box-shadow 150ms;
+}
+
+.form-check:not(.form-switch) .form-check-input[type=&quot;checkbox&quot;] {
+  border-color: var(--input);
+  border-radius: var(--radius-sm);
+  corner-shape: superellipse(1.5);
+  background-color: var(--secondary);
+  box-shadow: var(--shadow-sm);
+}
+
+.form-check:not(.form-switch)
+  .form-check-input:not(:disabled):not(:checked):hover {
+  background-color: var(--card);
+}
+
+.form-check:not(.form-switch) .form-check-input[type=&quot;checkbox&quot;]:checked {
+  border-color: var(--primary);
+  background-color: var(--primary);
+}
+
+.form-check:not(.form-switch)
+  .form-check-input[type=&quot;checkbox&quot;]:checked::before {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: var(--primary-foreground);
+  content: &quot;&quot;;
+  mask: var(--checkmark-image) center / 12px 12px no-repeat;
+}
+
+.form-check-input[type=&quot;radio&quot;] {
+  width: 14px;
+  height: 14px;
+  border-radius: var(--radius-full);
+}
+
+.form-check-input[type=&quot;radio&quot;]:checked {
+  border: 2px solid var(--primary);
+  background:
+    radial-gradient(circle, var(--primary-foreground) 0 2.5px, transparent 3px),
+    var(--primary);
+}
+
+.form-check:not(.form-switch) .form-check-input:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+.form-check:not(.form-switch) .form-check-input:disabled {
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.form-check:not(.form-switch) .form-check-input:disabled + .form-check-label {
+  cursor: not-allowed;
+}
+
+.form-switch .form-check-input:disabled,
+.form-switch .form-check-input:disabled + .form-check-label {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.form-check-label {
+  color: var(--foreground);
+  cursor: var(--cursor-interaction, default);
+}
+
+.form-switch .form-check-input {
+  position: relative;
+  width: 32px;
+  height: 20px;
+  border: 0;
+  border-radius: var(--radius-full);
+  background: var(--muted);
+  box-shadow: none;
+  transition: background-color 200ms cubic-bezier(0, 0, 0.2, 1);
+}
+
+.form-switch .form-check-input::before {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 16px;
+  height: 16px;
+  box-sizing: border-box;
+  border: 1px solid light-dark(var(--primary-foreground), var(--foreground));
+  border-radius: var(--radius-full);
+  background: light-dark(var(--primary-foreground), var(--foreground));
+  box-shadow: var(--shadow-sm);
+  content: &quot;&quot;;
+  transform: translate(2px, -50%);
+  transition: transform 200ms cubic-bezier(0, 0, 0.2, 1);
+}
+
+.form-switch .form-check-input:checked {
+  background: var(--primary);
+}
+
+.form-switch .form-check-input:checked::before {
+  transform: translate(14px, -50%);
+}
+
+.form-switch .form-check-input:focus-visible {
+  box-shadow: 0 0 0 2px var(--ring);
+}
+
+.form-range {
+  appearance: none;
+  display: block;
+  width: 100%;
+  height: 28px;
+  flex: 1;
+  margin: 0;
+  padding: 0;
+  outline: none;
+  border: 0;
+  accent-color: var(--primary);
+  background: linear-gradient(
+      color-mix(in srgb, var(--foreground) 7%, transparent),
+      color-mix(in srgb, var(--foreground) 7%, transparent)
+    )
+    center / 100% 2px no-repeat;
+}
+
+.form-range::-webkit-slider-runnable-track {
+  height: 28px;
+  background: transparent;
+}
+
+.form-range::-webkit-slider-thumb {
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  margin-top: 4px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  background: light-dark(var(--primary-foreground), var(--foreground));
+}
+
+.form-range:focus-visible::-webkit-slider-thumb {
+  border-color: var(--ring);
+  box-shadow: inset 0 0 0 1px var(--ring);
+}
+
+.form-range::-moz-range-track {
+  height: 28px;
+  background: transparent;
+}
+
+.form-range::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  background: light-dark(var(--primary-foreground), var(--foreground));
+}
+
+.form-range:focus-visible::-moz-range-thumb {
+  border-color: var(--ring);
+  box-shadow: inset 0 0 0 1px var(--ring);
+}
+
+.form-range:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.btn:not(.btn-primary, .viz-tile):is(
+  [aria-pressed=&quot;true&quot;],
+  [aria-selected=&quot;true&quot;],
+  .is-selected
+) {
+  border-color: var(--primary);
+  color: var(--primary-foreground);
+  background: var(--primary);
+}
+
+.btn.viz-tile:is([aria-pressed=&quot;true&quot;], [aria-selected=&quot;true&quot;], .is-selected) {
+  border-color: var(--primary);
+  box-shadow: inset 0 0 0 1px var(--primary);
+}
+
+.btn:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+svg {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+#widget &gt; svg {
+  width: 100%;
+}
+
+/* Model-authored chart rules can otherwise stretch icons after these styles load. */
+svg.lucide {
+  display: block;
+  width: 16px !important;
+  height: 16px !important;
+  flex: none;
+  margin: 0 !important;
+  stroke-width: 1.6;
+}
+
+.text-warning,
+.text-destructive {
+  color: var(--destructive);
+}
+
+html&gt;body{padding:0}&lt;/style&gt;
+&lt;/head&gt;
+&lt;body&gt;
+&lt;div id=&quot;hoshimichi-start-form&quot;&gt;
+  &lt;style&gt;
+    #hoshimichi-start-form {
+      width: 100%;
+    }
+
+    #hoshimichi-start-form .hm-stack {
+      display: grid;
+      gap: 16px;
+    }
+
+    #hoshimichi-start-form .hm-section {
+      display: grid;
+      gap: 10px;
+    }
+
+    #hoshimichi-start-form .hm-section + .hm-section {
+      margin-top: 4px;
+    }
+
+    #hoshimichi-start-form .hm-choice-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px 16px;
+    }
+
+    #hoshimichi-start-form .hm-two-column {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    #hoshimichi-start-form .hm-mode-note {
+      margin: 0;
+    }
+
+    #hoshimichi-start-form textarea {
+      min-height: 84px;
+      resize: vertical;
+    }
+
+    #hoshimichi-start-form #hm-preview {
+      min-height: 180px;
+    }
+
+    #hoshimichi-start-form [hidden] {
+      display: none !important;
+    }
+
+    @media (max-width: 560px) {
+      #hoshimichi-start-form .hm-choice-grid,
+      #hoshimichi-start-form .hm-two-column {
+        grid-template-columns: 1fr;
+      }
+    }
+  &lt;/style&gt;
+
+  &lt;div class=&quot;card hm-stack&quot;&gt;
+    &lt;header class=&quot;hm-section&quot;&gt;
+      &lt;h1&gt;RP・TRPG はじめるフォーム&lt;/h1&gt;
+      &lt;p class=&quot;text-muted hm-mode-note&quot;&gt;★だけ書けば大丈夫。分からない欄は「おまかせ」「未定」で始められます。&lt;/p&gt;
+    &lt;/header&gt;
+
+    &lt;fieldset class=&quot;hm-section&quot;&gt;
+      &lt;legend&gt;1. 今日は何をする？ ★&lt;/legend&gt;
+      &lt;div class=&quot;hm-choice-grid&quot;&gt;
+        &lt;div class=&quot;form-check&quot;&gt;
+          &lt;input class=&quot;form-check-input&quot; type=&quot;radio&quot; name=&quot;hm-mode&quot; id=&quot;hm-mode-consult&quot; value=&quot;consult&quot; checked&gt;
+          &lt;label class=&quot;form-check-label&quot; for=&quot;hm-mode-consult&quot;&gt;まず相談する&lt;/label&gt;
+        &lt;/div&gt;
+        &lt;div class=&quot;form-check&quot;&gt;
+          &lt;input class=&quot;form-check-input&quot; type=&quot;radio&quot; name=&quot;hm-mode&quot; id=&quot;hm-mode-rp&quot; value=&quot;rp&quot;&gt;
+          &lt;label class=&quot;form-check-label&quot; for=&quot;hm-mode-rp&quot;&gt;通常RPをする&lt;/label&gt;
+        &lt;/div&gt;
+        &lt;div class=&quot;form-check&quot;&gt;
+          &lt;input class=&quot;form-check-input&quot; type=&quot;radio&quot; name=&quot;hm-mode&quot; id=&quot;hm-mode-viewpoint&quot; value=&quot;viewpoint&quot;&gt;
+          &lt;label class=&quot;form-check-label&quot; for=&quot;hm-mode-viewpoint&quot;&gt;視点RPをする&lt;/label&gt;
+        &lt;/div&gt;
+        &lt;div class=&quot;form-check&quot;&gt;
+          &lt;input class=&quot;form-check-input&quot; type=&quot;radio&quot; name=&quot;hm-mode&quot; id=&quot;hm-mode-trpg&quot; value=&quot;trpg&quot;&gt;
+          &lt;label class=&quot;form-check-label&quot; for=&quot;hm-mode-trpg&quot;&gt;星みちTRPGをする&lt;/label&gt;
+        &lt;/div&gt;
+      &lt;/div&gt;
+      &lt;p id=&quot;hm-mode-note&quot; class=&quot;text-small text-muted hm-mode-note&quot; aria-live=&quot;polite&quot;&gt;&lt;/p&gt;
+    &lt;/fieldset&gt;
+
+    &lt;section id=&quot;hm-panel-consult&quot; class=&quot;hm-section&quot; data-panel=&quot;consult&quot;&gt;
+      &lt;label class=&quot;form-label&quot; for=&quot;hm-consult-topic&quot;&gt;相談したいこと ★&lt;/label&gt;
+      &lt;textarea class=&quot;form-control&quot; id=&quot;hm-consult-topic&quot; placeholder=&quot;例：誰のどんな場面で遊ぶか、候補を出しながら一緒に決めたい&quot;&gt;&lt;/textarea&gt;
+      &lt;fieldset class=&quot;hm-section&quot;&gt;
+        &lt;legend&gt;相談の進め方候補&lt;/legend&gt;
+        &lt;div class=&quot;hm-choice-grid&quot;&gt;
+          &lt;div class=&quot;form-check&quot;&gt;&lt;input class=&quot;form-check-input&quot; type=&quot;checkbox&quot; id=&quot;hm-help-scenes&quot; value=&quot;場面案を出してほしい&quot; data-group=&quot;consult-help&quot;&gt;&lt;label class=&quot;form-check-label&quot; for=&quot;hm-help-scenes&quot;&gt;場面案がほしい&lt;/label&gt;&lt;/div&gt;
+          &lt;div class=&quot;form-check&quot;&gt;&lt;input class=&quot;form-check-input&quot; type=&quot;checkbox&quot; id=&quot;hm-help-characters&quot; value=&quot;登場人物の組み合わせを考えたい&quot; data-group=&quot;consult-help&quot;&gt;&lt;label class=&quot;form-check-label&quot; for=&quot;hm-help-characters&quot;&gt;人物を決めたい&lt;/label&gt;&lt;/div&gt;
+          &lt;div class=&quot;form-check&quot;&gt;&lt;input class=&quot;form-check-input&quot; type=&quot;checkbox&quot; id=&quot;hm-help-three&quot; value=&quot;迷う項目は三つの候補から選びたい&quot; data-group=&quot;consult-help&quot; checked&gt;&lt;label class=&quot;form-check-label&quot; for=&quot;hm-help-three&quot;&gt;三つの候補がほしい&lt;/label&gt;&lt;/div&gt;
+          &lt;div class=&quot;form-check&quot;&gt;&lt;input class=&quot;form-check-input&quot; type=&quot;checkbox&quot; id=&quot;hm-help-canon&quot; value=&quot;正本との矛盾や確定度を確認したい&quot; data-group=&quot;consult-help&quot; checked&gt;&lt;label class=&quot;form-check-label&quot; for=&quot;hm-help-canon&quot;&gt;正本も確認したい&lt;/label&gt;&lt;/div&gt;
+        &lt;/div&gt;
+      &lt;/fieldset&gt;
+    &lt;/section&gt;
+
+    &lt;section id=&quot;hm-panel-rp&quot; class=&quot;hm-section&quot; data-panel=&quot;rp&quot; hidden&gt;
+      &lt;div class=&quot;hm-two-column&quot;&gt;
+        &lt;div class=&quot;hm-section&quot;&gt;
+          &lt;label class=&quot;form-label&quot; for=&quot;hm-rp-character&quot;&gt;自分が動かす人物 ★&lt;/label&gt;
+          &lt;input class=&quot;form-control&quot; id=&quot;hm-rp-character&quot; placeholder=&quot;例：シーリス／自作PC／まだ未定&quot;&gt;
+        &lt;/div&gt;
+        &lt;div class=&quot;hm-section&quot;&gt;
+          &lt;label class=&quot;form-label&quot; for=&quot;hm-rp-with&quot;&gt;一緒に出したい人物&lt;/label&gt;
+          &lt;input class=&quot;form-control&quot; id=&quot;hm-rp-with&quot; placeholder=&quot;例：カイト／おまかせ／なし&quot;&gt;
+        &lt;/div&gt;
+      &lt;/div&gt;
+      &lt;label class=&quot;form-label&quot; for=&quot;hm-rp-scene&quot;&gt;やりたい場面・気分 ★&lt;/label&gt;
+      &lt;textarea class=&quot;form-control&quot; id=&quot;hm-rp-scene&quot; placeholder=&quot;例：依頼帰りの酒場で、仲間とゆっくり話したい&quot;&gt;&lt;/textarea&gt;
+      &lt;div class=&quot;hm-two-column&quot;&gt;
+        &lt;div class=&quot;hm-section&quot;&gt;
+          &lt;label class=&quot;form-label&quot; for=&quot;hm-rp-status&quot;&gt;このRPの扱い&lt;/label&gt;
+          &lt;select class=&quot;form-select&quot; id=&quot;hm-rp-status&quot;&gt;
+            &lt;option value=&quot;候補・妄想として気軽に遊ぶ&quot;&gt;候補・妄想として遊ぶ&lt;/option&gt;
+            &lt;option value=&quot;正史候補として遊ぶ&quot;&gt;正史候補として遊ぶ&lt;/option&gt;
+            &lt;option value=&quot;IF・正史外として遊ぶ&quot;&gt;IF・正史外で遊ぶ&lt;/option&gt;
+            &lt;option value=&quot;相談して決める&quot;&gt;相談して決める&lt;/option&gt;
+          &lt;/select&gt;
+        &lt;/div&gt;
+        &lt;div class=&quot;hm-section&quot;&gt;
+          &lt;label class=&quot;form-label&quot; for=&quot;hm-rp-start&quot;&gt;入力後の進め方&lt;/label&gt;
+          &lt;select class=&quot;form-select&quot; id=&quot;hm-rp-start&quot;&gt;
+            &lt;option value=&quot;正本確認後、不足がなければそのまま短い導入から始める&quot;&gt;確認後すぐ始める&lt;/option&gt;
+            &lt;option value=&quot;正本確認後、開始案を一度見てから始める&quot;&gt;開始案を見て決める&lt;/option&gt;
+          &lt;/select&gt;
+        &lt;/div&gt;
+      &lt;/div&gt;
+      &lt;fieldset class=&quot;hm-section&quot;&gt;
+        &lt;legend&gt;雰囲気の候補&lt;/legend&gt;
+        &lt;div class=&quot;hm-choice-grid&quot;&gt;
+          &lt;div class=&quot;form-check&quot;&gt;&lt;input class=&quot;form-check-input&quot; type=&quot;checkbox&quot; id=&quot;hm-rp-talk&quot; value=&quot;会話中心&quot; data-group=&quot;rp-tone&quot;&gt;&lt;label class=&quot;form-check-label&quot; for=&quot;hm-rp-talk&quot;&gt;会話中心&lt;/label&gt;&lt;/div&gt;
+          &lt;div class=&quot;form-check&quot;&gt;&lt;input class=&quot;form-check-input&quot; type=&quot;checkbox&quot; id=&quot;hm-rp-daily&quot; value=&quot;日常・休息&quot; data-group=&quot;rp-tone&quot;&gt;&lt;label class=&quot;form-check-label&quot; for=&quot;hm-rp-daily&quot;&gt;日常・休息&lt;/label&gt;&lt;/div&gt;
+          &lt;div class=&quot;form-check&quot;&gt;&lt;input class=&quot;form-check-input&quot; type=&quot;checkbox&quot; id=&quot;hm-rp-adventure&quot; value=&quot;冒険・探索&quot; data-group=&quot;rp-tone&quot;&gt;&lt;label class=&quot;form-check-label&quot; for=&quot;hm-rp-adventure&quot;&gt;冒険・探索&lt;/label&gt;&lt;/div&gt;
+          &lt;div class=&quot;form-check&quot;&gt;&lt;input class=&quot;form-check-input&quot; type=&quot;checkbox&quot; id=&quot;hm-rp-relation&quot; value=&quot;感情・関係性を深める&quot; data-group=&quot;rp-tone&quot;&gt;&lt;label class=&quot;form-check-label&quot; for=&quot;hm-rp-relation&quot;&gt;感情・関係性&lt;/label&gt;&lt;/div&gt;
+          &lt;div class=&quot;form-check&quot;&gt;&lt;input class=&quot;form-check-input&quot; type=&quot;checkbox&quot; id=&quot;hm-rp-tension&quot; value=&quot;緊張感のある場面&quot; data-group=&quot;rp-tone&quot;&gt;&lt;label class=&quot;form-check-label&quot; for=&quot;hm-rp-tension&quot;&gt;緊張感あり&lt;/label&gt;&lt;/div&gt;
+          &lt;div class=&quot;form-check&quot;&gt;&lt;input class=&quot;form-check-input&quot; type=&quot;checkbox&quot; id=&quot;hm-rp-no-fight&quot; value=&quot;戦闘なし&quot; data-group=&quot;rp-tone&quot;&gt;&lt;label class=&quot;form-check-label&quot; for=&quot;hm-rp-no-fight&quot;&gt;戦闘なし&lt;/label&gt;&lt;/div&gt;
+        &lt;/div&gt;
+      &lt;/fieldset&gt;
+    &lt;/section&gt;
+
+    &lt;section id=&quot;hm-panel-viewpoint&quot; class=&quot;hm-section&quot; data-panel=&quot;viewpoint&quot; hidden&gt;
+      &lt;div class=&quot;hm-two-column&quot;&gt;
+        &lt;div class=&quot;hm-section&quot;&gt;
+          &lt;label class=&quot;form-label&quot; for=&quot;hm-vp-character&quot;&gt;視点人物 ★&lt;/label&gt;
+          &lt;input class=&quot;form-control&quot; id=&quot;hm-vp-character&quot; placeholder=&quot;例：カイト／町の受付／自作人物&quot;&gt;
+        &lt;/div&gt;
+        &lt;div class=&quot;hm-section&quot;&gt;
+          &lt;label class=&quot;form-label&quot; for=&quot;hm-vp-with&quot;&gt;場面にいる人物&lt;/label&gt;
+          &lt;input class=&quot;form-control&quot; id=&quot;hm-vp-with&quot; placeholder=&quot;例：シーリス／おまかせ&quot;&gt;
+        &lt;/div&gt;
+      &lt;/div&gt;
+      &lt;label class=&quot;form-label&quot; for=&quot;hm-vp-scene&quot;&gt;見たい場面・発掘したいこと ★&lt;/label&gt;
+      &lt;textarea class=&quot;form-control&quot; id=&quot;hm-vp-scene&quot; placeholder=&quot;例：初対面の人物から見たシーリスの印象を、会話しながら見たい&quot;&gt;&lt;/textarea&gt;
+      &lt;div class=&quot;hm-two-column&quot;&gt;
+        &lt;div class=&quot;hm-section&quot;&gt;
+          &lt;label class=&quot;form-label&quot; for=&quot;hm-vp-time&quot;&gt;時期・場所&lt;/label&gt;
+          &lt;input class=&quot;form-control&quot; id=&quot;hm-vp-time&quot; placeholder=&quot;例：シーリス14歳くらい／中継都市／おまかせ&quot;&gt;
+        &lt;/div&gt;
+        &lt;div class=&quot;hm-section&quot;&gt;
+          &lt;label class=&quot;form-label&quot; for=&quot;hm-vp-status&quot;&gt;このRPの扱い&lt;/label&gt;
+          &lt;select class=&quot;form-select&quot; id=&quot;hm-vp-status&quot;&gt;
+            &lt;option value=&quot;設定発掘用の候補・妄想&quot;&gt;設定発掘用の候補・妄想&lt;/option&gt;
+            &lt;option value=&quot;正史候補&quot;&gt;正史候補&lt;/option&gt;
+            &lt;option value=&quot;IF・正史外&quot;&gt;IF・正史外&lt;/option&gt;
+            &lt;option value=&quot;相談して決める&quot;&gt;相談して決める&lt;/option&gt;
+          &lt;/select&gt;
+        &lt;/div&gt;
+      &lt;/div&gt;
+    &lt;/section&gt;
+
+    &lt;section id=&quot;hm-panel-trpg&quot; class=&quot;hm-section&quot; data-panel=&quot;trpg&quot; hidden&gt;
+      &lt;div class=&quot;hm-two-column&quot;&gt;
+        &lt;div class=&quot;hm-section&quot;&gt;
+          &lt;label class=&quot;form-label&quot; for=&quot;hm-trpg-pc&quot;&gt;PC名 ★&lt;/label&gt;
+          &lt;input class=&quot;form-control&quot; id=&quot;hm-trpg-pc&quot; placeholder=&quot;例：カイト／まだいない（作成相談から）&quot;&gt;
+        &lt;/div&gt;
+        &lt;div class=&quot;hm-section&quot;&gt;
+          &lt;label class=&quot;form-label&quot; for=&quot;hm-trpg-attack&quot;&gt;主な攻撃手段 ★&lt;/label&gt;
+          &lt;input class=&quot;form-control&quot; id=&quot;hm-trpg-attack&quot; placeholder=&quot;例：片手剣／弓／魔法／未定（候補がほしい）&quot;&gt;
+        &lt;/div&gt;
+      &lt;/div&gt;
+      &lt;div class=&quot;viz-controls&quot;&gt;
+        &lt;button type=&quot;button&quot; class=&quot;btn btn-ghost&quot; id=&quot;hm-trpg-new-pc&quot;&gt;PC作成相談から&lt;/button&gt;
+        &lt;button type=&quot;button&quot; class=&quot;btn btn-ghost&quot; id=&quot;hm-trpg-undecided-attack&quot;&gt;攻撃手段は未定&lt;/button&gt;
+      &lt;/div&gt;
+      &lt;div class=&quot;hm-two-column&quot;&gt;
+        &lt;div class=&quot;hm-section&quot;&gt;
+          &lt;label class=&quot;form-label&quot; for=&quot;hm-trpg-scenario&quot;&gt;遊びたいシナリオ&lt;/label&gt;
+          &lt;select class=&quot;form-select&quot; id=&quot;hm-trpg-scenario&quot;&gt;
+            &lt;option value=&quot;おまかせ。初心者でも始めやすい短い依頼を提案してほしい&quot;&gt;おまかせ・短い依頼&lt;/option&gt;
+            &lt;option value=&quot;既存シナリオから候補を提案してほしい&quot;&gt;既存シナリオから選ぶ&lt;/option&gt;
+            &lt;option value=&quot;やりたい内容に合わせて相談したい&quot;&gt;内容から相談する&lt;/option&gt;
+          &lt;/select&gt;
+        &lt;/div&gt;
+        &lt;div class=&quot;hm-section&quot;&gt;
+          &lt;label class=&quot;form-label&quot; for=&quot;hm-trpg-control&quot;&gt;PCの操作&lt;/label&gt;
+          &lt;select class=&quot;form-select&quot; id=&quot;hm-trpg-control&quot;&gt;
+            &lt;option value=&quot;ユーザーが操作する&quot;&gt;自分で操作する&lt;/option&gt;
+            &lt;option value=&quot;AI代理で操作する。重大な人格判断は自動確定しない&quot;&gt;AI代理を使う&lt;/option&gt;
+          &lt;/select&gt;
+        &lt;/div&gt;
+      &lt;/div&gt;
+      &lt;div class=&quot;hm-two-column&quot;&gt;
+        &lt;div class=&quot;hm-section&quot;&gt;
+          &lt;label class=&quot;form-label&quot; for=&quot;hm-trpg-status&quot;&gt;卓の扱い&lt;/label&gt;
+          &lt;select class=&quot;form-select&quot; id=&quot;hm-trpg-status&quot;&gt;
+            &lt;option value=&quot;正史候補&quot;&gt;正史候補&lt;/option&gt;
+            &lt;option value=&quot;IF&quot;&gt;IF&lt;/option&gt;
+            &lt;option value=&quot;比較シミュレーション&quot;&gt;比較シミュレーション&lt;/option&gt;
+            &lt;option value=&quot;正史外&quot;&gt;正史外&lt;/option&gt;
+            &lt;option value=&quot;相談して決める&quot;&gt;相談して決める&lt;/option&gt;
+          &lt;/select&gt;
+        &lt;/div&gt;
+        &lt;div class=&quot;hm-section&quot;&gt;
+          &lt;label class=&quot;form-label&quot; for=&quot;hm-trpg-device&quot;&gt;遊ぶ環境&lt;/label&gt;
+          &lt;select class=&quot;form-select&quot; id=&quot;hm-trpg-device&quot;&gt;
+            &lt;option value=&quot;このCodex Desktopで遊ぶ&quot;&gt;このCodexで遊ぶ&lt;/option&gt;
+            &lt;option value=&quot;スマホ向けの準備を相談する&quot;&gt;スマホ向けに相談&lt;/option&gt;
+            &lt;option value=&quot;相談して決める&quot;&gt;まだ決めていない&lt;/option&gt;
+          &lt;/select&gt;
+        &lt;/div&gt;
+      &lt;/div&gt;
+      &lt;label class=&quot;form-label&quot; for=&quot;hm-trpg-want&quot;&gt;やりたい依頼・雰囲気&lt;/label&gt;
+      &lt;textarea class=&quot;form-control&quot; id=&quot;hm-trpg-want&quot; placeholder=&quot;例：森を探索したい／ギルドの初仕事／会話多め／全部おまかせ&quot;&gt;&lt;/textarea&gt;
+      &lt;fieldset class=&quot;hm-section&quot;&gt;
+        &lt;legend&gt;記入候補&lt;/legend&gt;
+        &lt;div class=&quot;hm-choice-grid&quot;&gt;
+          &lt;div class=&quot;form-check&quot;&gt;&lt;input class=&quot;form-check-input&quot; type=&quot;checkbox&quot; id=&quot;hm-trpg-short&quot; value=&quot;1〜2時間程度の短い依頼&quot; data-group=&quot;trpg-tone&quot; checked&gt;&lt;label class=&quot;form-check-label&quot; for=&quot;hm-trpg-short&quot;&gt;短い依頼&lt;/label&gt;&lt;/div&gt;
+          &lt;div class=&quot;form-check&quot;&gt;&lt;input class=&quot;form-check-input&quot; type=&quot;checkbox&quot; id=&quot;hm-trpg-explore&quot; value=&quot;探索を楽しみたい&quot; data-group=&quot;trpg-tone&quot;&gt;&lt;label class=&quot;form-check-label&quot; for=&quot;hm-trpg-explore&quot;&gt;探索多め&lt;/label&gt;&lt;/div&gt;
+          &lt;div class=&quot;form-check&quot;&gt;&lt;input class=&quot;form-check-input&quot; type=&quot;checkbox&quot; id=&quot;hm-trpg-talk&quot; value=&quot;会話やNPC交流を楽しみたい&quot; data-group=&quot;trpg-tone&quot;&gt;&lt;label class=&quot;form-check-label&quot; for=&quot;hm-trpg-talk&quot;&gt;会話多め&lt;/label&gt;&lt;/div&gt;
+          &lt;div class=&quot;form-check&quot;&gt;&lt;input class=&quot;form-check-input&quot; type=&quot;checkbox&quot; id=&quot;hm-trpg-fight&quot; value=&quot;戦闘を含めたい&quot; data-group=&quot;trpg-tone&quot;&gt;&lt;label class=&quot;form-check-label&quot; for=&quot;hm-trpg-fight&quot;&gt;戦闘あり&lt;/label&gt;&lt;/div&gt;
+          &lt;div class=&quot;form-check&quot;&gt;&lt;input class=&quot;form-check-input&quot; type=&quot;checkbox&quot; id=&quot;hm-trpg-life&quot; value=&quot;食料・装備・依頼準備など冒険者の生活感も楽しみたい&quot; data-group=&quot;trpg-tone&quot;&gt;&lt;label class=&quot;form-check-label&quot; for=&quot;hm-trpg-life&quot;&gt;冒険者の生活感&lt;/label&gt;&lt;/div&gt;
+          &lt;div class=&quot;form-check&quot;&gt;&lt;input class=&quot;form-check-input&quot; type=&quot;checkbox&quot; id=&quot;hm-trpg-ai-party&quot; value=&quot;不足する仲間はAI代理PCで補いたい&quot; data-group=&quot;trpg-tone&quot;&gt;&lt;label class=&quot;form-check-label&quot; for=&quot;hm-trpg-ai-party&quot;&gt;仲間はAI代理可&lt;/label&gt;&lt;/div&gt;
+        &lt;/div&gt;
+      &lt;/fieldset&gt;
+    &lt;/section&gt;
+
+    &lt;details class=&quot;hm-section&quot;&gt;
+      &lt;summary&gt;任意：苦手・避けたいこと、描写の希望&lt;/summary&gt;
+      &lt;label class=&quot;form-label&quot; for=&quot;hm-boundaries&quot;&gt;希望や避けたいこと&lt;/label&gt;
+      &lt;textarea class=&quot;form-control&quot; id=&quot;hm-boundaries&quot; placeholder=&quot;例：残酷描写は軽め／恋愛なし／テンポ重視／じっくり会話したい&quot;&gt;&lt;/textarea&gt;
+    &lt;/details&gt;
+
+    &lt;section class=&quot;hm-section&quot;&gt;
+      &lt;label class=&quot;form-label&quot; for=&quot;hm-preview&quot;&gt;送信される開始メッセージ&lt;/label&gt;
+      &lt;textarea class=&quot;form-control&quot; id=&quot;hm-preview&quot; readonly&gt;&lt;/textarea&gt;
+      &lt;p id=&quot;hm-error&quot; class=&quot;text-small text-destructive hm-mode-note&quot; aria-live=&quot;assertive&quot;&gt;&lt;/p&gt;
+      &lt;p id=&quot;hm-status&quot; class=&quot;text-small text-muted hm-mode-note&quot; aria-live=&quot;polite&quot;&gt;&lt;/p&gt;
+      &lt;div class=&quot;viz-controls&quot;&gt;
+        &lt;button type=&quot;button&quot; class=&quot;btn btn-primary&quot; id=&quot;hm-start&quot;&gt;この内容で相談を始める&lt;/button&gt;
+        &lt;button type=&quot;button&quot; class=&quot;btn&quot; id=&quot;hm-copy&quot;&gt;文章をコピー&lt;/button&gt;
+      &lt;/div&gt;
+    &lt;/section&gt;
+  &lt;/div&gt;
+
+  &lt;script&gt;
+    (() =&gt; {
+      const root = document.getElementById(&#x27;hoshimichi-start-form&#x27;);
+      const modeNotes = {
+        consult: &#x27;テーマだけで開始できます。迷う部分は候補を出しながら一緒に整理します。&#x27;,
+        rp: &#x27;ダイス判定を使わない通常RPです。人物と場面があれば始められます。&#x27;,
+        viewpoint: &#x27;特定人物の視点から場面を遊び、人物像や設定を自然に発掘します。&#x27;,
+        trpg: &#x27;PC名と主な攻撃手段が最小入力です。本編前にシナリオ準備と起動確認を行います。&#x27;
+      };
+
+      const value = (id) =&gt; root.querySelector(`#${id}`).value.trim();
+      const selectedMode = () =&gt; root.querySelector(&#x27;input[name=&quot;hm-mode&quot;]:checked&#x27;).value;
+      const checkedValues = (group) =&gt; Array.from(root.querySelectorAll(`[data-group=&quot;${group}&quot;]:checked`)).map((input) =&gt; input.value);
+      const shown = (text) =&gt; text || &#x27;おまかせ&#x27;;
+
+      const buildPrompt = () =&gt; {
+        const mode = selectedMode();
+        const boundaries = value(&#x27;hm-boundaries&#x27;);
+        const lines = [];
+
+        if (mode === &#x27;consult&#x27;) {
+          lines.push(&#x27;/相談&#x27;);
+          lines.push(&#x27;RP・TRPGを始めるため、次の内容を一緒に整理してください。&#x27;);
+          lines.push(`相談テーマ：${shown(value(&#x27;hm-consult-topic&#x27;))}`);
+          lines.push(`希望する進め方：${shown(checkedValues(&#x27;consult-help&#x27;).join(&#x27;、&#x27;))}`);
+          lines.push(&#x27;正本に関係する内容は、AI参照索引から関連正本を特定し、原文を確認してから提案してください。&#x27;);
+          lines.push(&#x27;未決定部分は勝手に確定せず、迷う項目は具体的な候補を最大三つ示してください。&#x27;);
+        }
+
+        if (mode === &#x27;rp&#x27;) {
+          lines.push(&#x27;/相談&#x27;);
+          lines.push(&#x27;次の内容で通常RPを始めたいです。開始に必要な確認と準備をしてください。&#x27;);
+          lines.push(`自分が動かす人物：${shown(value(&#x27;hm-rp-character&#x27;))}`);
+          lines.push(`一緒に出したい人物：${shown(value(&#x27;hm-rp-with&#x27;))}`);
+          lines.push(`やりたい場面・気分：${shown(value(&#x27;hm-rp-scene&#x27;))}`);
+          lines.push(`雰囲気：${shown(checkedValues(&#x27;rp-tone&#x27;).join(&#x27;、&#x27;))}`);
+          lines.push(`扱い：${value(&#x27;hm-rp-status&#x27;)}`);
+          lines.push(`進め方：${value(&#x27;hm-rp-start&#x27;)}`);
+          lines.push(&#x27;通常RPとして、ダイス判定・死亡判定は使わず、ユーザー操作人物の重大な感情や決断を勝手に確定しないでください。&#x27;);
+        }
+
+        if (mode === &#x27;viewpoint&#x27;) {
+          lines.push(&#x27;/相談&#x27;);
+          lines.push(&#x27;次の内容で視点RPを始めたいです。開始に必要な確認と準備をしてください。&#x27;);
+          lines.push(`視点人物：${shown(value(&#x27;hm-vp-character&#x27;))}`);
+          lines.push(`場面にいる人物：${shown(value(&#x27;hm-vp-with&#x27;))}`);
+          lines.push(`見たい場面・発掘したいこと：${shown(value(&#x27;hm-vp-scene&#x27;))}`);
+          lines.push(`時期・場所：${shown(value(&#x27;hm-vp-time&#x27;))}`);
+          lines.push(`扱い：${value(&#x27;hm-vp-status&#x27;)}`);
+          lines.push(&#x27;描写返し型で進め、視点人物の感情や行動を勝手に強く確定せず、選択肢を毎回出さないでください。&#x27;);
+          lines.push(&#x27;正本確認後、不足がなければ短い導入から始めてください。&#x27;);
+        }
+
+        if (mode === &#x27;trpg&#x27;) {
+          lines.push(&#x27;/相談&#x27;);
+          lines.push(&#x27;次の内容で星みちTRPGを始めたいです。まだ本編は開始せず、必要な正本確認とシナリオ準備をしてください。&#x27;);
+          lines.push(`PC名：${shown(value(&#x27;hm-trpg-pc&#x27;))}`);
+          lines.push(`主な攻撃手段：${shown(value(&#x27;hm-trpg-attack&#x27;))}`);
+          lines.push(`シナリオ：${value(&#x27;hm-trpg-scenario&#x27;)}`);
+          lines.push(`PC操作：${value(&#x27;hm-trpg-control&#x27;)}`);
+          lines.push(`卓の扱い：${value(&#x27;hm-trpg-status&#x27;)}`);
+          lines.push(`遊ぶ環境：${value(&#x27;hm-trpg-device&#x27;)}`);
+          lines.push(`やりたい依頼・雰囲気：${shown(value(&#x27;hm-trpg-want&#x27;))}`);
+          lines.push(`希望：${shown(checkedValues(&#x27;trpg-tone&#x27;).join(&#x27;、&#x27;))}`);
+          lines.push(&#x27;不足情報は一度に大量質問せず、開始に必要なものから候補つきで確認してください。&#x27;);
+          lines.push(&#x27;準備と起動試験がREADYになっても、私が「/シナリオ開始」と入力するまで本編を始めないでください。&#x27;);
+        }
+
+        if (boundaries) {
+          lines.push(`希望・避けたいこと：${boundaries}`);
+        }
+
+        lines.push(&#x27;正本と入力が食い違う場合は勝手に統合せず、短く確認してください。&#x27;);
+        return lines.join(&#x27;\n&#x27;);
+      };
+
+      const validate = () =&gt; {
+        const mode = selectedMode();
+        const required = {
+          consult: [[&#x27;hm-consult-topic&#x27;, &#x27;相談したいこと&#x27;]],
+          rp: [[&#x27;hm-rp-character&#x27;, &#x27;自分が動かす人物&#x27;], [&#x27;hm-rp-scene&#x27;, &#x27;やりたい場面・気分&#x27;]],
+          viewpoint: [[&#x27;hm-vp-character&#x27;, &#x27;視点人物&#x27;], [&#x27;hm-vp-scene&#x27;, &#x27;見たい場面・発掘したいこと&#x27;]],
+          trpg: [[&#x27;hm-trpg-pc&#x27;, &#x27;PC名&#x27;], [&#x27;hm-trpg-attack&#x27;, &#x27;主な攻撃手段&#x27;]]
+        };
+        const missing = required[mode].filter(([id]) =&gt; !value(id)).map(([, label]) =&gt; label);
+        const error = root.querySelector(&#x27;#hm-error&#x27;);
+        error.textContent = missing.length ? `★の必須欄を入力してください：${missing.join(&#x27;、&#x27;)}` : &#x27;&#x27;;
+        return missing.length === 0;
+      };
+
+      const update = () =&gt; {
+        const mode = selectedMode();
+        root.querySelectorAll(&#x27;[data-panel]&#x27;).forEach((panel) =&gt; {
+          panel.hidden = panel.dataset.panel !== mode;
+        });
+        root.querySelector(&#x27;#hm-mode-note&#x27;).textContent = modeNotes[mode];
+        root.querySelector(&#x27;#hm-preview&#x27;).value = buildPrompt();
+        root.querySelector(&#x27;#hm-error&#x27;).textContent = &#x27;&#x27;;
+        root.querySelector(&#x27;#hm-status&#x27;).textContent = &#x27;&#x27;;
+      };
+
+      root.addEventListener(&#x27;input&#x27;, update);
+      root.addEventListener(&#x27;change&#x27;, update);
+
+      root.querySelector(&#x27;#hm-trpg-new-pc&#x27;).addEventListener(&#x27;click&#x27;, () =&gt; {
+        root.querySelector(&#x27;#hm-trpg-pc&#x27;).value = &#x27;まだいない（PC作成相談から）&#x27;;
+        update();
+      });
+
+      root.querySelector(&#x27;#hm-trpg-undecided-attack&#x27;).addEventListener(&#x27;click&#x27;, () =&gt; {
+        root.querySelector(&#x27;#hm-trpg-attack&#x27;).value = &#x27;未定（PCに合う候補がほしい）&#x27;;
+        update();
+      });
+
+      root.querySelector(&#x27;#hm-copy&#x27;).addEventListener(&#x27;click&#x27;, async () =&gt; {
+        const status = root.querySelector(&#x27;#hm-status&#x27;);
+        try {
+          await navigator.clipboard.writeText(buildPrompt());
+          status.textContent = &#x27;開始メッセージをコピーしました。&#x27;;
+        } catch (error) {
+          root.querySelector(&#x27;#hm-preview&#x27;).select();
+          status.textContent = &#x27;自動コピーできませんでした。選択された文章をコピーしてください。&#x27;;
+        }
+      });
+
+      root.querySelector(&#x27;#hm-start&#x27;).addEventListener(&#x27;click&#x27;, async () =&gt; {
+        if (!validate()) return;
+        const status = root.querySelector(&#x27;#hm-status&#x27;);
+        status.textContent = &#x27;開始メッセージを送信しています…&#x27;;
+        try {
+          await window.openai.sendFollowUpMessage({
+            prompt: buildPrompt(),
+            title: &#x27;この内容でRP・TRPGの相談を始めますか？&#x27;
+          });
+          status.textContent = &#x27;開始メッセージを送信しました。&#x27;;
+        } catch (error) {
+          status.textContent = &#x27;送信できませんでした。「文章をコピー」を使って送ってください。&#x27;;
+        }
+      });
+
+      update();
+    })();
+  &lt;/script&gt;
+&lt;/div&gt;
+
+&lt;script src=&quot;https://unpkg.com/@floating-ui/core@1.7.3/dist/floating-ui.core.umd.min.js&quot;&gt;&lt;/script&gt;
+&lt;script src=&quot;https://unpkg.com/@floating-ui/dom@1.7.4/dist/floating-ui.dom.umd.min.js&quot;&gt;&lt;/script&gt;
+&lt;script&gt;
+(() =&gt; {
+  if (window.FloatingUIDOM == null) {
+    return;
+  }
+  const { autoUpdate, computePosition, flip, offset, shift, size } =
+    window.FloatingUIDOM;
+  const tooltipPlacements = new Set([&quot;top&quot;, &quot;right&quot;, &quot;bottom&quot;, &quot;left&quot;]);
+  const tooltipId = `codex-visualization-tooltip-${
+    window.crypto?.randomUUID?.() ?? Date.now().toString(36)
+  }`;
+  const tooltipGap = 5;
+  const hoverDelay = 700;
+  const skipDelay = 300;
+  let activeTrigger = null;
+  let pendingTrigger = null;
+  let tooltip = null;
+  let openTimeout = null;
+  let autoUpdateCleanup = null;
+  let positionRequest = 0;
+  let skipDelayUntil = 0;
+
+  const getTrigger = (target) =&gt;
+    target?.nodeType === Node.ELEMENT_NODE
+      ? target.closest(&quot;[data-tooltip]&quot;)
+      : null;
+  const containsTarget = (trigger, target) =&gt;
+    target?.nodeType != null &amp;&amp; trigger.contains(target);
+  const getContent = (trigger) =&gt;
+    trigger.getAttribute(&quot;data-tooltip&quot;)?.trim() ?? &quot;&quot;;
+  const getPlacement = (trigger) =&gt; {
+    const placement = trigger.getAttribute(&quot;data-tooltip-placement&quot;);
+    return tooltipPlacements.has(placement) ? placement : &quot;top&quot;;
+  };
+  const getTooltip = () =&gt; {
+    if (tooltip == null) {
+      tooltip = document.createElement(&quot;div&quot;);
+      tooltip.id = tooltipId;
+      tooltip.className = &quot;tooltip&quot;;
+      tooltip.setAttribute(&quot;role&quot;, &quot;tooltip&quot;);
+    }
+    return tooltip;
+  };
+  const setDescribedBy = (trigger, described) =&gt; {
+    const ids = new Set(
+      (trigger.getAttribute(&quot;aria-describedby&quot;) ?? &quot;&quot;)
+        .split(/\s+/)
+        .filter(Boolean),
+    );
+    if (described) {
+      ids.add(tooltipId);
+    } else {
+      ids.delete(tooltipId);
+    }
+    if (ids.size === 0) {
+      trigger.removeAttribute(&quot;aria-describedby&quot;);
+    } else {
+      trigger.setAttribute(&quot;aria-describedby&quot;, [...ids].join(&quot; &quot;));
+    }
+  };
+  const clearOpenTimeout = () =&gt; {
+    if (openTimeout != null) {
+      window.clearTimeout(openTimeout);
+      openTimeout = null;
+    }
+    pendingTrigger = null;
+  };
+  const closeTooltip = (activateSkipDelay = true) =&gt; {
+    clearOpenTimeout();
+    positionRequest += 1;
+    autoUpdateCleanup?.();
+    autoUpdateCleanup = null;
+    if (activeTrigger == null) {
+      return;
+    }
+    setDescribedBy(activeTrigger, false);
+    activeTrigger = null;
+    tooltip?.remove();
+    if (activateSkipDelay) {
+      skipDelayUntil = Date.now() + skipDelay;
+    }
+  };
+  const updatePosition = (trigger, floating) =&gt; {
+    const request = ++positionRequest;
+    void computePosition(trigger, floating, {
+      middleware: [
+        offset(tooltipGap),
+        flip({ padding: tooltipGap }),
+        shift({ padding: tooltipGap }),
+        size({
+          padding: tooltipGap,
+          apply({ availableHeight, availableWidth, elements }) {
+            elements.floating.style.setProperty(
+              &quot;--tooltip-available-width&quot;,
+              `${Math.max(0, availableWidth)}px`,
+            );
+            elements.floating.style.setProperty(
+              &quot;--tooltip-available-height&quot;,
+              `${Math.max(0, availableHeight)}px`,
+            );
+          },
+        }),
+      ],
+      placement: getPlacement(trigger),
+      strategy: &quot;fixed&quot;,
+    })
+      .then(({ x, y }) =&gt; {
+        if (activeTrigger !== trigger || request !== positionRequest) {
+          return;
+        }
+        const scale = window.devicePixelRatio || 1;
+        floating.style.transform = `translate(${Math.round(x * scale) / scale}px, ${Math.round(y * scale) / scale}px)`;
+        floating.style.visibility = &quot;visible&quot;;
+      })
+      .catch(() =&gt; {
+        if (activeTrigger === trigger &amp;&amp; request === positionRequest) {
+          closeTooltip(false);
+        }
+      });
+  };
+  const openTooltip = (trigger) =&gt; {
+    const content = getContent(trigger);
+    if (!trigger.isConnected || content.length === 0) {
+      return;
+    }
+    clearOpenTimeout();
+    if (activeTrigger === trigger) {
+      return;
+    }
+    closeTooltip();
+    const floating = getTooltip();
+    floating.textContent = content;
+    floating.style.visibility = &quot;hidden&quot;;
+    floating.style.transform = &quot;translate(0, 0)&quot;;
+    document.body.appendChild(floating);
+    activeTrigger = trigger;
+    setDescribedBy(trigger, true);
+    autoUpdateCleanup = autoUpdate(trigger, floating, () =&gt; {
+      updatePosition(trigger, floating);
+    });
+  };
+  const requestOpen = (trigger, immediate = false) =&gt; {
+    if (
+      getContent(trigger).length === 0 ||
+      activeTrigger === trigger ||
+      pendingTrigger === trigger
+    ) {
+      return;
+    }
+    clearOpenTimeout();
+    pendingTrigger = trigger;
+    const delay =
+      immediate || activeTrigger != null || Date.now() &lt; skipDelayUntil
+        ? 0
+        : hoverDelay;
+    if (delay === 0) {
+      openTooltip(trigger);
+      return;
+    }
+    openTimeout = window.setTimeout(() =&gt; {
+      openTimeout = null;
+      pendingTrigger = null;
+      openTooltip(trigger);
+    }, delay);
+  };
+  const handlePointerOpen = (event) =&gt; {
+    if (event.pointerType === &quot;touch&quot;) {
+      return;
+    }
+    const trigger = getTrigger(event.target);
+    if (trigger == null || containsTarget(trigger, event.relatedTarget)) {
+      return;
+    }
+    requestOpen(trigger);
+  };
+  const handleLeave = (event) =&gt; {
+    const trigger = getTrigger(event.target);
+    if (trigger == null || containsTarget(trigger, event.relatedTarget)) {
+      return;
+    }
+    if (activeTrigger === trigger || pendingTrigger === trigger) {
+      closeTooltip();
+    }
+  };
+  const handleFocusIn = (event) =&gt; {
+    const trigger = getTrigger(event.target);
+    if (trigger?.matches(&quot;:focus-visible&quot;)) {
+      requestOpen(trigger, true);
+    }
+  };
+  const handleKeyDown = (event) =&gt; {
+    if (event.key === &quot;Escape&quot;) {
+      closeTooltip();
+    }
+  };
+  const handleContextMenu = (event) =&gt; {
+    const trigger = getTrigger(event.target);
+    if (activeTrigger === trigger || pendingTrigger === trigger) {
+      closeTooltip();
+    }
+  };
+  const destroy = () =&gt; {
+    closeTooltip(false);
+    document.removeEventListener(&quot;pointerover&quot;, handlePointerOpen);
+    document.removeEventListener(&quot;pointerout&quot;, handleLeave);
+    document.removeEventListener(&quot;focusin&quot;, handleFocusIn);
+    document.removeEventListener(&quot;focusout&quot;, handleLeave);
+    document.removeEventListener(&quot;keydown&quot;, handleKeyDown);
+    document.removeEventListener(&quot;contextmenu&quot;, handleContextMenu);
+    tooltip = null;
+  };
+
+  document.addEventListener(&quot;pointerover&quot;, handlePointerOpen);
+  document.addEventListener(&quot;pointerout&quot;, handleLeave);
+  document.addEventListener(&quot;focusin&quot;, handleFocusIn);
+  document.addEventListener(&quot;focusout&quot;, handleLeave);
+  document.addEventListener(&quot;keydown&quot;, handleKeyDown);
+  document.addEventListener(&quot;contextmenu&quot;, handleContextMenu);
+  window.addEventListener(&quot;pagehide&quot;, destroy, { once: true });
+})();
+&lt;/script&gt;
+&lt;script id=&quot;codex-visualization-lucide&quot; async src=&quot;https://unpkg.com/lucide@1.17.0/dist/umd/lucide.js&quot;&gt;&lt;/script&gt;
+&lt;script&gt;
+(() =&gt; {
+  const initialize = () =&gt; {
+    globalThis.lucide?.createIcons({ attrs: { width: 16, height: 16 } });
+  };
+  if (globalThis.lucide != null) {
+    initialize();
+    return;
+  }
+  document
+    .getElementById(&quot;codex-visualization-lucide&quot;)
+    ?.addEventListener(&quot;load&quot;, initialize, { once: true });
+})();
+&lt;/script&gt;
+
+&lt;/body&gt;
+&lt;/html&gt;
+"></iframe>
+</body>
+</html>

@@ -118,6 +118,166 @@
       margin-bottom: 1.25rem;
     }
 
+    .primary-tabs {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.75rem;
+      margin-bottom: 1.25rem;
+      padding: 0.45rem;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+
+    .primary-tab {
+      padding: 0.75rem 1rem;
+      border-color: transparent;
+      background: transparent;
+      color: var(--muted);
+    }
+
+    .primary-tab:hover:not(:disabled) {
+      border-color: var(--line);
+      background: var(--surface-soft);
+      color: var(--accent-dark);
+    }
+
+    .primary-tab[aria-selected="true"] {
+      border-color: var(--accent);
+      background: var(--accent);
+      color: #ffffff;
+    }
+
+    .primary-tab-panel[hidden] {
+      display: none;
+    }
+
+    .play-intro {
+      margin: 0;
+      color: var(--muted);
+    }
+
+    .play-character-grid,
+    .play-form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.9rem;
+    }
+
+    .play-character-card {
+      display: grid;
+      gap: 0.25rem;
+      min-width: 0;
+      padding: 0.9rem 1rem;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: var(--surface-soft);
+    }
+
+    .play-character-card span {
+      color: var(--muted);
+      font-size: 0.82rem;
+      font-weight: 800;
+    }
+
+    .play-character-card strong {
+      overflow-wrap: anywhere;
+      font-size: 1.05rem;
+    }
+
+    .play-fieldset {
+      min-width: 0;
+      margin: 0;
+      padding: 1rem;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+    }
+
+    .play-fieldset legend {
+      padding: 0 0.35rem;
+      font-weight: 800;
+    }
+
+    .play-choice-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.6rem 1rem;
+    }
+
+    .play-choice-grid label {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.55rem;
+      min-width: 0;
+      cursor: pointer;
+    }
+
+    .play-choice-grid input {
+      width: auto;
+      margin-top: 0.3rem;
+      flex: 0 0 auto;
+    }
+
+    .play-wide {
+      grid-column: 1 / -1;
+    }
+
+    .play-notice {
+      margin: 0;
+      padding: 0.8rem 0.95rem;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: var(--surface-soft);
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .play-notice.is-warning {
+      border-color: var(--danger);
+      background: var(--danger-soft);
+      color: var(--danger);
+      font-weight: 800;
+    }
+
+    .play-preview {
+      min-height: 24rem;
+      white-space: pre-wrap;
+    }
+
+    .play-actions {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+    }
+
+    .play-actions button {
+      padding: 0.75rem 1.1rem;
+    }
+
+    .play-status {
+      margin: 0;
+      color: var(--muted);
+      font-weight: 800;
+    }
+
+    .play-status.is-error {
+      color: var(--danger);
+    }
+
+    @media (max-width: 700px) {
+      .play-character-grid,
+      .play-form-grid,
+      .play-choice-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .play-wide {
+        grid-column: auto;
+      }
+    }
+
     .kp-gate {
       display: flex;
       align-items: center;
@@ -1184,6 +1344,15 @@
       <span class="privacy-note">入力内容はこのブラウザ内だけに保存され、外部へ送信されません。</span>
     </header>
 
+    <nav class="primary-tabs" role="tablist" aria-label="キャラクタービルダーの機能">
+      <button id="builder-tab" class="primary-tab" type="button" role="tab"
+        aria-selected="true" aria-controls="builder-panel">キャラクター作成</button>
+      <button id="play-tab" class="primary-tab" type="button" role="tab"
+        aria-selected="false" aria-controls="play-panel">このキャラで遊ぶ</button>
+    </nav>
+
+    <div id="builder-panel" class="primary-tab-panel" role="tabpanel" aria-labelledby="builder-tab">
+
     <section class="panel section-panel" aria-labelledby="basic-heading">
       <div class="section-heading">
         <h2 id="basic-heading">1. 基本情報</h2>
@@ -1769,6 +1938,128 @@
       <button id="kp-enter" type="button" aria-label="合言葉を確認してKPモードへ接続">✓</button>
       <span id="kp-mode-status" class="kp-mode-status" aria-live="polite"></span>
     </div>
+    </div>
+
+    <section id="play-panel" class="primary-tab-panel panel section-panel" role="tabpanel"
+      aria-labelledby="play-tab" hidden>
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">キャラクター完成後の入口</p>
+          <h2>このキャラで遊ぶ</h2>
+        </div>
+        <p class="section-note">キャラ情報つきの依頼文を自動作成</p>
+      </div>
+
+      <p class="play-intro">
+        作成中のキャラクター情報を使って、その人向けのシナリオやRPをAIへ依頼できます。
+        分からない項目は「おまかせ」のままで大丈夫です。
+      </p>
+
+      <div class="play-character-grid" aria-label="引き継ぐキャラクター情報">
+        <div class="play-character-card">
+          <span>キャラクター</span>
+          <strong id="play-character-name">未入力</strong>
+        </div>
+        <div class="play-character-card">
+          <span>主な攻撃手段</span>
+          <strong id="play-character-weapon">未定</strong>
+        </div>
+      </div>
+
+      <p id="play-character-warning" class="play-notice is-warning" role="alert">
+        「キャラクター作成」タブで名前を入力すると、開始メッセージをコピーできます。
+      </p>
+
+      <fieldset class="play-fieldset">
+        <legend>何をして遊ぶ？</legend>
+        <div class="play-choice-grid">
+          <label><input type="radio" name="play-mode" value="trpg" checked>このキャラ用の星みちTRPG</label>
+          <label><input type="radio" name="play-mode" value="rp">このキャラで通常RP</label>
+          <label><input type="radio" name="play-mode" value="viewpoint">このキャラの視点RP</label>
+          <label><input type="radio" name="play-mode" value="consult">このキャラについて相談</label>
+        </div>
+      </fieldset>
+
+      <div class="play-form-grid">
+        <div class="field play-trpg-only">
+          <label for="play-scenario-method">シナリオの作り方</label>
+          <select id="play-scenario-method">
+            <option value="このPC専用の短編シナリオを一本作る">このキャラ専用を1本作る</option>
+            <option value="異なる方向性のシナリオ候補を三つ出し、選んだ後に一本を作る">3候補から選んで作る</option>
+            <option value="現行正本にある既存シナリオから、このPCに合うものを提案する">既存シナリオから選ぶ</option>
+            <option value="シナリオを作る前に、向いている遊び方を相談する">まず遊び方を相談する</option>
+          </select>
+        </div>
+
+        <div class="field play-trpg-only">
+          <label for="play-history-status">卓の扱い</label>
+          <select id="play-history-status">
+            <option value="正史候補">正史候補</option>
+            <option value="IF">IF</option>
+            <option value="比較シミュレーション">比較シミュレーション</option>
+            <option value="正史外">正史外</option>
+            <option value="相談して決める">相談して決める</option>
+          </select>
+        </div>
+
+        <div class="field play-trpg-only">
+          <label for="play-control">PCの操作</label>
+          <select id="play-control">
+            <option value="ユーザーが操作する">自分で操作する</option>
+            <option value="AI代理で操作する。重大な人格判断は自動確定しない">AI代理を使う</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="play-start-style">依頼後の進め方</label>
+          <select id="play-start-style">
+            <option value="必要な正本確認後、準備または開始案まで進める">確認後、準備まで進める</option>
+            <option value="候補だけを出し、ユーザーが選ぶまで開始しない">候補を見てから決める</option>
+          </select>
+        </div>
+
+        <div class="field play-wide">
+          <label for="play-wish">やりたい場面・依頼・気分</label>
+          <textarea id="play-wish" placeholder="例：初仕事／森を探索したい／仲間との会話多め／全部おまかせ"></textarea>
+          <span class="field-hint">空欄なら「このキャラに合う内容をおまかせ」で生成します。</span>
+        </div>
+      </div>
+
+      <fieldset class="play-fieldset play-trpg-only">
+        <legend>シナリオの希望候補</legend>
+        <div class="play-choice-grid">
+          <label><input type="checkbox" data-play-tag value="1〜2時間程度の短い依頼" checked>短い依頼</label>
+          <label><input type="checkbox" data-play-tag value="このPCの得意・苦手・経歴が自然に活きる内容" checked>このキャラらしさを活かす</label>
+          <label><input type="checkbox" data-play-tag value="探索を楽しみたい">探索多め</label>
+          <label><input type="checkbox" data-play-tag value="会話やNPC交流を楽しみたい">会話多め</label>
+          <label><input type="checkbox" data-play-tag value="戦闘を含めたい">戦闘あり</label>
+          <label><input type="checkbox" data-play-tag value="食料・装備・依頼準備など冒険者の生活感も楽しみたい">冒険者の生活感</label>
+          <label><input type="checkbox" data-play-tag value="不足する仲間はAI代理PCで補ってよい">仲間はAI代理可</label>
+          <label><input type="checkbox" data-play-tag value="失敗や撤退判断にも意味がある内容">失敗・撤退も物語にする</label>
+        </div>
+      </fieldset>
+
+      <div class="field">
+        <label for="play-boundaries">任意：苦手・避けたいこと、描写の希望</label>
+        <textarea id="play-boundaries" placeholder="例：残酷描写は軽め／恋愛なし／テンポ重視／じっくり会話したい"></textarea>
+      </div>
+
+      <p class="play-notice">
+        星みちTRPGは、この文章を送っただけでは本編を開始しません。正本確認、シナリオ準備、起動試験を経て、
+        あなたが <code>/シナリオ開始</code> と入力するまで待つ内容を自動で含めます。
+      </p>
+
+      <div class="field">
+        <label for="play-request-preview">AIへ渡す開始メッセージ</label>
+        <textarea id="play-request-preview" class="play-preview" readonly></textarea>
+      </div>
+
+      <div class="play-actions">
+        <button id="copy-play-request" type="button">開始メッセージをコピー</button>
+        <button id="refresh-play-request" type="button" class="secondary-button">キャラ情報を読み直す</button>
+        <p id="play-status" class="play-status" aria-live="polite"></p>
+      </div>
+    </section>
   </main>
 
   <dialog id="manual-copy-dialog" aria-labelledby="manual-copy-heading">
@@ -5683,6 +5974,227 @@
       });
 
       initialize();
+    }());
+  </script>
+  <script>
+    (function () {
+      "use strict";
+
+      var builderTab = document.getElementById("builder-tab");
+      var playTab = document.getElementById("play-tab");
+      var builderPanel = document.getElementById("builder-panel");
+      var playPanel = document.getElementById("play-panel");
+      var preview = document.getElementById("play-request-preview");
+      var copyButton = document.getElementById("copy-play-request");
+      var status = document.getElementById("play-status");
+      var tabButtons = [builderTab, playTab];
+
+      var attackTypeLabels = {
+        heavy: "重撃型の武器",
+        single: "一撃型の武器",
+        standard: "標準型の武器",
+        combo: "連撃型の武器",
+        multi: "多段型の武器"
+      };
+
+      function getBuilderState() {
+        return window.characterSheetBuilder.getState();
+      }
+
+      function getCharacterName(state) {
+        return String(state.name || "").trim();
+      }
+
+      function getMainWeapon(state) {
+        var weapon = state.weapons && state.weapons[0] ? state.weapons[0] : {};
+        var name = String(weapon.name || "").trim();
+        if (name) {
+          return name;
+        }
+        return attackTypeLabels[weapon.attackType] || "未定";
+      }
+
+      function getCharacterMarkdown() {
+        try {
+          return window.characterSheetBuilder.buildChappyMarkdown();
+        } catch (error) {
+          return window.characterSheetBuilder.buildCharacterSummary();
+        }
+      }
+
+      function selectedPlayMode() {
+        return document.querySelector('input[name="play-mode"]:checked').value;
+      }
+
+      function selectedTags() {
+        return Array.from(document.querySelectorAll("[data-play-tag]:checked")).map(function (input) {
+          return input.value;
+        });
+      }
+
+      function fieldValue(id, fallback) {
+        var value = document.getElementById(id).value.trim();
+        return value || fallback;
+      }
+
+      function buildPlayRequest() {
+        var state = getBuilderState();
+        var name = getCharacterName(state) || "未入力";
+        var weapon = getMainWeapon(state);
+        var mode = selectedPlayMode();
+        var wish = fieldValue("play-wish", "このキャラに合う内容をおまかせ");
+        var boundaries = fieldValue("play-boundaries", "特になし");
+        var lines = ["/相談"];
+
+        if (mode === "trpg") {
+          lines.push("キャラクタービルダーで作成した次のPCに合わせて、星みちTRPGのシナリオを作ってください。");
+          lines.push("PC名：" + name);
+          lines.push("主な攻撃手段：" + weapon);
+          lines.push("シナリオ作成方式：" + fieldValue("play-scenario-method", "このPC専用の短編シナリオを一本作る"));
+          lines.push("やりたい依頼・雰囲気：" + wish);
+          lines.push("希望：" + (selectedTags().join("、") || "おまかせ"));
+          lines.push("卓の扱い：" + fieldValue("play-history-status", "正史候補"));
+          lines.push("PC操作：" + fieldValue("play-control", "ユーザーが操作する"));
+          lines.push("依頼後の進め方：" + fieldValue("play-start-style", "必要な正本確認後、準備または開始案まで進める"));
+          lines.push("苦手・避けたいこと、描写希望：" + boundaries);
+          lines.push("");
+          lines.push("このPCの得意・苦手・経歴を、都合のよい成功保証ではなく、選択や活路が生まれるシナリオ要素として使ってください。");
+          lines.push("まだ本編は開始せず、AI参照索引から関連正本を特定し、正本原文を確認してからシナリオ作成と /シナリオ準備を行ってください。");
+          lines.push("必要な準備と固定fixtureによる起動試験がREADYになっても、私が「/シナリオ開始」と入力するまで公開導入、作中時間、人物行動、FLOW、ROLL、COPYを開始しないでください。");
+        } else if (mode === "rp") {
+          lines.push("キャラクタービルダーで作成した次の人物で、通常RPを始めたいです。");
+          lines.push("人物：" + name);
+          lines.push("主な装備・攻撃手段：" + weapon);
+          lines.push("やりたい場面・気分：" + wish);
+          lines.push("依頼後の進め方：" + fieldValue("play-start-style", "必要な正本確認後、準備または開始案まで進める"));
+          lines.push("苦手・避けたいこと、描写希望：" + boundaries);
+          lines.push("通常RPとしてダイス判定・死亡判定を使わず、ユーザー操作人物の重大な感情や決断を勝手に確定しないでください。");
+          lines.push("正本確認後、不足がなければ短い導入から始めてください。");
+        } else if (mode === "viewpoint") {
+          lines.push("キャラクタービルダーで作成した次の人物を視点人物として、視点RPを始めたいです。");
+          lines.push("視点人物：" + name);
+          lines.push("主な装備・攻撃手段：" + weapon);
+          lines.push("見たい場面・発掘したいこと：" + wish);
+          lines.push("苦手・避けたいこと、描写希望：" + boundaries);
+          lines.push("描写返し型で進め、視点人物の感情や行動を勝手に強く確定せず、選択肢を毎回出さないでください。");
+          lines.push("正本確認後、不足がなければ短い導入から始めてください。");
+        } else {
+          lines.push("キャラクタービルダーで作成した次の人物について、遊び方を一緒に相談してください。");
+          lines.push("人物：" + name);
+          lines.push("主な装備・攻撃手段：" + weapon);
+          lines.push("相談したいこと：" + wish);
+          lines.push("苦手・避けたいこと、描写希望：" + boundaries);
+          lines.push("未決定部分は勝手に確定せず、迷う項目は具体的な候補を最大三つ示してください。");
+        }
+
+        lines.push("");
+        lines.push("## キャラクタービルダー出力");
+        lines.push("");
+        lines.push(getCharacterMarkdown());
+        lines.push("");
+        lines.push("正本と入力が食い違う場合は勝手に統合せず、短く確認してください。候補・妄想・保留を自動的に決定へ昇格しないでください。");
+        return lines.join("\n");
+      }
+
+      function updatePlayPanel() {
+        var state = getBuilderState();
+        var name = getCharacterName(state);
+        var mode = selectedPlayMode();
+        var isCharacter = state.targetType !== "monster";
+        var warning = document.getElementById("play-character-warning");
+        document.getElementById("play-character-name").textContent = name || "未入力";
+        document.getElementById("play-character-weapon").textContent = getMainWeapon(state);
+        warning.hidden = Boolean(name && isCharacter);
+        warning.textContent = !name
+          ? "「キャラクター作成」タブで名前を入力すると、開始メッセージをコピーできます。"
+          : "「キャラクター作成」タブで作成対象をキャラクターへ切り替えると、この機能を使用できます。";
+        copyButton.disabled = !name || !isCharacter;
+        document.querySelectorAll(".play-trpg-only").forEach(function (element) {
+          element.hidden = mode !== "trpg";
+        });
+        preview.value = buildPlayRequest();
+        status.textContent = "";
+        status.classList.remove("is-error");
+      }
+
+      function activateTab(tabName, focusTab) {
+        var showPlay = tabName === "play";
+        builderTab.setAttribute("aria-selected", showPlay ? "false" : "true");
+        playTab.setAttribute("aria-selected", showPlay ? "true" : "false");
+        builderTab.tabIndex = showPlay ? -1 : 0;
+        playTab.tabIndex = showPlay ? 0 : -1;
+        builderPanel.hidden = showPlay;
+        playPanel.hidden = !showPlay;
+        if (showPlay) {
+          updatePlayPanel();
+        }
+        if (focusTab) {
+          (showPlay ? playTab : builderTab).focus();
+        }
+      }
+
+      function showManualCopy(text) {
+        var dialog = document.getElementById("manual-copy-dialog");
+        var manualText = document.getElementById("manual-copy-text");
+        manualText.value = text;
+        dialog.showModal();
+        manualText.focus();
+        manualText.select();
+      }
+
+      async function copyPlayRequest() {
+        if (copyButton.disabled) {
+          var state = getBuilderState();
+          status.textContent = state.targetType === "monster"
+            ? "作成対象をキャラクターへ切り替えてください。"
+            : "キャラクター名を入力してください。";
+          status.classList.add("is-error");
+          return;
+        }
+        var text = buildPlayRequest();
+        preview.value = text;
+        try {
+          if (!navigator.clipboard || !window.isSecureContext) {
+            throw new Error("Clipboard API unavailable");
+          }
+          await navigator.clipboard.writeText(text);
+          status.textContent = "開始メッセージをコピーしました。";
+          status.classList.remove("is-error");
+        } catch (error) {
+          showManualCopy(text);
+          status.textContent = "手動コピー画面を開きました。";
+          status.classList.remove("is-error");
+        }
+      }
+
+      tabButtons.forEach(function (tab, index) {
+        tab.addEventListener("click", function () {
+          activateTab(tab === playTab ? "play" : "builder", false);
+        });
+        tab.addEventListener("keydown", function (event) {
+          var nextIndex = index;
+          if (event.key === "ArrowRight" || event.key === "ArrowDown") {
+            nextIndex = (index + 1) % tabButtons.length;
+          } else if (event.key === "ArrowLeft" || event.key === "ArrowUp") {
+            nextIndex = (index - 1 + tabButtons.length) % tabButtons.length;
+          } else if (event.key === "Home") {
+            nextIndex = 0;
+          } else if (event.key === "End") {
+            nextIndex = tabButtons.length - 1;
+          } else {
+            return;
+          }
+          event.preventDefault();
+          activateTab(nextIndex === 1 ? "play" : "builder", true);
+        });
+      });
+
+      playPanel.addEventListener("input", updatePlayPanel);
+      playPanel.addEventListener("change", updatePlayPanel);
+      document.getElementById("refresh-play-request").addEventListener("click", updatePlayPanel);
+      copyButton.addEventListener("click", copyPlayRequest);
+
+      activateTab("builder", false);
     }());
   </script>
 </body>
