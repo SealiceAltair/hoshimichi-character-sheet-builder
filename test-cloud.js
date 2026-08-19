@@ -32,6 +32,11 @@ includes(html, "キャラ一覧へ →");
 includes(html, "キャラ作成へ →");
 includes(html, "シナリオ・RPへ →");
 includes(html, "grid-template-columns: repeat(3, minmax(0, 1fr))");
+includes(html, 'id="character-thumbnail-file"');
+includes(html, 'canvas.toDataURL("image/webp", quality)');
+includes(html, "THUMBNAIL_MAX_CHARS = 42000");
+includes(html, "safeThumbnailDataUrl(character.thumbnailDataUrl)");
+includes(html, 'revision.textContent = (Number(character.revision) || 1) + "版";');
 assert(
   /window\.HOSHIMICHI_CLOUD_API_URL\s*=\s*"https:\/\/script\.google\.com\/macros\/s\/[A-Za-z0-9_-]+\/exec";/.test(html),
   "Cloud must point to a deployed GAS web app"
@@ -94,6 +99,10 @@ includes(gas, "usage: usage");
 includes(gas, "usageDateKey_(rows[index][0])");
 includes(gas, "previousCount += Number(rows[index][1] || 0);");
 includes(gas, "sheet.deleteRow(matchingRows[duplicateIndex]);");
+includes(gas, '"last_request_id", "thumbnail_data_url"');
+includes(gas, "var HM_MAX_THUMBNAIL_CHARS = 45000;");
+includes(gas, "validateThumbnailDataUrl_(state.thumbnailDataUrl)");
+includes(gas, 'sheet.getRange(1, 10).setValue(headers[9]);');
 assert(!/getOwner\(|getEmail\(/.test(gas), "The API must not expose the owner's identity");
 
 // GASのペイロード分割と入力検証を、Node上の最小モックで実行する。
@@ -146,6 +155,15 @@ assert.strictEqual(encoded.originalChars, JSON.stringify(largeState).length);
 assert.strictEqual(encoded.sha256.length, 64);
 
 assert.strictEqual(gasContext.validateState_(largeState).name, "分割試験");
+const tinyThumbnail = "data:image/webp;base64,AAAA";
+assert.strictEqual(
+  gasContext.validateState_({ ...largeState, thumbnailDataUrl: tinyThumbnail }).thumbnailDataUrl,
+  tinyThumbnail
+);
+assert.throws(
+  () => gasContext.validateState_({ ...largeState, thumbnailDataUrl: "javascript:alert(1)" }),
+  (error) => error.publicCode === "INVALID_THUMBNAIL"
+);
 assert.throws(
   () => gasContext.validateState_({ version: 10, name: "" }),
   (error) => error.publicCode === "INVALID_NAME"
@@ -187,6 +205,10 @@ class MemoryRange {
       });
     });
     return this;
+  }
+
+  setValue(value) {
+    return this.setValues([[value]]);
   }
 }
 
@@ -292,13 +314,34 @@ assert.deepStrictEqual(
   Array.from(memorySpreadsheet.sheets.keys()).sort(),
   ["Characters", "PayloadChunks", "Revisions", "Usage"].sort()
 );
+assert.strictEqual(
+  memorySpreadsheet.getSheetByName("Characters").rows[0][9],
+  "thumbnail_data_url"
+);
+
+const legacySpreadsheet = new MemorySpreadsheet("legacy-spreadsheet");
+legacySpreadsheet.insertSheet("Characters").rows.push(
+  Array.from(gasContext.HM_HEADERS.characters).slice(0, 9)
+);
+gasContext.ensureSheets_(legacySpreadsheet);
+assert.strictEqual(
+  legacySpreadsheet.getSheetByName("Characters").rows[0][9],
+  "thumbnail_data_url",
+  "The legacy Characters header must migrate without deleting rows"
+);
 
 function requestId(number) {
   return `10000000-0000-4000-8000-${number.toString(16).padStart(12, "0")}`;
 }
 
 function revisionState(name) {
-  return { version: 10, name, targetType: "character", characterSetting: `設定:${name}` };
+  return {
+    version: 10,
+    name,
+    thumbnailDataUrl: tinyThumbnail,
+    targetType: "character",
+    characterSetting: `設定:${name}`
+  };
 }
 
 let savedCharacter = gasContext.saveCharacter_({
@@ -331,6 +374,7 @@ for (let revision = 2; revision <= 4; revision += 1) {
 }
 assert.strictEqual(savedCharacter.revision, 4);
 assert.strictEqual(savedCharacter.state.name, "v4");
+assert.strictEqual(savedCharacter.thumbnailDataUrl, tinyThumbnail);
 
 const historyAtV4 = gasContext.getHistory_(savedCharacterId);
 assert.deepStrictEqual(Array.from(historyAtV4.history, (entry) => entry.revision), [3, 2]);

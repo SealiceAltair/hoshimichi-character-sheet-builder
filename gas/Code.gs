@@ -5,6 +5,7 @@ var HM_KEEP_REVISIONS = 3;
 var HM_CHUNK_SIZE = 40000;
 var HM_MAX_JSON_CHARS = 500000;
 var HM_MAX_BODY_BYTES = 2000000;
+var HM_MAX_THUMBNAIL_CHARS = 45000;
 var HM_LOCK_TIMEOUT_MS = 20000;
 var HM_SPREADSHEET_PROPERTY = "HOSHIMICHI_SPREADSHEET_ID";
 var HM_REQUEST_SPREADSHEET = null;
@@ -19,7 +20,7 @@ var HM_SHEETS = {
 var HM_HEADERS = {
   characters: [
     "character_id", "name_json", "target_type", "schema_version", "current_revision",
-    "created_at", "updated_at", "deleted_at", "last_request_id"
+    "created_at", "updated_at", "deleted_at", "last_request_id", "thumbnail_data_url"
   ],
   revisions: [
     "character_id", "revision", "operation", "restored_from_revision", "name_json",
@@ -74,7 +75,7 @@ function seedCurrentCharacters() {
       });
       var row = [
         seed.id, JSON.stringify(stateInfo.name), stateInfo.targetType, stateInfo.schemaVersion,
-        1, now, now, "", seed.requestId
+        1, now, now, "", seed.requestId, stateInfo.thumbnailDataUrl
       ];
       charactersSheet.appendRow(row);
       existingRows.push(row);
@@ -492,7 +493,7 @@ function saveCharacter_(request) {
       });
       charactersSheet.appendRow([
         newId, JSON.stringify(stateInfo.name), stateInfo.targetType, stateInfo.schemaVersion,
-        1, now, now, "", request.requestId
+        1, now, now, "", request.requestId, stateInfo.thumbnailDataUrl
       ]);
       return { character: publicCharacter_(spreadsheet, findCharacter_(spreadsheet, newId, false)) };
     }
@@ -513,9 +514,9 @@ function saveCharacter_(request) {
     writeRevision_(spreadsheet, requestedId, nextRevision, request.state, {
       operation: "save", restoredFromRevision: "", requestId: request.requestId, savedAt: now
     });
-    charactersSheet.getRange(record.rowIndex, 2, 1, 8).setValues([[
+    charactersSheet.getRange(record.rowIndex, 2, 1, 9).setValues([[
       JSON.stringify(stateInfo.name), stateInfo.targetType, stateInfo.schemaVersion, nextRevision,
-      record.values[5], now, "", request.requestId
+      record.values[5], now, "", request.requestId, stateInfo.thumbnailDataUrl
     ]]);
     pruneRevisions_(spreadsheet, requestedId);
     return { character: publicCharacter_(spreadsheet, findCharacter_(spreadsheet, requestedId, false)) };
@@ -553,9 +554,9 @@ function restoreCharacter_(request) {
       operation: "restore", restoredFromRevision: sourceRevision,
       requestId: request.requestId, savedAt: now
     });
-    spreadsheet.getSheetByName(HM_SHEETS.characters).getRange(record.rowIndex, 2, 1, 8).setValues([[
+    spreadsheet.getSheetByName(HM_SHEETS.characters).getRange(record.rowIndex, 2, 1, 9).setValues([[
       JSON.stringify(stateInfo.name), stateInfo.targetType, stateInfo.schemaVersion, nextRevision,
-      record.values[5], now, "", request.requestId
+      record.values[5], now, "", request.requestId, stateInfo.thumbnailDataUrl
     ]]);
     pruneRevisions_(spreadsheet, characterId);
     return { character: publicCharacter_(spreadsheet, findCharacter_(spreadsheet, characterId, false)) };
@@ -597,7 +598,8 @@ function characterSummaryFromRow_(row) {
     schemaVersion: Number(row[3]),
     revision: Number(row[4]),
     createdAt: isoString_(row[5]),
-    updatedAt: isoString_(row[6])
+    updatedAt: isoString_(row[6]),
+    thumbnailDataUrl: validateThumbnailDataUrl_(row[9])
   };
 }
 
@@ -734,8 +736,19 @@ function validateState_(state) {
   return {
     name: name,
     targetType: state.targetType === "monster" ? "monster" : "character",
-    schemaVersion: HM_SCHEMA_VERSION
+    schemaVersion: HM_SCHEMA_VERSION,
+    thumbnailDataUrl: validateThumbnailDataUrl_(state.thumbnailDataUrl)
   };
+}
+
+function validateThumbnailDataUrl_(value) {
+  var dataUrl = String(value || "");
+  if (!dataUrl) return "";
+  if (dataUrl.length > HM_MAX_THUMBNAIL_CHARS ||
+      !/^data:image\/(?:webp|jpeg|png);base64,[A-Za-z0-9+/=]+$/.test(dataUrl)) {
+    throw publicException_("INVALID_THUMBNAIL", "一覧画像の形式またはサイズが正しくありません。");
+  }
+  return dataUrl;
 }
 
 function findCharacter_(spreadsheet, characterId, includeDeleted) {
@@ -819,6 +832,12 @@ function ensureSheets_(spreadsheet) {
       return;
     }
     var current = sheet.getRange(1, 1, 1, headers.length).getValues()[0];
+    if (key === "characters" &&
+        current.slice(0, 9).join("\t") === headers.slice(0, 9).join("\t") &&
+        !current[9]) {
+      sheet.getRange(1, 10).setValue(headers[9]);
+      return;
+    }
     if (current.join("\t") !== headers.join("\t")) {
       throw publicException_("INVALID_SHEET", name + "シートの見出しが一致しません。");
     }

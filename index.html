@@ -231,7 +231,12 @@
       font-weight: 800;
     }
 
-    .character-grid,
+    .character-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 0.65rem;
+    }
+
     .local-backup-grid {
       display: grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -275,6 +280,131 @@
 
     .character-card-actions button {
       flex: 1 1 6.5rem;
+    }
+
+    .cloud-character-card {
+      grid-template-columns: 132px minmax(0, 1fr);
+      align-items: stretch;
+      gap: 1rem;
+      padding: 0.8rem;
+      border-radius: 8px;
+    }
+
+    .character-thumbnail {
+      display: grid;
+      place-items: center;
+      width: 132px;
+      height: 158px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--surface-soft);
+      color: var(--muted);
+      font-size: 0.78rem;
+      font-weight: 800;
+    }
+
+    .character-thumbnail img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+
+    .character-card-body {
+      display: grid;
+      align-content: start;
+      gap: 0.65rem;
+      min-width: 0;
+    }
+
+    .character-card-title {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      min-width: 0;
+    }
+
+    .character-revision-badge {
+      flex: 0 0 auto;
+      padding: 0.35rem 0.55rem;
+      border-radius: 6px;
+      background: var(--accent);
+      color: #ffffff;
+      font-size: 0.82rem;
+      font-weight: 900;
+    }
+
+    .cloud-character-card .character-card-actions {
+      justify-content: flex-end;
+      margin-top: auto;
+    }
+
+    .cloud-character-card .character-card-actions button {
+      flex: 0 1 auto;
+      min-width: 6.5rem;
+    }
+
+    .thumbnail-editor {
+      grid-column: 1 / -1;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: 0.9rem;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: var(--surface-soft);
+    }
+
+    .thumbnail-editor-preview {
+      display: grid;
+      place-items: center;
+      flex: 0 0 120px;
+      width: 120px;
+      height: 150px;
+      overflow: hidden;
+      border: 1px dashed var(--line-strong);
+      border-radius: 8px;
+      background: var(--surface);
+      color: var(--muted);
+      font-size: 0.78rem;
+      font-weight: 800;
+    }
+
+    .thumbnail-editor-preview img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+
+    .thumbnail-editor-controls {
+      display: grid;
+      gap: 0.65rem;
+      min-width: 0;
+    }
+
+    .thumbnail-editor-controls strong,
+    .thumbnail-editor-controls p {
+      margin: 0;
+    }
+
+    .thumbnail-editor-controls p {
+      color: var(--muted);
+      font-size: 0.82rem;
+    }
+
+    .thumbnail-editor-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.55rem;
+    }
+
+    .thumbnail-status.is-error {
+      color: var(--danger);
+    }
+
+    .thumbnail-status.is-success {
+      color: var(--success);
+      font-weight: 800;
     }
 
     .local-backup-section {
@@ -1362,7 +1492,6 @@
     }
 
     @media (max-width: 900px) {
-      .character-grid,
       .local-backup-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
       }
@@ -1404,9 +1533,31 @@
       }
 
       .primary-tabs,
-      .character-grid,
       .local-backup-grid {
         grid-template-columns: 1fr;
+      }
+
+      .cloud-character-card {
+        grid-template-columns: 88px minmax(0, 1fr);
+        gap: 0.75rem;
+        padding: 0.7rem;
+      }
+
+      .character-thumbnail {
+        width: 88px;
+        height: 112px;
+      }
+
+      .cloud-character-card .character-card-actions {
+        justify-content: stretch;
+      }
+
+      .cloud-character-card .character-card-actions button {
+        flex: 1 1 7rem;
+      }
+
+      .thumbnail-editor {
+        align-items: flex-start;
       }
 
       .primary-tab {
@@ -1614,6 +1765,23 @@
         <p class="section-note">名前はコピー時に必須です</p>
       </div>
       <div class="basic-grid">
+        <div class="thumbnail-editor">
+          <div class="thumbnail-editor-preview" aria-label="一覧画像のプレビュー">
+            <img id="character-thumbnail-preview" alt="" hidden>
+            <span id="character-thumbnail-placeholder">画像なし</span>
+          </div>
+          <div class="thumbnail-editor-controls">
+            <strong>キャラ一覧の画像</strong>
+            <p>選んだ画像は一覧用の小さなWebPへ自動変換します。元画像はクラウドへ保存しません。</p>
+            <div class="thumbnail-editor-actions">
+              <button id="select-character-thumbnail" type="button" class="secondary-button">画像を選ぶ</button>
+              <button id="remove-character-thumbnail" type="button" class="danger-button">画像を削除</button>
+            </div>
+            <p id="character-thumbnail-status" class="thumbnail-status" aria-live="polite"></p>
+            <input id="character-thumbnail-file" class="visually-hidden" type="file"
+              accept="image/png,image/jpeg,image/webp">
+          </div>
+        </div>
         <div class="field field-name">
           <label for="character-name">名前<span class="required">必須</span></label>
           <input id="character-name" type="text" maxlength="100" autocomplete="off"
@@ -2356,6 +2524,9 @@
 
       var STORAGE_KEY = "hoshimichi-character-sheet-builder";
       var STORAGE_VERSION = 10;
+      var THUMBNAIL_MAX_CHARS = 42000;
+      var THUMBNAIL_MAX_WIDTH = 200;
+      var THUMBNAIL_MAX_HEIGHT = 300;
       var KP_PASSPHRASE_HASH = "6da948cc";
       var feedbackTimer = null;
       var loadNotice = "";
@@ -2776,6 +2947,7 @@
         return {
           version: STORAGE_VERSION,
           name: "",
+          thumbnailDataUrl: "",
           targetType: "character",
           totalPoints: 4,
           build: "1",
@@ -2819,6 +2991,18 @@
 
       function sanitizeText(value) {
         return typeof value === "string" ? value : "";
+      }
+
+      function sanitizeThumbnailDataUrl(value) {
+        var dataUrl = sanitizeText(value);
+        if (!dataUrl) {
+          return "";
+        }
+        if (dataUrl.length > THUMBNAIL_MAX_CHARS ||
+            !/^data:image\/(?:webp|jpeg|png);base64,[A-Za-z0-9+/=]+$/.test(dataUrl)) {
+          return "";
+        }
+        return dataUrl;
       }
 
       function sanitizeChoiceArray(value, allowed, fallback) {
@@ -2978,6 +3162,7 @@
 
         var clean = createInitialState();
         clean.name = sanitizeText(raw.name);
+        clean.thumbnailDataUrl = sanitizeThumbnailDataUrl(raw.thumbnailDataUrl);
         clean.targetType = raw.targetType === "monster" ? "monster" : "character";
         clean.totalPoints = clampInteger(raw.totalPoints, 0, 999);
         clean.build = sanitizeBuild(raw.build);
@@ -4708,12 +4893,109 @@
         return true;
       }
 
+      function setThumbnailStatus(message, kind) {
+        var status = document.getElementById("character-thumbnail-status");
+        status.textContent = message || "";
+        status.className = "thumbnail-status";
+        if (kind) {
+          status.classList.add("is-" + kind);
+        }
+      }
+
+      function updateThumbnailPreview() {
+        var preview = document.getElementById("character-thumbnail-preview");
+        var placeholder = document.getElementById("character-thumbnail-placeholder");
+        var removeButton = document.getElementById("remove-character-thumbnail");
+        var hasThumbnail = Boolean(state.thumbnailDataUrl);
+        preview.hidden = !hasThumbnail;
+        placeholder.hidden = hasThumbnail;
+        removeButton.disabled = !hasThumbnail;
+        if (hasThumbnail) {
+          preview.src = state.thumbnailDataUrl;
+          preview.alt = (state.name.trim() || "キャラクター") + "の一覧画像";
+        } else {
+          preview.removeAttribute("src");
+          preview.alt = "";
+        }
+      }
+
+      function readImageFile(file) {
+        return new Promise(function (resolve, reject) {
+          var reader = new FileReader();
+          reader.addEventListener("load", function () { resolve(String(reader.result || "")); });
+          reader.addEventListener("error", function () { reject(new Error("画像を読み込めませんでした。")); });
+          reader.readAsDataURL(file);
+        });
+      }
+
+      function loadThumbnailSource(dataUrl) {
+        return new Promise(function (resolve, reject) {
+          var image = new Image();
+          image.addEventListener("load", function () { resolve(image); });
+          image.addEventListener("error", function () { reject(new Error("画像の形式を確認してください。")); });
+          image.src = dataUrl;
+        });
+      }
+
+      async function createThumbnailDataUrl(file) {
+        if (!file || ["image/png", "image/jpeg", "image/webp"].indexOf(file.type) < 0) {
+          throw new Error("PNG・JPEG・WebP画像を選んでください。");
+        }
+        if (file.size > 20 * 1024 * 1024) {
+          throw new Error("元画像は20MB以下にしてください。");
+        }
+        var source = await readImageFile(file);
+        var image = await loadThumbnailSource(source);
+        var sourceWidth = Number(image.naturalWidth) || 1;
+        var sourceHeight = Number(image.naturalHeight) || 1;
+        var baseScale = Math.min(1, THUMBNAIL_MAX_WIDTH / sourceWidth,
+          THUMBNAIL_MAX_HEIGHT / sourceHeight);
+        var shrink = 1;
+        for (var attempt = 0; attempt < 10; attempt += 1) {
+          var width = Math.max(1, Math.round(sourceWidth * baseScale * shrink));
+          var height = Math.max(1, Math.round(sourceHeight * baseScale * shrink));
+          var canvas = document.createElement("canvas");
+          canvas.width = width;
+          canvas.height = height;
+          var context = canvas.getContext("2d");
+          if (!context) {
+            throw new Error("このブラウザでは画像を縮小できません。");
+          }
+          context.clearRect(0, 0, width, height);
+          context.drawImage(image, 0, 0, width, height);
+          var quality = Math.max(0.45, 0.84 - attempt * 0.05);
+          var result = canvas.toDataURL("image/webp", quality);
+          if (sanitizeThumbnailDataUrl(result) && result.length <= THUMBNAIL_MAX_CHARS) {
+            return result;
+          }
+          shrink *= 0.82;
+        }
+        throw new Error("一覧画像を十分に小さくできませんでした。別の画像を選んでください。");
+      }
+
+      async function handleThumbnailFile(file) {
+        var selectButton = document.getElementById("select-character-thumbnail");
+        selectButton.disabled = true;
+        setThumbnailStatus("一覧用の画像へ変換しています…");
+        try {
+          state.thumbnailDataUrl = await createThumbnailDataUrl(file);
+          saveState();
+          updateThumbnailPreview();
+          setThumbnailStatus("一覧画像を設定しました。クラウド保存すると他の環境にも表示されます。", "success");
+        } catch (error) {
+          setThumbnailStatus(error.message || "画像を設定できませんでした。", "error");
+        } finally {
+          selectButton.disabled = false;
+        }
+      }
+
       function updateBasicInputs() {
         document.getElementById("character-name").value = state.name;
         document.getElementById("creation-target").value = state.targetType;
         document.getElementById("total-points").value = String(state.totalPoints);
         document.getElementById("build").value = state.build;
         document.getElementById("character-setting").value = state.characterSetting;
+        updateThumbnailPreview();
         updateBasicIndicators();
         freeFieldDefinitions.forEach(function (field) {
           var textarea = document.querySelector("[data-free-field='" + field.key + "']");
@@ -5885,6 +6167,26 @@
           }, true);
         });
 
+        document.getElementById("select-character-thumbnail").addEventListener("click", function () {
+          document.getElementById("character-thumbnail-file").click();
+        });
+
+        document.getElementById("character-thumbnail-file").addEventListener("change", function (event) {
+          var input = event.target;
+          var file = input.files && input.files[0];
+          if (file) {
+            handleThumbnailFile(file);
+          }
+          input.value = "";
+        });
+
+        document.getElementById("remove-character-thumbnail").addEventListener("click", function () {
+          state.thumbnailDataUrl = "";
+          saveState();
+          updateThumbnailPreview();
+          setThumbnailStatus("一覧画像を削除しました。クラウド側へ反映するには保存してください。", "success");
+        });
+
         document.getElementById("character-name").addEventListener("input", function (event) {
           state.name = event.target.value;
           if (state.name.trim()) {
@@ -5892,6 +6194,7 @@
             event.target.removeAttribute("aria-invalid");
           }
           saveState();
+          updateThumbnailPreview();
           updatePreview();
         });
 
@@ -6627,6 +6930,14 @@
         return targetType === "monster" ? "モンスター" : "キャラクター";
       }
 
+      function safeThumbnailDataUrl(value) {
+        var dataUrl = typeof value === "string" ? value : "";
+        return dataUrl.length <= 45000 &&
+          /^data:image\/(?:webp|jpeg|png);base64,[A-Za-z0-9+/=]+$/.test(dataUrl)
+          ? dataUrl
+          : "";
+      }
+
       function persistContext() {
         saveJson(CLOUD_CONTEXT_KEY, currentContext);
         updateSaveBar();
@@ -6790,29 +7101,54 @@
 
       function createCharacterCard(character) {
         var card = document.createElement("article");
-        card.className = "character-card";
+        card.className = "character-card cloud-character-card";
+
+        var thumbnail = document.createElement("div");
+        thumbnail.className = "character-thumbnail";
+        var thumbnailDataUrl = safeThumbnailDataUrl(character.thumbnailDataUrl);
+        if (thumbnailDataUrl) {
+          var image = document.createElement("img");
+          image.src = thumbnailDataUrl;
+          image.alt = (character.name || "名前なし") + "の一覧画像";
+          thumbnail.appendChild(image);
+        } else {
+          var placeholder = document.createElement("span");
+          placeholder.textContent = "画像なし";
+          thumbnail.appendChild(placeholder);
+        }
+        card.appendChild(thumbnail);
+
+        var body = document.createElement("div");
+        body.className = "character-card-body";
+
+        var title = document.createElement("div");
+        title.className = "character-card-title";
+
+        var revision = document.createElement("span");
+        revision.className = "character-revision-badge";
+        revision.textContent = (Number(character.revision) || 1) + "版";
+        title.appendChild(revision);
 
         var heading = document.createElement("h3");
         heading.textContent = character.name || "名前なし";
-        card.appendChild(heading);
+        title.appendChild(heading);
+        body.appendChild(title);
 
         var meta = document.createElement("p");
         meta.className = "character-card-meta";
         var type = document.createElement("span");
         type.textContent = targetLabel(character.targetType);
-        var revision = document.createElement("span");
-        revision.textContent = "v" + (Number(character.revision) || 1);
         var updated = document.createElement("span");
-        updated.textContent = formatDate(character.updatedAt);
-        meta.append(type, revision, updated);
-        card.appendChild(meta);
+        updated.textContent = "保存：" + formatDate(character.updatedAt);
+        meta.append(type, updated);
+        body.appendChild(meta);
 
         var actions = document.createElement("div");
         actions.className = "character-card-actions";
-        var openButton = createButton("開く", "", function () {
+        var openButton = createButton("編集", "", function () {
           openCloudCharacter(character.id);
         });
-        openButton.setAttribute("aria-label", "「" + (character.name || "名前なし") + "」を開く");
+        openButton.setAttribute("aria-label", "「" + (character.name || "名前なし") + "」を編集する");
         actions.appendChild(openButton);
         var historyButton = createButton("過去2版", "secondary-button", function () {
           showHistory(character.id);
@@ -6829,7 +7165,8 @@
         });
         deleteButton.setAttribute("aria-label", "「" + (character.name || "名前なし") + "」を一覧から削除する");
         actions.appendChild(deleteButton);
-        card.appendChild(actions);
+        body.appendChild(actions);
+        card.appendChild(body);
         return card;
       }
 
