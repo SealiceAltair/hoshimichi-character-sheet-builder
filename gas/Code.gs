@@ -42,6 +42,320 @@ function setupHoshimichiCloud() {
   }) };
 }
 
+function seedCurrentCharacters() {
+  return withScriptLock_(function () {
+    var spreadsheet = getSpreadsheet_();
+    var charactersSheet = spreadsheet.getSheetByName(HM_SHEETS.characters);
+    var existingRows = dataRows_(charactersSheet);
+    var seeds = currentCharacterSeeds_();
+    var created = [];
+    var skipped = [];
+    var now = new Date().toISOString();
+
+    seeds.forEach(function (seed) {
+      var existingById = existingRows.find(function (row) {
+        return String(row[0]) === seed.id;
+      });
+      var existingByName = existingRows.find(function (row) {
+        return !row[7] && parseName_(row[1]) === seed.state.name;
+      });
+      if (existingById || existingByName) {
+        skipped.push(seed.state.name);
+        return;
+      }
+
+      validateUuid_(seed.id, "characterId");
+      var stateInfo = validateState_(seed.state);
+      writeRevision_(spreadsheet, seed.id, 1, seed.state, {
+        operation: "seed",
+        restoredFromRevision: "",
+        requestId: seed.requestId,
+        savedAt: now
+      });
+      var row = [
+        seed.id, JSON.stringify(stateInfo.name), stateInfo.targetType, stateInfo.schemaVersion,
+        1, now, now, "", seed.requestId
+      ];
+      charactersSheet.appendRow(row);
+      existingRows.push(row);
+      created.push(seed.state.name);
+    });
+
+    return { created: created, skipped: skipped };
+  });
+}
+
+function currentCharacterSeeds_() {
+  return [
+    characterSeed_(13, makeCharacterSeedState_("紅焔", {
+      totalPoints: 4,
+      baseStats: { skill: 1, sense: 1 },
+      potentialStats: { magic: 2 },
+      characterSetting: [
+        "九本の尾を持つ狐獣人の炎術士。中継都市の冒険者ギルド所属、銅級。",
+        "現在地：中継都市の冒険者ギルド支部（夕方）。",
+        "左前腕の刺し傷は洗浄・止血・包帯による応急処置済み。出血は停止。",
+        "所持金：銀貨11枚。現在MPは未確認。"
+      ].join("\n"),
+      weapons: [{
+        name: "紅焔の鉤爪",
+        description: "両手それぞれにつける爪。術を邪魔しないよう、あまり長くない。",
+        attackType: "multi",
+        power: 5,
+        accuracyStat: "skill"
+      }],
+      armor: {
+        name: "出雲の軽鎧",
+        description: "動きやすさを重視した布装備。",
+        protection: 2
+      },
+      skills: [
+        {
+          id: "kouen-kitsunebi",
+          name: "狐火",
+          resourceType: "magic",
+          attackType: "standard",
+          powerDisplay: 10,
+          accuracy: 25,
+          cost: 1,
+          targetMode: "single",
+          description: "3つの狐火を作り出し対象を燃やす。"
+        },
+        {
+          id: "kouen-kurenaiten",
+          name: "奥義・九尾紅蓮天",
+          resourceType: "magic",
+          attackType: "standard",
+          powerDisplay: 56,
+          accuracy: -10,
+          cost: 1,
+          targetMode: "range",
+          rangeShape: "area",
+          rangeDistance: 6,
+          areaRadius: 1.5
+        }
+      ]
+    })),
+    characterSeed_(12, makeCharacterSeedState_("フィトリアット・マリアベル", {
+      totalPoints: 4,
+      baseStats: { strength: 3 },
+      potentialStats: { willpower: 1 },
+      characterSetting: [
+        "中継都市の冒険者ギルド所属、銅級。初実戦と初回依頼を経験済み。",
+        "左前腕は教会で治療済みだが未完治。左手は小物のみ保持可能で、戦闘使用と両手武器の補助は不可。",
+        "次のシナリオではグランを基本使用できず、右手用の不慣れな代替武器を所持。",
+        "グランの正式な攻撃型・単発威力と、代替武器の正式名称は未確認。"
+      ].join("\n"),
+      hasWeapon2: true,
+      weapons: [
+        {
+          name: "特大剣グラン",
+          description: "正式な攻撃型・単発威力は未確認。ビルダー上の攻撃型と威力は初期値。"
+        },
+        {
+          name: "右手用の金属製棍棒のような武器",
+          description: "負傷中の代替武器。正式名称・攻撃型・単発威力は未確認。"
+        }
+      ],
+      armor: { protection: 1, description: "正本の派生防護点1。正式な防具名は未確認。" }
+    })),
+    characterSeed_(11, makeCharacterSeedState_("カイト", {
+      totalPoints: 4,
+      baseStats: { robustness: 1, strength: 1 },
+      practicalSkills: { adventure: 2 },
+      characterSetting: [
+        "中継都市の冒険者ギルド所属、銅級。初実戦を経験し、初回依頼は条件付き達成。",
+        "左肩打撲は応急処置済み。痛みは残るが腕と指は動かせる。",
+        "次回課題：緊張や恐怖でも目を閉じない。",
+        "通貨：銀貨2枚・銅貨6枚＋未確定の報酬銅貨数枚。直剣の正式名称・攻撃型・単発威力は未確認。"
+      ].join("\n"),
+      weapons: [{
+        name: "直剣",
+        description: "正式名称・攻撃型・単発威力・素材・入手経路は未確認。ビルダー上の攻撃型と威力は初期値。"
+      }],
+      armor: { protection: 2 }
+    })),
+    characterSeed_(10, makeCharacterSeedState_("カーヴェイン", {
+      totalPoints: 4,
+      potentialStats: { magic: 4 },
+      characterSetting: [
+        "中継都市の冒険者ギルドへカオスナイトメアロードの名で登録した銅級冒険者。",
+        "魔法は4枠すべて内容未決定。薬品による黒炎は魔法枠へ登録しない。",
+        "現在地：中継都市の冒険者ギルド。負傷なし。",
+        "仕込み刀の正式な攻撃型・単発威力は未確認。"
+      ].join("\n"),
+      weapons: [{
+        name: "仕込み刀",
+        description: "正式な攻撃型・単発威力・来歴・機構は未確認。ビルダー上の攻撃型と威力は初期値。"
+      }]
+    })),
+    characterSeed_(1, makeCharacterSeedState_("シーリス・アルタイル", {
+      totalPoints: 40,
+      baseStats: {
+        robustness: 5, endurance: 3, strength: 3, skill: 5,
+        agility: 3, sense: 1, intellect: 2, spirit: 1
+      },
+      potentialStats: { willpower: 5, holy: 1 },
+      practicalSkills: {
+        maintenance: 2, firstAid: 2, plants: 2, dismantling: 1, adventure: 4
+      },
+      uniqueAbility: "星結びの祝福",
+      characterSetting: [
+        "冒険者の二つ名は『流星』。普通の冒険者として幸せに生きることを望んでいる。",
+        "普段は警戒心から静かに見えるが、本来は活発でお茶目な冒険好き。",
+        "主武器はアステルブレード＋3、防具は月白の旅装＋3。",
+        "《流転》の正本登録命中補正は＋150、《星砕き》は＋95。構造化欄は現行ビルダーの適用上限＋80で登録。"
+      ].join("\n"),
+      weapons: [{
+        name: "アステルブレード",
+        description: "学園卒業時に聖騎士の師匠から贈られた軽大剣。斬撃・突き・受け流し・軌道変更に適する。",
+        attackType: "standard",
+        power: 7,
+        enhancementStage: 3,
+        accuracyStat: "skill"
+      }],
+      armor: {
+        name: "月白の旅装",
+        description: "旅、探索、採取、戦闘を一着で行える、白を基調とした厚手の冒険用コート。",
+        protection: 1,
+        enhancementStage: 3
+      },
+      skills: [
+        {
+          id: "seiris-ruten",
+          name: "星流剣術・壱ノ型《流転》",
+          resourceType: "willpower",
+          attackType: "standard",
+          powerDisplay: -60,
+          accuracy: 80,
+          cost: 1,
+          effectBudget: 5,
+          targetMode: "single",
+          description: "敵の攻撃を正面から止めず、剣の腹、足運び、重心移動で軌道を外す受け流し技。正本登録命中補正は＋150。"
+        },
+        {
+          id: "seiris-hoshikudaki",
+          name: "星流剣術・参ノ型《星砕き》",
+          resourceType: "willpower",
+          attackType: "heavy",
+          powerDisplay: 0,
+          accuracy: 80,
+          cost: 3,
+          effectBudget: 5,
+          targetMode: "single",
+          description: "敵の決定的な一撃へ踏み込み、攻撃が完成する前に軌道の根元を断つ必殺迎撃。正本登録命中補正は＋95。"
+        }
+      ]
+    })),
+    characterSeed_(14, makeCharacterSeedState_("シェイナム", {
+      totalPoints: 4,
+      characterSetting: [
+        "16歳の男性。兄を超えるため冒険者となった、礼儀正しく丁寧な蛇腹剣使い。",
+        "中継都市の冒険者ギルド所属、銅級。初回チュートリアル完了、CP4。",
+        "左肩から背中にかけて重い打撲。左腕は動作可能で、軟膏と布による処置済み。",
+        "所持金：銀貨6枚。能力配分・体格・防具・武器数値・黒蛇牢獄のスキルデータは未登録。"
+      ].join("\n"),
+      weapons: [{
+        name: "黒蛇ヴェノムナーガ",
+        description: "剣形態と鞭形態を切り替える蛇腹剣。正式な攻撃型・単発威力・強化値は未登録。ビルダー上の攻撃型と威力は初期値。"
+      }]
+    })),
+    characterSeed_(9, makeCharacterSeedState_("マイン・A・レッドフォックス", {
+      totalPoints: 0,
+      characterSetting: [
+        "15歳の女性。中継都市の冒険者ギルド所属、銅級。ギルド登録名はレッドフォックス。",
+        "淡泊で効率を重視し、必要がなければ戦わない。初回の赤縁草採取依頼を達成。",
+        "現在地：中継都市の冒険者ギルド。負傷なし、疲労は軽微。",
+        "通貨：銀貨10枚＋未確定の依頼報酬銅貨数枚。CPと恒常能力値、潜在能力、実務技能は正本未登録。"
+      ].join("\n"),
+      weapons: [{
+        name: "小太刀",
+        description: "外見・来歴・固有名・正式な攻撃型・単発威力は未確認。ビルダー上の攻撃型と威力は初期値。"
+      }]
+    }))
+  ];
+}
+
+function characterSeed_(number, state) {
+  var suffix = String(number).padStart(12, "0");
+  return {
+    id: "00000000-0000-4000-8000-" + suffix,
+    requestId: "10000000-0000-4000-8000-" + suffix,
+    state: state
+  };
+}
+
+function makeCharacterSeedState_(name, options) {
+  var config = options || {};
+  return {
+    version: HM_SCHEMA_VERSION,
+    name: name,
+    targetType: "character",
+    totalPoints: Number(config.totalPoints || 0),
+    build: "1",
+    baseStats: seedNumberMap_([
+      "robustness", "endurance", "strength", "skill",
+      "agility", "sense", "intellect", "spirit"
+    ], config.baseStats),
+    potentialStats: seedNumberMap_(["willpower", "magic", "holy"], config.potentialStats),
+    practicalSkills: seedNumberMap_([
+      "cooking", "maintenance", "firstAid", "plants",
+      "minerals", "dismantling", "adventure"
+    ], config.practicalSkills),
+    uniqueAbility: String(config.uniqueAbility || ""),
+    characterSetting: String(config.characterSetting || ""),
+    hasWeapon2: Boolean(config.hasWeapon2),
+    weapons: (config.weapons || []).map(function (weapon) {
+      return {
+        name: String(weapon.name || ""),
+        description: String(weapon.description || ""),
+        attackType: String(weapon.attackType || "standard"),
+        power: Number(weapon.power === undefined ? 7 : weapon.power),
+        enhancementStage: Number(weapon.enhancementStage || 0),
+        accuracyStat: String(weapon.accuracyStat || "skill")
+      };
+    }),
+    armor: {
+      name: String(config.armor && config.armor.name || ""),
+      description: String(config.armor && config.armor.description || ""),
+      protection: Number(config.armor && config.armor.protection !== undefined
+        ? config.armor.protection : 2),
+      enhancementStage: Number(config.armor && config.armor.enhancementStage || 0)
+    },
+    skills: (config.skills || []).map(function (skill) {
+      return {
+        id: String(skill.id || ""),
+        name: String(skill.name || ""),
+        resourceType: String(skill.resourceType || "willpower"),
+        attackType: String(skill.attackType || "standard"),
+        powerDisplay: Number(skill.powerDisplay || 0),
+        accuracy: Number(skill.accuracy || 0),
+        cost: Number(skill.cost || 0),
+        effectBudget: Number(skill.effectBudget || 0),
+        targetMode: String(skill.targetMode || "single"),
+        maxTargets: Number(skill.maxTargets || 1),
+        rangeShape: String(skill.rangeShape || "line"),
+        rangeDistance: Number(skill.rangeDistance || 3),
+        rangeAngle: Number(skill.rangeAngle || 90),
+        areaRadius: Number(skill.areaRadius || 1.5),
+        description: String(skill.description || "")
+      };
+    }),
+    legacySkills: "",
+    legacyWeapons: "",
+    legacyEquipment: ""
+  };
+}
+
+function seedNumberMap_(keys, values) {
+  var source = values || {};
+  var result = {};
+  keys.forEach(function (key) {
+    result[key] = Number(source[key] || 0);
+  });
+  return result;
+}
+
 function doGet(e) {
   return handleRequest_("GET", e || {});
 }
@@ -443,16 +757,31 @@ function incrementUsage_() {
     var sheet = spreadsheet.getSheetByName(HM_SHEETS.usage);
     var date = Utilities.formatDate(new Date(), HM_TIME_ZONE, "yyyy-MM-dd");
     var rows = dataRows_(sheet);
+    var matchingRows = [];
+    var previousCount = 0;
     for (var index = 0; index < rows.length; index += 1) {
-      if (rows[index][0] === date) {
-        var count = Number(rows[index][1]) + 1;
-        sheet.getRange(index + 2, 2, 1, 2).setValues([[count, new Date().toISOString()]]);
-        return { dateJst: date, count: count };
+      if (usageDateKey_(rows[index][0]) !== date) continue;
+      matchingRows.push(index + 2);
+      previousCount += Number(rows[index][1] || 0);
+    }
+    if (matchingRows.length) {
+      var count = previousCount + 1;
+      sheet.getRange(matchingRows[0], 2, 1, 2).setValues([[count, new Date().toISOString()]]);
+      for (var duplicateIndex = matchingRows.length - 1; duplicateIndex >= 1; duplicateIndex -= 1) {
+        sheet.deleteRow(matchingRows[duplicateIndex]);
       }
+      return { dateJst: date, count: count };
     }
     sheet.appendRow([date, 1, new Date().toISOString()]);
     return { dateJst: date, count: 1 };
   });
+}
+
+function usageDateKey_(value) {
+  if (Object.prototype.toString.call(value) === "[object Date]" && !isNaN(value.getTime())) {
+    return Utilities.formatDate(value, HM_TIME_ZONE, "yyyy-MM-dd");
+  }
+  return String(value || "").slice(0, 10);
 }
 
 function withScriptLock_(callback) {

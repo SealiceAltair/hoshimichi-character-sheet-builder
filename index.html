@@ -2347,7 +2347,7 @@
 
   <script>
     // GASをウェブアプリとして公開した後、発行された /exec URLをここへ設定します。
-    window.HOSHIMICHI_CLOUD_API_URL = "";
+    window.HOSHIMICHI_CLOUD_API_URL = "https://script.google.com/macros/s/AKfycbwtEfL2_hTuX66d1YkS-ySZs-krfzWqNpTMhDZ8VW64CtzLcJ4I4glOVY4ONGfJ3Nrr/exec";
   </script>
 
   <script>
@@ -6531,6 +6531,7 @@
       var lastListLoad = 0;
       var backupTimer = null;
       var listLoading = false;
+      var saveInProgress = false;
 
       var usageCounter = document.getElementById("usage-counter");
       var connectionNote = document.getElementById("cloud-connection-note");
@@ -6648,7 +6649,6 @@
 
       function updateSaveBar() {
         var state = getCurrentState();
-        var hasName = Boolean(String(state.name || "").trim());
         var configured = isConfigured();
         if (currentContext.characterId) {
           cloudCharacterLabel.textContent =
@@ -6656,8 +6656,8 @@
         } else {
           cloudCharacterLabel.textContent = "このキャラはまだクラウドへ保存されていません";
         }
-        saveButton.disabled = !configured || !hasName;
-        saveCopyButton.disabled = !configured || !hasName;
+        saveButton.disabled = saveInProgress;
+        saveCopyButton.disabled = saveInProgress;
         currentHistoryButton.disabled = !configured || !currentContext.characterId;
       }
 
@@ -6979,6 +6979,17 @@
       }
 
       async function saveToCloud(asCopy, force) {
+        if (saveInProgress) {
+          return;
+        }
+        if (!isConfigured()) {
+          setStatus(
+            cloudSaveStatus,
+            "クラウド保存を使うにはGASのURL設定が必要です。入力内容はこのブラウザへ自動保存されています。",
+            "error"
+          );
+          return;
+        }
         var state = getCloudState();
         var name = String(state.name || "").trim();
         if (!name) {
@@ -6987,8 +6998,8 @@
           return;
         }
         backupCurrentState();
-        saveButton.disabled = true;
-        saveCopyButton.disabled = true;
+        saveInProgress = true;
+        updateSaveBar();
         setStatus(cloudSaveStatus, asCopy ? "別キャラとして保存しています…" : "クラウドへ保存しています…", "");
         try {
           var request = {
@@ -7008,11 +7019,13 @@
           if (error.code === "REVISION_CONFLICT" && !force && window.confirm(
             "別の環境で先に更新されています。現在の内容を新しい版として強制保存しますか？"
           )) {
+            saveInProgress = false;
             await saveToCloud(asCopy, true);
             return;
           }
           setStatus(cloudSaveStatus, error.message, "error");
         } finally {
+          saveInProgress = false;
           updateSaveBar();
         }
       }

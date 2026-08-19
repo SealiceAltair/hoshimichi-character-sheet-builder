@@ -32,7 +32,10 @@ includes(html, "キャラ一覧へ →");
 includes(html, "キャラ作成へ →");
 includes(html, "シナリオ・RPへ →");
 includes(html, "grid-template-columns: repeat(3, minmax(0, 1fr))");
-includes(html, 'window.HOSHIMICHI_CLOUD_API_URL = "";', "Cloud must default to disconnected");
+assert(
+  /window\.HOSHIMICHI_CLOUD_API_URL\s*=\s*"https:\/\/script\.google\.com\/macros\/s\/[A-Za-z0-9_-]+\/exec";/.test(html),
+  "Cloud must point to a deployed GAS web app"
+);
 assert(!/<script[^>]+src=/i.test(html), "The builder must not depend on an external script");
 assert(!/<link[^>]+rel=["']stylesheet["']/i.test(html), "The builder must not depend on an external stylesheet");
 
@@ -67,6 +70,10 @@ includes(html, 'credentials: "omit"');
 assert(!/mode\s*:\s*["']no-cors["']/.test(html), "no-cors responses cannot be read");
 assert(!/action\s*[:=]\s*["'](?:usage|counter|quota)["']/.test(html), "Do not add a counter-only API call");
 includes(html, 'usageCounter.textContent = "本日の通信回数：" + count + "回";');
+includes(html, "saveButton.disabled = saveInProgress;");
+includes(html, "saveCopyButton.disabled = saveInProgress;");
+includes(html, "クラウド保存を使うにはGASのURL設定が必要です。入力内容はこのブラウザへ自動保存されています。");
+assert(!html.includes("saveButton.disabled = !configured || !hasName"), "Save must explain why it cannot proceed after click");
 
 // 公開HTMLへ所有者情報を埋め込まないこと。
 assert(!/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i.test(html), "An email address leaked into index.html");
@@ -84,6 +91,9 @@ includes(gas, 'if (action === "delete")');
 includes(gas, "LockService.getScriptLock()");
 includes(gas, "revisionRows.slice(HM_KEEP_REVISIONS)");
 includes(gas, "usage: usage");
+includes(gas, "usageDateKey_(rows[index][0])");
+includes(gas, "previousCount += Number(rows[index][1] || 0);");
+includes(gas, "sheet.deleteRow(matchingRows[duplicateIndex]);");
 assert(!/getOwner\(|getEmail\(/.test(gas), "The API must not expose the owner's identity");
 
 // GASのペイロード分割と入力検証を、Node上の最小モックで実行する。
@@ -233,7 +243,7 @@ class MemorySpreadsheet {
 
 const memorySpreadsheet = new MemorySpreadsheet("test-spreadsheet");
 const memoryProperties = {};
-let generatedUuid = 0;
+let generatedUuid = 1000;
 utilities.getUuid = () => {
   generatedUuid += 1;
   return `00000000-0000-4000-8000-${generatedUuid.toString(16).padStart(12, "0")}`;
@@ -372,6 +382,33 @@ assert.throws(
   () => gasContext.getCharacter_(savedCharacterId),
   (error) => error.publicCode === "CHARACTER_DELETED"
 );
+
+const firstSeed = gasContext.seedCurrentCharacters();
+assert.deepStrictEqual(Array.from(firstSeed.created), [
+  "紅焔",
+  "フィトリアット・マリアベル",
+  "カイト",
+  "カーヴェイン",
+  "シーリス・アルタイル",
+  "シェイナム",
+  "マイン・A・レッドフォックス"
+]);
+assert.deepStrictEqual(Array.from(firstSeed.skipped), []);
+assert.deepStrictEqual(
+  Array.from(gasContext.listCharacters_().characters, (character) => character.name),
+  Array.from(firstSeed.created)
+);
+const repeatedSeed = gasContext.seedCurrentCharacters();
+assert.deepStrictEqual(Array.from(repeatedSeed.created), []);
+assert.deepStrictEqual(Array.from(repeatedSeed.skipped), Array.from(firstSeed.created));
+assert.strictEqual(memorySpreadsheet.getSheetByName("Characters").rows.length, 9);
+
+const currentSeeds = gasContext.currentCharacterSeeds_();
+const shainamSeed = currentSeeds.find((seed) => seed.state.name === "シェイナム");
+assert.strictEqual(shainamSeed.state.name, "シェイナム", "Only Shainam's public name may be seeded");
+assert(!shainamSeed.state.name.includes("・"), "A non-public surname leaked into Shainam's list name");
+const mineSeed = currentSeeds.find((seed) => seed.state.name.startsWith("マイン"));
+assert.strictEqual(mineSeed.state.totalPoints, 0, "Unregistered CP must not be invented for Mine");
 
 const countedResponse = gasContext.doGet({ parameter: { action: "list" } });
 const countedPayload = JSON.parse(countedResponse.value);
