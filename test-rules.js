@@ -75,6 +75,8 @@ const attackTypes = readObject("attackTypeDefinitions");
 const attackMethods = readObject("simulationAttackMethods");
 const attackPurposes = readObject("attackPurposeDefinitions");
 const defenseMultipliers = readObject("defenseResultMultipliers");
+const skillEffects = readObject("skillEffectDefinitions");
+const commonSkillEffects = readArray("commonSkillEffectDefinitions");
 const weaponStages = readArray("weaponEnhancementDefinitions");
 const defenseStages = readArray("armorEnhancementDefinitions");
 
@@ -138,11 +140,21 @@ const getRangeBudget = readFunction("getRangeBudget", {});
 const getTargetBudget = (skill) => skill.targetMode === "multiple"
   ? Math.max(0, skill.maxTargets - 1) * 25
   : 0;
+const effectContext = {
+  skillEffectDefinitions: skillEffects,
+  commonSkillEffectDefinitions: commonSkillEffects
+};
+effectContext.clampInteger = readFunction("clampInteger", {});
+effectContext.getSkillEffectGroups = readFunction("getSkillEffectGroups", effectContext);
+effectContext.getSkillEffectOption = readFunction("getSkillEffectOption", effectContext);
+effectContext.sanitizeEffectSelections = readFunction("sanitizeEffectSelections", effectContext);
+effectContext.getSkillEffectBudget = readFunction("getSkillEffectBudget", effectContext);
 const getSkillPerformance = readFunction("getSkillPerformance", {
   SKILL_ACCURACY_RATE: 1.4,
   SKILL_SELL_RATE: 0.7,
   getTargetBudget,
-  getRangeBudget
+  getRangeBudget,
+  getSkillEffectBudget: effectContext.getSkillEffectBudget
 });
 
 function skillBudget(overrides) {
@@ -150,6 +162,9 @@ function skillBudget(overrides) {
     powerDisplay: 0,
     accuracy: 0,
     effectBudget: 0,
+    resourceType: "magic",
+    effectSelections: [],
+    customEffects: [],
     targetMode: "single",
     maxTargets: 1,
     rangeShape: "line",
@@ -170,16 +185,35 @@ assertClose(soldAccuracy.netBudget, 64.2, "power 123 accuracy -60 net budget");
 assert(soldAccuracy.requiredCost === 1,
   "power 123 accuracy -60 should require cost 1");
 const minimumCost = skillBudget({
-  powerDisplay: -90,
+  powerDisplay: -100,
   targetMode: "multiple",
   maxTargets: 3
 });
 assertClose(minimumCost.buyBudget, 50, "negative power buy budget");
-assertClose(minimumCost.sellBudget, 63, "negative power sell budget");
-assertClose(minimumCost.netBudget, -13, "negative power net budget");
+assertClose(minimumCost.sellBudget, 70, "negative power sell budget");
+assertClose(minimumCost.netBudget, -20, "negative power net budget");
 assert(minimumCost.requiredCost === 1, "minimum skill cost should be 1");
 assert(skillBudget({ powerDisplay: 130 }).requiredCost === 2,
   "power 130 should require cost 2");
+
+const combinedEffects = skillBudget({
+  resourceType: "magic",
+  effectSelections: ["magic-block-passage", "magic-disadvantage", "common-combat-long"],
+  customEffects: [{ enabled: true, label: "追加", budget: 5 }]
+});
+assert(combinedEffects.effectBudget === 95, "selected and custom effect budgets are not summed");
+assert(combinedEffects.requiredCost === 2, "combined effect budget should require cost 2");
+const exclusiveEffects = effectContext.sanitizeEffectSelections("magic", [
+  "magic-disadvantage", "magic-remove-turn", "magic-hide-person", "magic-block-passage"
+]);
+assert(exclusiveEffects.length === 2, "exclusive effect categories allow duplicate selections");
+assert(exclusiveEffects[0] === "magic-disadvantage", "first opponent effect should be preserved");
+assert(exclusiveEffects[1] === "magic-hide-person", "first field effect should be preserved");
+assert(effectContext.getSkillEffectBudget({
+  resourceType: "holy",
+  effectSelections: ["holy-cleanse-many", "common-brief"],
+  customEffects: [{ enabled: true, label: "追加", budget: 10 }]
+}) === 55, "negative common property should offset positive effects");
 
 assert(getRangeBudget({ targetMode: "range", rangeShape: "line", rangeDistance: 3 }) === 20,
   "line 3m budget");
@@ -238,6 +272,9 @@ Object.keys(expectedDefenseMultipliers).forEach((grade) => {
 });
 
 assert(/var STORAGE_VERSION = 10;/.test(source), "storage version is not V10");
+assert(/powerInput\.min = "-100"/.test(source), "skill power minimum is not -100");
+assert(/自由入力予算は0～999の整数/.test(source), "custom effect integer validation is missing");
+assert(/group\.exclusive/.test(source), "exclusive effect category handling is missing");
 assert(/raw\.version !== 9/.test(source), "V9 migration is not accepted");
 assert(/enhancementStage:\s*0/.test(source), "new weapon enhancement stage is not 0");
 assert(/goblinArmorEnhancement:\s*0/.test(source), "new enemy defense stage is not 0");

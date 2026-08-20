@@ -1277,6 +1277,104 @@
       min-height: 5rem;
     }
 
+    .skill-effects {
+      grid-column: 1 / -1;
+      display: grid;
+      gap: 0.8rem;
+      min-width: 0;
+      margin: 0;
+      padding: 0.85rem;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--surface);
+    }
+
+    .skill-effects > legend {
+      padding: 0 0.35rem;
+      color: var(--accent-dark);
+      font-weight: 800;
+    }
+
+    .skill-effect-groups {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.75rem;
+    }
+
+    .skill-effect-group {
+      display: grid;
+      align-content: start;
+      gap: 0.45rem;
+      min-width: 0;
+      padding: 0.7rem;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--surface-soft);
+    }
+
+    .skill-effect-group h4,
+    .skill-effect-group p {
+      margin: 0;
+    }
+
+    .skill-effect-group h4 {
+      font-size: 0.92rem;
+    }
+
+    .skill-effect-group p {
+      color: var(--muted);
+      font-size: 0.76rem;
+    }
+
+    .skill-effect-option {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr) auto;
+      align-items: start;
+      gap: 0.5rem;
+      padding: 0.35rem 0;
+      cursor: pointer;
+    }
+
+    .skill-effect-option input {
+      width: 1.15rem;
+      height: 1.15rem;
+      margin: 0.2rem 0 0;
+    }
+
+    .skill-effect-option span:last-child {
+      color: var(--accent-dark);
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .skill-custom-effects {
+      display: grid;
+      gap: 0.55rem;
+    }
+
+    .skill-custom-effect {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr) minmax(8rem, 0.35fr);
+      align-items: center;
+      gap: 0.55rem;
+    }
+
+    .skill-custom-effect > input[type="checkbox"] {
+      width: 1.15rem;
+      height: 1.15rem;
+      margin: 0;
+    }
+
+    .skill-custom-effect input:disabled {
+      opacity: 0.62;
+    }
+
+    .skill-effect-warning {
+      margin: 0;
+      color: var(--warning-text);
+      font-size: 0.78rem;
+    }
+
     .skill-metrics,
     .skill-attack-preview {
       grid-column: 1 / -1;
@@ -1732,6 +1830,15 @@
       .simulator-grid,
       .skill-grid {
         grid-template-columns: 1fr;
+      }
+
+      .skill-effect-groups,
+      .skill-custom-effect {
+        grid-template-columns: 1fr;
+      }
+
+      .skill-custom-effect > input[type="checkbox"] {
+        justify-self: start;
       }
 
       .skill-effect,
@@ -2745,6 +2852,108 @@
         magic: { label: "魔力", statKey: "magic" },
         holy: { label: "聖力", statKey: "holy" }
       };
+      var skillEffectDefinitions = {
+        magic: [
+          {
+            key: "magic-opponent",
+            label: "相手へ",
+            exclusive: true,
+            options: [
+              { key: "magic-disadvantage", label: "判定に不利を与える", budget: 30 },
+              { key: "magic-block-action", label: "特定の行動を封じる", budget: 60 },
+              { key: "magic-remove-turn", label: "手番を奪う", budget: 90 }
+            ]
+          },
+          {
+            key: "magic-field",
+            label: "場へ",
+            exclusive: true,
+            options: [
+              { key: "magic-hide-person", label: "人ひとりを隠す規模", budget: 15 },
+              { key: "magic-block-passage", label: "通路を塞ぐ規模", budget: 30 },
+              { key: "magic-partition-room", label: "部屋を仕切る規模", budget: 60 }
+            ]
+          },
+          {
+            key: "magic-attribute",
+            label: "属性",
+            exclusive: true,
+            requiresKp: true,
+            options: [
+              { key: "magic-attribute-slight", label: "少し外れる", budget: 15 },
+              { key: "magic-attribute-clear", label: "明らかに外れる", budget: 45 }
+            ]
+          }
+        ],
+        willpower: [
+          {
+            key: "willpower-self",
+            label: "自分へ",
+            exclusive: false,
+            options: [
+              { key: "willpower-raise-stat", label: "基礎能力を一つ一時的に上げる", budget: 30 },
+              { key: "willpower-extra-action", label: "一巡に追加で動く", budget: 60 },
+              { key: "willpower-endure", label: "倒れずに耐える", budget: 90 }
+            ]
+          },
+          {
+            key: "willpower-weapon",
+            label: "武器へ",
+            exclusive: false,
+            options: [
+              { key: "willpower-channel-weapon", label: "気力を通す（硬い外皮へ届く）", budget: 30 }
+            ]
+          }
+        ],
+        holy: [
+          {
+            key: "holy-healing",
+            label: "癒し",
+            exclusive: false,
+            options: [
+              { key: "holy-heal-wound", label: "負傷を一段戻す", budget: 60 }
+            ]
+          },
+          {
+            key: "holy-purification",
+            label: "浄化",
+            exclusive: true,
+            options: [
+              { key: "holy-cleanse-one", label: "状態異常を一つ解除", budget: 30 },
+              { key: "holy-cleanse-many", label: "複数を同時に解除", budget: 60 }
+            ]
+          },
+          {
+            key: "holy-blessing",
+            label: "加護",
+            exclusive: false,
+            options: [
+              { key: "holy-nullify-type", label: "特定の属性・種類を無効化", budget: 60 },
+              { key: "holy-barrier", label: "結界を張る", budget: 60 }
+            ]
+          }
+        ]
+      };
+      var commonSkillEffectDefinitions = [
+        {
+          key: "common-duration",
+          label: "持続",
+          exclusive: true,
+          options: [
+            { key: "common-combat-long", label: "戦闘中ずっと続く", budget: 30 },
+            { key: "common-cross-session", label: "卓を越えて残る", budget: 60 },
+            { key: "common-brief", label: "すぐ消える", budget: -15 }
+          ]
+        },
+        {
+          key: "common-property",
+          label: "性質",
+          exclusive: false,
+          options: [
+            { key: "common-no-escape", label: "抜けられない", budget: 45 }
+          ]
+        }
+      ];
       var SKILL_ACCURACY_RATE = 1.4;
       var SKILL_SELL_RATE = 0.7;
 
@@ -3067,6 +3276,12 @@
           accuracy: 0,
           cost: 0,
           effectBudget: 0,
+          effectSelections: [],
+          customEffects: [
+            { enabled: false, label: "", budget: 0 },
+            { enabled: false, label: "", budget: 0 },
+            { enabled: false, label: "", budget: 0 }
+          ],
           targetMode: "single",
           maxTargets: 1,
           rangeShape: "line",
@@ -3192,13 +3407,104 @@
         return Object.prototype.hasOwnProperty.call(choices, value) ? value : fallback;
       }
 
+      function getSkillEffectGroups(resourceType) {
+        return (skillEffectDefinitions[resourceType] || []).concat(commonSkillEffectDefinitions);
+      }
+
+      function getSkillEffectOption(resourceType, optionKey) {
+        var groups = getSkillEffectGroups(resourceType);
+        for (var groupIndex = 0; groupIndex < groups.length; groupIndex += 1) {
+          for (var optionIndex = 0; optionIndex < groups[groupIndex].options.length; optionIndex += 1) {
+            if (groups[groupIndex].options[optionIndex].key === optionKey) {
+              return {
+                group: groups[groupIndex],
+                option: groups[groupIndex].options[optionIndex]
+              };
+            }
+          }
+        }
+        return null;
+      }
+
+      function sanitizeEffectSelections(resourceType, value) {
+        var requested = Array.isArray(value) ? value : [];
+        var selected = [];
+        var selectedExclusiveGroups = {};
+        requested.forEach(function (optionKey) {
+          var match = getSkillEffectOption(resourceType, optionKey);
+          if (!match || selected.indexOf(optionKey) >= 0) {
+            return;
+          }
+          if (match.group.exclusive && selectedExclusiveGroups[match.group.key]) {
+            return;
+          }
+          selected.push(optionKey);
+          if (match.group.exclusive) {
+            selectedExclusiveGroups[match.group.key] = true;
+          }
+        });
+        return selected;
+      }
+
+      function sanitizeCustomEffects(value, legacyBudget) {
+        var source = Array.isArray(value) ? value : [];
+        var effects = [0, 1, 2].map(function (index) {
+          var item = source[index] && typeof source[index] === "object" ? source[index] : {};
+          return {
+            enabled: item.enabled === true,
+            label: sanitizeText(item.label).slice(0, 100),
+            budget: clampInteger(item.budget, 0, 999)
+          };
+        });
+        if (!source.length && legacyBudget > 0) {
+          effects[0] = {
+            enabled: true,
+            label: "旧追加効果予算",
+            budget: clampInteger(legacyBudget, 0, 999)
+          };
+        }
+        return effects;
+      }
+
+      function getSkillEffectBudget(skill) {
+        var selectedBudget = sanitizeEffectSelections(
+          skill.resourceType,
+          skill.effectSelections
+        ).reduce(function (total, optionKey) {
+          var match = getSkillEffectOption(skill.resourceType, optionKey);
+          return total + (match ? match.option.budget : 0);
+        }, 0);
+        var customBudget = (Array.isArray(skill.customEffects) ? skill.customEffects : [])
+          .reduce(function (total, item) {
+            if (!item || item.enabled !== true) {
+              return total;
+            }
+            return total + clampInteger(item.budget, 0, 999);
+          }, 0);
+        return Math.max(0, selectedBudget + customBudget);
+      }
+
+      function getSelectedSkillEffectLabels(skill) {
+        var labels = sanitizeEffectSelections(skill.resourceType, skill.effectSelections)
+          .map(function (optionKey) {
+            var match = getSkillEffectOption(skill.resourceType, optionKey);
+            return match ? match.option.label + "（" + formatSigned(match.option.budget) + "）" : "";
+          }).filter(Boolean);
+        (Array.isArray(skill.customEffects) ? skill.customEffects : []).forEach(function (item) {
+          if (item && item.enabled === true) {
+            labels.push((item.label.trim() || "自由入力") + "（" + formatSigned(item.budget) + "）");
+          }
+        });
+        return labels;
+      }
+
       function getSkillPerformance(skill) {
         var power = Number(skill.powerDisplay) || 0;
         var accuracy = Number(skill.accuracy) || 0;
         var powerFactor = Math.max(0, 1 + power / 100);
         var targetBudget = getTargetBudget(skill);
         var rangeBudget = getRangeBudget(skill);
-        var effectBudget = Number(skill.effectBudget) || 0;
+        var effectBudget = getSkillEffectBudget(skill);
         var buyBudget = Math.max(0, power) +
           Math.max(0, accuracy) * SKILL_ACCURACY_RATE +
           targetBudget + rangeBudget + effectBudget;
@@ -3215,7 +3521,9 @@
           buyBudget: buyBudget,
           sellBudget: sellBudget,
           netBudget: netBudget,
-          requiredCost: requiredCost
+          requiredCost: requiredCost,
+          remainingBudget: requiredCost * 65 - netBudget,
+          nextBoundary: requiredCost > 1 ? netBudget - (requiredCost - 1) * 65 : null
         };
       }
 
@@ -3226,10 +3534,16 @@
         clean.name = sanitizeText(source.name).slice(0, 100);
         clean.resourceType = normalizeChoice(source.resourceType, resourceDefinitions, "willpower");
         clean.attackType = normalizeChoice(source.attackType, attackTypeDefinitions, "standard");
-        clean.powerDisplay = clampInteger(source.powerDisplay, -90, 999);
+        clean.powerDisplay = clampInteger(source.powerDisplay, -100, 999);
         clean.accuracy = clampInteger(source.accuracy, -999, 80);
         clean.cost = clampInteger(source.cost, 0, 10);
-        clean.effectBudget = clampInteger(source.effectBudget, 0, 999);
+        var legacyEffectBudget = clampInteger(source.effectBudget, 0, 999);
+        clean.effectSelections = sanitizeEffectSelections(
+          clean.resourceType,
+          source.effectSelections
+        );
+        clean.customEffects = sanitizeCustomEffects(source.customEffects, legacyEffectBudget);
+        clean.effectBudget = getSkillEffectBudget(clean);
         var legacyShape = sanitizeText(source.targetShape);
         clean.targetMode = normalizeChoice(source.targetMode, targetModeDefinitions,
           legacyShape === "multiple" ? "multiple" :
@@ -3424,6 +3738,9 @@
 
       function saveState() {
         state.version = STORAGE_VERSION;
+        state.skills.forEach(function (skill) {
+          skill.effectBudget = getSkillEffectBudget(skill);
+        });
         try {
           window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
         } catch (error) {
@@ -3653,6 +3970,117 @@
         }) ? String(selectedValue) : "custom";
       }
 
+      function renderSkillEffectControls(skill, unlocked) {
+        var fieldset = document.createElement("fieldset");
+        fieldset.className = "skill-effects";
+        var legend = document.createElement("legend");
+        legend.textContent = resourceDefinitions[skill.resourceType].label + "の追加効果";
+        fieldset.appendChild(legend);
+
+        var groupsContainer = document.createElement("div");
+        groupsContainer.className = "skill-effect-groups";
+        getSkillEffectGroups(skill.resourceType).forEach(function (group) {
+          var groupElement = document.createElement("section");
+          groupElement.className = "skill-effect-group";
+          var heading = document.createElement("h4");
+          heading.textContent = group.label;
+          groupElement.appendChild(heading);
+          if (group.exclusive || group.requiresKp) {
+            var groupNote = document.createElement("p");
+            groupNote.textContent = [
+              group.exclusive ? "このカテゴリは一つだけ選択" : "",
+              group.requiresKp ? "選択時は要KP確認" : ""
+            ].filter(Boolean).join("／");
+            groupElement.appendChild(groupNote);
+          }
+          group.options.forEach(function (option) {
+            var label = document.createElement("label");
+            label.className = "skill-effect-option";
+            var checkbox = document.createElement("input");
+            checkbox.type = "checkbox";
+            checkbox.checked = skill.effectSelections.indexOf(option.key) >= 0;
+            checkbox.disabled = !unlocked;
+            checkbox.dataset.skillId = skill.id;
+            checkbox.dataset.skillField = "effectOption";
+            checkbox.dataset.effectKey = option.key;
+            var textSpan = document.createElement("span");
+            textSpan.textContent = option.label;
+            var budgetSpan = document.createElement("span");
+            budgetSpan.textContent = formatSigned(option.budget);
+            label.appendChild(checkbox);
+            label.appendChild(textSpan);
+            label.appendChild(budgetSpan);
+            groupElement.appendChild(label);
+          });
+          groupsContainer.appendChild(groupElement);
+        });
+        fieldset.appendChild(groupsContainer);
+
+        var customHeading = document.createElement("strong");
+        customHeading.textContent = "自由入力";
+        fieldset.appendChild(customHeading);
+        var customContainer = document.createElement("div");
+        customContainer.className = "skill-custom-effects";
+        skill.customEffects.forEach(function (item, index) {
+          var row = document.createElement("div");
+          row.className = "skill-custom-effect";
+          var enabled = document.createElement("input");
+          enabled.type = "checkbox";
+          enabled.checked = item.enabled;
+          enabled.disabled = !unlocked;
+          enabled.title = "自由入力" + (index + 1) + "を使用";
+          enabled.setAttribute("aria-label", "自由入力" + (index + 1) + "を使用");
+          enabled.dataset.skillId = skill.id;
+          enabled.dataset.skillField = "customEffectEnabled";
+          enabled.dataset.customIndex = String(index);
+
+          var nameInput = document.createElement("input");
+          nameInput.type = "text";
+          nameInput.maxLength = 100;
+          nameInput.value = item.label;
+          nameInput.placeholder = index < 2 ? "系統固有の効果" : "共通の性質";
+          nameInput.disabled = !unlocked || !item.enabled;
+          nameInput.setAttribute("aria-label", "自由入力" + (index + 1) + "の内容");
+          nameInput.dataset.skillId = skill.id;
+          nameInput.dataset.skillField = "customEffectLabel";
+          nameInput.dataset.customIndex = String(index);
+
+          var budgetInput = document.createElement("input");
+          budgetInput.type = "number";
+          budgetInput.min = "0";
+          budgetInput.max = "999";
+          budgetInput.step = "1";
+          budgetInput.value = String(item.budget);
+          budgetInput.placeholder = "予算（整数）";
+          budgetInput.disabled = !unlocked || !item.enabled;
+          budgetInput.setAttribute("aria-label", "自由入力" + (index + 1) + "の予算");
+          budgetInput.dataset.skillId = skill.id;
+          budgetInput.dataset.skillField = "customEffectBudget";
+          budgetInput.dataset.customIndex = String(index);
+
+          row.appendChild(enabled);
+          row.appendChild(nameInput);
+          row.appendChild(budgetInput);
+          customContainer.appendChild(row);
+        });
+        fieldset.appendChild(customContainer);
+
+        var effectNote = document.createElement("p");
+        effectNote.className = "skill-effect-warning";
+        effectNote.textContent = skill.resourceType === "willpower"
+          ? "身体の外へ放つ効果は予算だけでは採用せず、要KP確認です。"
+          : (skill.resourceType === "holy"
+            ? "回復量と防護量は威力枠で扱い、追加効果へ二重計上しません。"
+            : "属性から外れる効果は、予算とは別にKP承認が必要です。");
+        fieldset.appendChild(effectNote);
+
+        var total = document.createElement("p");
+        total.className = "skill-metrics";
+        total.textContent = "追加効果予算 合計：" + getSkillEffectBudget(skill);
+        fieldset.appendChild(total);
+        return fieldset;
+      }
+
       function renderSkillControls() {
         var container = document.getElementById("skill-list");
         var fragment = document.createDocumentFragment();
@@ -3720,7 +4148,7 @@
 
           var powerInput = document.createElement("input");
           powerInput.type = "number";
-          powerInput.min = "-90";
+          powerInput.min = "-100";
           powerInput.max = "999";
           powerInput.step = "1";
           powerInput.value = String(skill.powerDisplay);
@@ -3879,21 +4307,7 @@
             grid.appendChild(rangeBudgetNote);
           }
 
-          var effectBudgetInput = document.createElement("input");
-          effectBudgetInput.type = "number";
-          effectBudgetInput.min = "0";
-          effectBudgetInput.max = "999";
-          effectBudgetInput.step = "1";
-          effectBudgetInput.value = String(skill.effectBudget);
-          effectBudgetInput.disabled = !unlocked;
-          var effectBudgetField = createSkillField(
-            "追加効果予算（KP相談値）", skill, "effectBudget", effectBudgetInput
-          );
-          var effectBudgetHint = document.createElement("span");
-          effectBudgetHint.className = "field-hint";
-          effectBudgetHint.textContent = "任意。0でも効果を記載できます。必要ならKP相談値を入力";
-          effectBudgetField.appendChild(effectBudgetHint);
-          grid.appendChild(effectBudgetField);
+          grid.appendChild(renderSkillEffectControls(skill, unlocked));
 
           var description = document.createElement("textarea");
           description.value = skill.description;
@@ -3906,14 +4320,16 @@
           var metrics = document.createElement("p");
           metrics.className = "skill-metrics";
           var availableBudget = skill.cost * 65;
-          var remainingBudget = availableBudget - performance.netBudget;
           metrics.textContent = unlocked
             ? "性能予算 " + formatNumber(availableBudget) +
               " ／ 買い " + formatNumber(performance.buyBudget) +
               " ／ 売り " + formatNumber(performance.sellBudget) +
               " ／ 正味 " + formatNumber(performance.netBudget) +
-              " ／ 残り " + formatNumber(remainingBudget) +
-              " ／ 必要消費 " + performance.requiredCost
+              " ／ 必要消費 " + performance.requiredCost +
+              " ／ 余り " + formatNumber(performance.remainingBudget) +
+              " ／ 次の境界まで " + (performance.nextBoundary === null
+                ? "対象外"
+                : formatNumber(performance.nextBoundary))
             : "消費を選ぶと、威力・命中・対象・範囲・効果を入力できます。";
           grid.appendChild(metrics);
           card.appendChild(grid);
@@ -5548,7 +5964,9 @@
             }
             lines.push("範囲予算：" + performance.rangeBudget);
           }
-          lines.push("追加効果予算：" + skill.effectBudget);
+          var selectedEffects = getSelectedSkillEffectLabels(skill);
+          lines.push("追加効果：" + (selectedEffects.length ? selectedEffects.join("／") : "なし"));
+          lines.push("追加効果予算：" + performance.effectBudget);
           lines.push("効果：" + textOrNone(skill.description));
           if (includeInternal) {
             lines.push("威力倍率：×" + formatNumber(performance.powerFactor));
@@ -5558,9 +5976,11 @@
             lines.push("売り予算：" + formatNumber(performance.sellBudget));
             lines.push("正味予算：" + formatNumber(performance.netBudget));
             lines.push("性能予算：" + formatNumber(skill.cost * 65));
-            lines.push("残り予算：" + formatNumber(
-              skill.cost * 65 - performance.netBudget));
             lines.push("必要消費：" + performance.requiredCost);
+            lines.push("余り：" + formatNumber(performance.remainingBudget));
+            lines.push("次の境界まで：" + (performance.nextBoundary === null
+              ? "対象外"
+              : formatNumber(performance.nextBoundary)));
             lines.push("潜在能力倍率：×" + formatNumber(getPotentialMultiplier(potential)));
             lines.push(getAttackTypePreview(skill.attackType));
           }
@@ -5994,8 +6414,16 @@
           return false;
         }
 
-        if (field === "name" || field === "description") {
-          skill[field] = sanitizeText(target.value).slice(0, field === "name" ? 100 : 2000);
+        if (field === "name" || field === "description" || field === "customEffectLabel") {
+          if (field === "customEffectLabel") {
+            var customLabelIndex = Number(target.dataset.customIndex);
+            if (!Number.isInteger(customLabelIndex) || !skill.customEffects[customLabelIndex]) {
+              return false;
+            }
+            skill.customEffects[customLabelIndex].label = sanitizeText(target.value).slice(0, 100);
+          } else {
+            skill[field] = sanitizeText(target.value).slice(0, field === "name" ? 100 : 2000);
+          }
           saveState();
           updatePreview();
           if (field === "name") {
@@ -6020,17 +6448,55 @@
           }
           candidate.resourceType = nextResource;
           candidate.cost = 0;
+          if (nextResource !== skill.resourceType) {
+            candidate.effectSelections = [];
+            candidate.customEffects = [
+              { enabled: false, label: "", budget: 0 },
+              { enabled: false, label: "", budget: 0 },
+              { enabled: false, label: "", budget: 0 }
+            ];
+          }
         } else if (field === "cost") {
           var resourceValue = state.potentialStats[resourceDefinitions[skill.resourceType].statKey];
           candidate.cost = clampInteger(target.value, 0, resourceValue);
         } else if (field === "attackType") {
           candidate.attackType = normalizeChoice(target.value, attackTypeDefinitions, "standard");
         } else if (field === "powerDisplay") {
-          candidate.powerDisplay = clampInteger(target.value, -90, 999);
+          candidate.powerDisplay = clampInteger(target.value, -100, 999);
         } else if (field === "accuracy") {
           candidate.accuracy = clampInteger(target.value, -999, 80);
-        } else if (field === "effectBudget") {
-          candidate.effectBudget = clampInteger(target.value, 0, 999);
+        } else if (field === "effectOption") {
+          var effectMatch = getSkillEffectOption(candidate.resourceType, target.dataset.effectKey);
+          if (!effectMatch) {
+            return false;
+          }
+          candidate.effectSelections = candidate.effectSelections.filter(function (optionKey) {
+            if (optionKey === effectMatch.option.key) {
+              return false;
+            }
+            var selectedMatch = getSkillEffectOption(candidate.resourceType, optionKey);
+            return !target.checked || !effectMatch.group.exclusive || !selectedMatch ||
+              selectedMatch.group.key !== effectMatch.group.key;
+          });
+          if (target.checked) {
+            candidate.effectSelections.push(effectMatch.option.key);
+          }
+        } else if (field === "customEffectEnabled") {
+          var enabledIndex = Number(target.dataset.customIndex);
+          if (!Number.isInteger(enabledIndex) || !candidate.customEffects[enabledIndex]) {
+            return false;
+          }
+          candidate.customEffects[enabledIndex].enabled = target.checked;
+        } else if (field === "customEffectBudget") {
+          var budgetIndex = Number(target.dataset.customIndex);
+          var budgetText = String(target.value).trim();
+          if (!Number.isInteger(budgetIndex) || !candidate.customEffects[budgetIndex] ||
+              !/^\d+$/.test(budgetText) || Number(budgetText) > 999) {
+            setFeedback("自由入力予算は0～999の整数で入力してください。", "error", false);
+            renderSkillControls();
+            return false;
+          }
+          candidate.customEffects[budgetIndex].budget = Number(budgetText);
         } else if (field === "targetMode") {
           candidate.targetMode = normalizeChoice(target.value, targetModeDefinitions, "single");
           if (candidate.targetMode !== "multiple") {
@@ -6060,6 +6526,11 @@
           }
         }
 
+        candidate.effectSelections = sanitizeEffectSelections(
+          candidate.resourceType,
+          candidate.effectSelections
+        );
+        candidate.effectBudget = getSkillEffectBudget(candidate);
         var required = getSkillPerformance(candidate).requiredCost;
         if (candidate.cost > 0 && required > candidate.cost) {
           setFeedback("消費" + candidate.cost + "では設定できません。必要消費は" + required + "です。", "error", false);
@@ -6087,14 +6558,19 @@
         if (!target) {
           return;
         }
-        if (target.dataset.skillField === "name" || target.dataset.skillField === "description") {
+        if (target.dataset.skillField === "name" || target.dataset.skillField === "description" ||
+            target.dataset.skillField === "customEffectLabel") {
+          updateSkillField(target);
+        } else if (target.dataset.skillField === "customEffectBudget" && target.value !== "") {
           updateSkillField(target);
         }
       }
 
       function handleSkillChange(event) {
         var target = event.target.closest("[data-skill-id][data-skill-field]");
-        if (!target || target.dataset.skillField === "name" || target.dataset.skillField === "description") {
+        if (!target || target.dataset.skillField === "name" ||
+            target.dataset.skillField === "description" ||
+            target.dataset.skillField === "customEffectLabel") {
           return;
         }
         updateSkillField(target);
