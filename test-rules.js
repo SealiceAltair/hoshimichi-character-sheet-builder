@@ -77,6 +77,7 @@ const attackPurposes = readObject("attackPurposeDefinitions");
 const defenseMultipliers = readObject("defenseResultMultipliers");
 const skillEffects = readObject("skillEffectDefinitions");
 const commonSkillEffects = readArray("commonSkillEffectDefinitions");
+const legacyEffectMap = readObject("legacySkillEffectMigrationMap");
 const weaponStages = readArray("weaponEnhancementDefinitions");
 const defenseStages = readArray("armorEnhancementDefinitions");
 
@@ -135,6 +136,15 @@ Object.keys(stage3Powers).forEach((type) => {
 });
 assertClose(enhanced(1, defenseStages[1]), 7 / 3, "standard protection 1 stage 1");
 assertClose(enhanced(2, defenseStages[3]), 7, "heavy protection 2 stage 3");
+const enhancedSkillPower = readFunction("getEnhancedSkillAttackPower", {
+  attackTypeDefinitions: attackTypes,
+  weaponEnhancementDefinitions: weaponStages,
+  clampInteger: readFunction("clampInteger", {})
+});
+assertClose(enhancedSkillPower("multi", 3), 12,
+  "multi skill on stage 3 weapon must use multi base power");
+assertClose(enhancedSkillPower("standard", 3), 16,
+  "standard skill on stage 3 weapon must use standard base power");
 
 const getRangeBudget = readFunction("getRangeBudget", {});
 const getTargetBudget = (skill) => skill.targetMode === "multiple"
@@ -142,18 +152,25 @@ const getTargetBudget = (skill) => skill.targetMode === "multiple"
   : 0;
 const effectContext = {
   skillEffectDefinitions: skillEffects,
-  commonSkillEffectDefinitions: commonSkillEffects
+  commonSkillEffectDefinitions: commonSkillEffects,
+  legacySkillEffectMigrationMap: legacyEffectMap,
+  SKILL_EFFECT_BASE_LOAD: 70,
+  SKILL_ACCURACY_RATE: 1.4
 };
 effectContext.clampInteger = readFunction("clampInteger", {});
 effectContext.getSkillEffectGroups = readFunction("getSkillEffectGroups", effectContext);
 effectContext.getSkillEffectOption = readFunction("getSkillEffectOption", effectContext);
+effectContext.normalizeSkillEffectKey = readFunction("normalizeSkillEffectKey", effectContext);
 effectContext.sanitizeEffectSelections = readFunction("sanitizeEffectSelections", effectContext);
+effectContext.getApplicationAccuracyCost = readFunction("getApplicationAccuracyCost", effectContext);
+effectContext.getSkillEffectBudgetBreakdown = readFunction("getSkillEffectBudgetBreakdown", effectContext);
 effectContext.getSkillEffectBudget = readFunction("getSkillEffectBudget", effectContext);
 const getSkillPerformance = readFunction("getSkillPerformance", {
   SKILL_ACCURACY_RATE: 1.4,
   SKILL_SELL_RATE: 0.7,
   getTargetBudget,
   getRangeBudget,
+  getSkillEffectBudgetBreakdown: effectContext.getSkillEffectBudgetBreakdown,
   getSkillEffectBudget: effectContext.getSkillEffectBudget
 });
 
@@ -198,22 +215,54 @@ assert(skillBudget({ powerDisplay: 130 }).requiredCost === 2,
 
 const combinedEffects = skillBudget({
   resourceType: "magic",
-  effectSelections: ["magic-block-passage", "magic-disadvantage", "common-combat-long"],
-  customEffects: [{ enabled: true, label: "追加", budget: 5 }]
+  effectSelections: ["effect-disadvantage", "effect-block-action"],
+  customEffects: []
 });
-assert(combinedEffects.effectBudget === 95, "selected and custom effect budgets are not summed");
-assert(combinedEffects.requiredCost === 2, "combined effect budget should require cost 2");
+assert(combinedEffects.effectBudget === 160,
+  "effect base load must be charged once for multiple effects");
+assert(combinedEffects.requiredCost === 3, "combined effect budget should require cost 3");
 const exclusiveEffects = effectContext.sanitizeEffectSelections("magic", [
-  "magic-disadvantage", "magic-remove-turn", "magic-hide-person", "magic-block-passage"
+  "magic-attribute-slight", "magic-attribute-clear"
 ]);
-assert(exclusiveEffects.length === 2, "exclusive effect categories allow duplicate selections");
-assert(exclusiveEffects[0] === "magic-disadvantage", "first opponent effect should be preserved");
-assert(exclusiveEffects[1] === "magic-hide-person", "first field effect should be preserved");
+assert(exclusiveEffects.length === 1, "system deviation must remain exclusive");
+assert(exclusiveEffects[0] === "magic-attribute-slight",
+  "first system deviation should be preserved");
+assert(effectContext.getSkillEffectBudget({resourceType: "magic", effectSelections: [], customEffects: []}) === 0,
+  "no effect must not charge base load");
 assert(effectContext.getSkillEffectBudget({
-  resourceType: "holy",
-  effectSelections: ["holy-cleanse-many", "common-brief"],
-  customEffects: [{ enabled: true, label: "追加", budget: 10 }]
-}) === 55, "negative common property should offset positive effects");
+  resourceType: "magic", effectSelections: ["effect-disadvantage"], customEffects: []
+}) === 100, "V30 must cost base load 70 plus value 30");
+assert(effectContext.getSkillEffectBudget({
+  resourceType: "magic", effectSelections: ["effect-disadvantage", "effect-block-action"], customEffects: []
+}) === 160, "V30 and V60 must share one base load");
+assert(effectContext.getSkillEffectBudget({
+  resourceType: "magic", effectSelections: ["effect-disadvantage"],
+  customEffects: [{enabled: true, label: "追加", value: 45}]
+}) === 145, "custom V must share the same base load");
+assert(effectContext.getSkillEffectBudget({
+  resourceType: "magic", effectSelections: ["magic-attribute-slight"], customEffects: []
+}) === 15, "system deviation is a direct adjustment without base load");
+assert(effectContext.sanitizeEffectSelections("holy", ["holy-cleanse-one"])[0] === "effect-cleanse-one",
+  "legacy supported effect key must migrate");
+[
+  [15, -15], [30, -25], [45, -40], [60, -50], [90, -75], [120, -100]
+].forEach(([value, expected]) => {
+  assert(effectContext.getApplicationAccuracyCost(value) === expected,
+    `application accuracy V${value}`);
+});
+const soldEffect = skillBudget({
+  powerDisplay: -100,
+  effectSelections: ["effect-disadvantage"]
+});
+assertClose(soldEffect.effectBudget, 100, "V30 effect total budget");
+assertClose(soldEffect.sellBudget, 70, "power -100 sell budget with effect");
+assertClose(soldEffect.netBudget, 30, "power -100 must offset only base load");
+const soldTwoEffects = skillBudget({
+  powerDisplay: -100,
+  effectSelections: ["effect-disadvantage", "effect-block-action"]
+});
+assertClose(soldTwoEffects.netBudget, 90,
+  "power -100 with V30 and V60 must leave pure value 90");
 
 assert(getRangeBudget({ targetMode: "range", rangeShape: "line", rangeDistance: 3 }) === 20,
   "line 3m budget");
@@ -271,15 +320,16 @@ Object.keys(expectedDefenseMultipliers).forEach((grade) => {
     `${grade} defense multiplier`);
 });
 
-assert(/var STORAGE_VERSION = 10;/.test(source), "storage version is not V10");
+assert(/var STORAGE_VERSION = 11;/.test(source), "storage version is not V11");
 assert(/powerInput\.min = "-100"/.test(source), "skill power minimum is not -100");
-assert(/自由入力予算は0～999の整数/.test(source), "custom effect integer validation is missing");
+assert(/純効果価値Vは0～999の整数/.test(source), "custom effect V integer validation is missing");
 assert(/group\.exclusive/.test(source), "exclusive effect category handling is missing");
 assert(/raw\.version !== 9/.test(source), "V9 migration is not accepted");
+assert(/raw\.version !== 10/.test(source), "V10 migration is not accepted");
 assert(/enhancementStage:\s*0/.test(source), "new weapon enhancement stage is not 0");
 assert(/goblinArmorEnhancement:\s*0/.test(source), "new enemy defense stage is not 0");
-assert(/HOSHIMICHI-PC-V10:/.test(source), "public restore marker is not V10");
-assert(/HOSHIMICHI-KP-V10:/.test(source), "KP restore marker is not V10");
+assert(/HOSHIMICHI-PC-V11:/.test(source), "public restore marker is not V11");
+assert(/HOSHIMICHI-KP-V11:/.test(source), "KP restore marker is not V11");
 assert(/<html lang="ja" data-theme="dark">/.test(source), "dark theme is not the default");
 assert(/id="theme-toggle"/.test(source), "theme toggle button is missing");
 assert(/localStorage\.setItem\(THEME_STORAGE_KEY, normalizedTheme\)/.test(source),
