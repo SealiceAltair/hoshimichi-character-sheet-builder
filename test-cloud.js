@@ -148,7 +148,7 @@ const gasContext = vm.createContext({
 });
 vm.runInContext(gas, gasContext);
 
-const largeState = { version: 10, name: "分割試験", targetType: "character", note: "星".repeat(90000) };
+const largeState = { version: 11, name: "分割試験", targetType: "character", note: "星".repeat(90000) };
 const encoded = gasContext.encodePayload_(largeState);
 assert(encoded.chunks.length > 1, "Large state should be split across cells");
 assert(encoded.chunks.every((chunk) => chunk.length <= 40000), "A payload chunk exceeds 40,000 characters");
@@ -166,11 +166,11 @@ assert.throws(
   (error) => error.publicCode === "INVALID_THUMBNAIL"
 );
 assert.throws(
-  () => gasContext.validateState_({ version: 10, name: "" }),
+  () => gasContext.validateState_({ version: 11, name: "" }),
   (error) => error.publicCode === "INVALID_NAME"
 );
 assert.throws(
-  () => gasContext.validateState_({ version: 9, name: "旧版" }),
+  () => gasContext.validateState_({ version: 10, name: "旧版" }),
   (error) => error.publicCode === "UNSUPPORTED_SCHEMA"
 );
 
@@ -337,7 +337,7 @@ function requestId(number) {
 
 function revisionState(name) {
   return {
-    version: 10,
+    version: 11,
     name,
     thumbnailDataUrl: tinyThumbnail,
     targetType: "character",
