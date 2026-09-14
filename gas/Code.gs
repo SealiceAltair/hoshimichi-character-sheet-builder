@@ -1,5 +1,5 @@
 var HM_API_VERSION = 1;
-var HM_SCHEMA_VERSION = 11;
+var HM_SEED_SCHEMA_VERSION = 11;
 var HM_TIME_ZONE = "Asia/Tokyo";
 var HM_KEEP_REVISIONS = 3;
 var HM_CHUNK_SIZE = 40000;
@@ -289,7 +289,7 @@ function characterSeed_(number, state) {
 function makeCharacterSeedState_(name, options) {
   var config = options || {};
   return {
-    version: HM_SCHEMA_VERSION,
+    version: HM_SEED_SCHEMA_VERSION,
     name: name,
     targetType: "character",
     totalPoints: Number(config.totalPoints || 0),
@@ -722,8 +722,12 @@ function pruneRevisions_(spreadsheet, characterId) {
 }
 
 function validateState_(state) {
-  if (!state || typeof state !== "object" || Number(state.version) !== HM_SCHEMA_VERSION) {
-    throw publicException_("UNSUPPORTED_SCHEMA", "未対応のキャラクターデータ形式です。");
+  if (!state || typeof state !== "object" || Array.isArray(state)) {
+    throw publicException_("INVALID_STATE", "キャラクターデータの形式が正しくありません。");
+  }
+  var schemaVersion = Number(state.version);
+  if (!Number.isSafeInteger(schemaVersion) || schemaVersion < 1) {
+    throw publicException_("UNSUPPORTED_SCHEMA", "キャラクターデータの版番号が正しくありません。");
   }
   var name = String(state.name || "").trim();
   if (!name || name.length > 100) {
@@ -736,7 +740,7 @@ function validateState_(state) {
   return {
     name: name,
     targetType: state.targetType === "monster" ? "monster" : "character",
-    schemaVersion: HM_SCHEMA_VERSION,
+    schemaVersion: schemaVersion,
     thumbnailDataUrl: validateThumbnailDataUrl_(state.thumbnailDataUrl)
   };
 }

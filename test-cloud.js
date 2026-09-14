@@ -87,6 +87,7 @@ assert(!/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i.test(html), "An email address l
 // GASの主要契約。
 includes(gas, "var HM_KEEP_REVISIONS = 3;");
 includes(gas, "var HM_CHUNK_SIZE = 40000;");
+includes(gas, "var HM_SEED_SCHEMA_VERSION = 11;");
 includes(gas, 'var HM_TIME_ZONE = "Asia/Tokyo";');
 includes(gas, 'if (action === "list")');
 includes(gas, 'if (action === "get")');
@@ -169,8 +170,18 @@ assert.throws(
   () => gasContext.validateState_({ version: 11, name: "" }),
   (error) => error.publicCode === "INVALID_NAME"
 );
+assert.strictEqual(
+  gasContext.validateState_({ version: 10, name: "旧版" }).schemaVersion,
+  10,
+  "The storage API must preserve older schema versions as opaque payload metadata"
+);
+assert.strictEqual(
+  gasContext.validateState_({ version: 12, name: "将来版" }).schemaVersion,
+  12,
+  "The storage API must not require redeployment for each future builder schema"
+);
 assert.throws(
-  () => gasContext.validateState_({ version: 10, name: "旧版" }),
+  () => gasContext.validateState_({ version: 0, name: "不正な版" }),
   (error) => error.publicCode === "UNSUPPORTED_SCHEMA"
 );
 
