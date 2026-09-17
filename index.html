@@ -19,6 +19,7 @@
     }());
   </script>
   <style>
+    [hidden] { display: none !important; }
     :root {
       color-scheme: light;
       --bg: #f4f8fc;
@@ -1982,6 +1983,18 @@
         クラウド保存はまだ未接続です。GASのURLを設定すると共有一覧を利用できます。
       </p>
       <p id="library-status" class="library-status" aria-live="polite"></p>
+      <div class="library-toolbar">
+        <div class="field" id="library-unlock-field">
+          <label for="library-passphrase">管理用の合言葉</label>
+          <input id="library-passphrase" type="password" autocomplete="off">
+        </div>
+        <button id="library-unlock" type="button" class="secondary-button">管理用を解除</button>
+        <button id="library-lock" type="button" class="secondary-button" hidden>管理用をロック</button>
+        <div class="field" id="library-scope-field" hidden>
+          <label for="library-scope">表示範囲</label>
+          <select id="library-scope"><option value="all">すべて</option><option value="public">公開</option><option value="manager">管理用</option></select>
+        </div>
+      </div>
       <div id="character-list" class="character-grid" aria-live="polite"></div>
 
       <section class="local-backup-section" aria-labelledby="local-backup-heading">
@@ -2000,6 +2013,10 @@
         <span>クラウド保存状態</span>
         <strong id="cloud-character-label">このキャラはまだクラウドへ保存されていません</strong>
         <p id="cloud-save-status" class="cloud-save-status" aria-live="polite"></p>
+      </div>
+      <div id="character-visibility-field" class="field" hidden>
+        <label for="character-visibility">一覧での公開範囲</label>
+        <select id="character-visibility"><option value="public">公開</option><option value="manager">管理用</option></select>
       </div>
       <div class="cloud-save-actions">
         <button id="save-character-cloud" type="button">このキャラを保存</button>
@@ -2888,6 +2905,7 @@
       var feedbackTimer = null;
       var loadNotice = "";
       var isKpMode = false;
+      var managerEpoch = 0;
       var pendingImportState = null;
       var pendingImportHasKpSettings = false;
 
@@ -3470,6 +3488,7 @@
         return {
           version: STORAGE_VERSION,
           name: "",
+          visibility: "public",
           thumbnailDataUrl: "",
           targetType: "character",
           totalPoints: 4,
@@ -3836,6 +3855,7 @@
 
         var clean = createInitialState();
         clean.name = sanitizeText(raw.name);
+        clean.visibility = raw.visibility === "manager" ? "manager" : "public";
         clean.thumbnailDataUrl = sanitizeThumbnailDataUrl(raw.thumbnailDataUrl);
         clean.targetType = raw.targetType === "monster" ? "monster" : "character";
         clean.totalPoints = clampInteger(raw.totalPoints, 0, 999);
@@ -3945,7 +3965,12 @@
           if (!stored) {
             return createInitialState();
           }
-          return sanitizeState(JSON.parse(stored));
+          var restored = sanitizeState(JSON.parse(stored));
+          if (restored.visibility === "manager") {
+            window.localStorage.setItem(STORAGE_KEY + "-locked-draft", JSON.stringify(restored));
+            return createInitialState();
+          }
+          return restored;
         } catch (error) {
           try {
             window.localStorage.removeItem(STORAGE_KEY);
@@ -4948,21 +4973,36 @@
 
       function tryEnterKpMode(passphrase) {
         if (hashPassphrase(sanitizeText(passphrase).trim()) !== KP_PASSPHRASE_HASH) {
-          isKpMode = false;
-          updateKpPresentation();
+          exitKpMode();
           setKpModeStatus("合言葉が違います。", "error");
           return false;
         }
         isKpMode = true;
         updateKpPresentation();
+        window.dispatchEvent(new CustomEvent("hoshimichi:manager-mode", { detail: { unlocked: true } }));
         setKpModeStatus("星の裏側へ接続しました。", "success");
         document.getElementById("kp-passphrase").value = "";
         return true;
       }
 
       function exitKpMode() {
+        managerEpoch += 1;
+        window.dispatchEvent(new CustomEvent("hoshimichi:before-manager-lock"));
         isKpMode = false;
+        if (state.visibility === "manager") {
+          try { window.localStorage.setItem(STORAGE_KEY + "-locked-draft", JSON.stringify(state)); } catch (ignored) {}
+          startNewCharacter();
+        }
+        pendingImportState = null;
+        ["manual-copy-dialog", "import-dialog"].forEach(function (id) {
+          var dialog = document.getElementById(id);
+          if (dialog && dialog.open) { dialog.close(); }
+        });
+        document.getElementById("manual-copy-text").value = "";
+        document.getElementById("markdown-import").value = "";
+        document.getElementById("import-summary").textContent = "";
         updateKpPresentation();
+        window.dispatchEvent(new CustomEvent("hoshimichi:manager-mode", { detail: { unlocked: false } }));
         setKpModeStatus("通常の星明かりへ戻ります。", "");
         document.getElementById("kp-passphrase").focus();
       }
@@ -5766,11 +5806,14 @@
       }
 
       async function handleThumbnailFile(file) {
+        var originalState = state;
         var selectButton = document.getElementById("select-character-thumbnail");
         selectButton.disabled = true;
         setThumbnailStatus("一覧用の画像へ変換しています…");
         try {
-          state.thumbnailDataUrl = await createThumbnailDataUrl(file);
+          var thumbnail = await createThumbnailDataUrl(file);
+          if (state !== originalState) { return; }
+          state.thumbnailDataUrl = thumbnail;
           saveState();
           updateThumbnailPreview();
           setThumbnailStatus("一覧画像を設定しました。クラウド保存すると他の環境にも表示されます。", "success");
@@ -6594,6 +6637,7 @@
         var dialog = document.getElementById("import-dialog");
         try {
           var result = parseMarkdownState(textarea.value);
+          if (result.state.visibility === "manager" && !isKpMode) { throw new Error("管理用を解除してから読み込んでください。"); }
           pendingImportState = result.state;
           pendingImportHasKpSettings = result.hasKpSettings;
           document.getElementById("import-summary").textContent = buildImportSummary(result);
@@ -6609,6 +6653,11 @@
       }
 
       function applyPendingImport() {
+        if (pendingImportState && pendingImportState.visibility === "manager" && !isKpMode) {
+          pendingImportState = null;
+          setFeedback("管理用を解除してから読み込んでください。", "error");
+          return false;
+        }
         if (!pendingImportState) {
           setFeedback("読込内容がありません。", "error");
           return false;
@@ -6943,6 +6992,7 @@
       }
 
       async function copyText(text, successMessage) {
+        var epoch = managerEpoch;
         var copied = false;
         if (navigator.clipboard && window.isSecureContext) {
           try {
@@ -6953,6 +7003,7 @@
           }
         }
 
+        if (epoch !== managerEpoch) { return; }
         if (!copied) {
           copied = legacyCopy(text);
         }
@@ -7009,6 +7060,9 @@
       }
 
       function replaceState(raw) {
+        if (raw && raw.visibility === "manager" && !isKpMode) {
+          throw new Error("管理用キャラは合言葉で解除してから開いてください。");
+        }
         var source = raw && typeof raw === "object" ? JSON.parse(JSON.stringify(raw)) : raw;
         if (source && typeof source === "object" && !Object.prototype.hasOwnProperty.call(source, "kpSettings")) {
           source.kpSettings = JSON.parse(JSON.stringify(state.kpSettings));
@@ -7511,6 +7565,16 @@
         getState: function () {
           return JSON.parse(JSON.stringify(state));
         },
+        setVisibility: function (value) {
+          if (!isKpMode) { return false; }
+          var next = value === "manager" ? "manager" : "public";
+          if (state.visibility === "manager" && next === "public" &&
+              !window.confirm("このキャラを公開一覧へ表示しますか？設定・画像にネタバレがないか確認してください。保存後に他の利用者にも表示されます。")) { return false; }
+          state.visibility = next;
+          saveState();
+          window.dispatchEvent(new CustomEvent("hoshimichi:visibility-changed"));
+          return true;
+        },
         getCloudState: function () {
           var cloudState = JSON.parse(JSON.stringify(state));
           delete cloudState.kpSettings;
@@ -7550,6 +7614,7 @@
         getMaximumHp: getMaximumHp,
         getMaximumAp: getMaximumAp,
         tryEnterKpMode: tryEnterKpMode,
+        getManagerEpoch: function () { return managerEpoch; },
         exitKpMode: exitKpMode,
         isKpMode: function () {
           return isKpMode;
@@ -7793,6 +7858,7 @@
         choices.replaceChildren();
         var context = currentContext();
         library.forEach(function (character) {
+          if (character.visibility === "manager" && !window.characterSheetBuilder.isKpMode()) { return; }
           var label = node("label");
           var check = node("input"); check.type = "checkbox"; check.checked = selected.has(character.id);
           check.disabled = useCurrent.checked && character.id === context.characterId;
@@ -7817,7 +7883,8 @@
             revision: data.revision, fetchedAt: new Date().toISOString() });
         } catch (error) {
           if (selected.get(id) === ticket) {
-            selected.set(id, { name: name || id, error: error.message });
+            if (error.code === "MANAGER_LOCKED") { selected.delete(id); }
+            else { selected.set(id, { name: name || id, error: error.message }); }
           }
         }
         refreshView(); renderChoices(); saveDraft();
@@ -7837,6 +7904,9 @@
 
       function buildPlayRequest() {
         var people = participants();
+        if (!window.characterSheetBuilder.isKpMode() && people.some(function (p) { return p.state && p.state.visibility === "manager"; })) {
+          throw new Error("管理用キャラを外すか、管理用を解除してください。");
+        }
         if (!people.length && mode() !== "consult") { throw new Error("参加者を1名以上選択してください。"); }
         var seen = new Set();
         people.forEach(function (p) {
@@ -8018,6 +8088,7 @@
         refreshView();
       });
       copyButton.addEventListener("click", async function () {
+        var epoch = window.characterSheetBuilder.getManagerEpoch();
         updateRequest();
         if (copyButton.disabled) { return; }
         var text = preview.value;
@@ -8026,6 +8097,7 @@
           await navigator.clipboard.writeText(text);
           status.textContent = "準備依頼文をコピーしました。";
         } catch (error) {
+          if (epoch !== window.characterSheetBuilder.getManagerEpoch()) { return; }
           var dialog = document.getElementById("manual-copy-dialog");
           var manual = document.getElementById("manual-copy-text");
           manual.value = text; dialog.showModal(); manual.focus(); manual.select();
@@ -8033,6 +8105,18 @@
         }
       });
       window.hoshimichiNavigation = Object.freeze({ activateTab: activateTab });
+      window.addEventListener("hoshimichi:manager-mode", function (event) {
+        if (!event.detail.unlocked) {
+          selected.forEach(function (entry, id) {
+            if (!entry.state || entry.state.visibility === "manager") { selected.delete(id); delete roles[id]; }
+          });
+          library = library.filter(function (entry) { return entry.visibility !== "manager"; });
+          status.textContent = "";
+          libraryStatus.textContent = "";
+        }
+        refreshView(); renderChoices(); saveDraft();
+      });
+      window.addEventListener("hoshimichi:visibility-changed", function () { refreshView(); saveDraft(); });
       window.hoshimichiPlay = Object.freeze({ buildRequest: buildPlayRequest });
       initializePreferences();
       restoreDraft();
@@ -8051,6 +8135,10 @@
         ? loadedContext
         : {};
       var cloudCharacters = [];
+      var visibilityCache = new Map();
+      var scopeInput = document.getElementById("library-scope");
+      var visibilityInput = document.getElementById("character-visibility");
+      var lockEpoch = 0;
       var lastListLoad = 0;
       var backupTimer = null;
       var listLoading = false;
@@ -8115,6 +8203,42 @@
         return window.characterSheetBuilder.getCloudState();
       }
 
+      function managerUnlocked() { return window.characterSheetBuilder.isKpMode(); }
+      function canView(state) { return !!state && (state.visibility !== "manager" || managerUnlocked()); }
+      function assertVisible(state) {
+        if (!canView(state)) { throw apiError("管理用キャラは合言葉で解除してから開いてください。", "MANAGER_LOCKED"); }
+      }
+      // The warehouse stays schema-agnostic. Cache classifications by revision, never guess on a failed read.
+      async function classifiedList() {
+        var data = await apiGet("list", {});
+        if (!Array.isArray(data.characters)) { throw new Error("一覧を読み取れませんでした。"); }
+        var pending = data.characters.slice();
+        var result = [];
+        var failures = 0;
+        async function worker() {
+          while (pending.length) {
+            var summary = pending.shift();
+            var key = summary.id + ":" + summary.revision;
+            try {
+              var visibility = visibilityCache.get(key);
+              if (!visibility) {
+                var full = await apiGet("get", { id: summary.id });
+                if (!full.character || !full.character.state) { throw new Error("公開範囲を確認できません。"); }
+                summary = Object.assign({}, summary, full.character);
+                visibility = full.character.state.visibility === "manager" ? "manager" : "public";
+                visibilityCache.set(summary.id + ":" + summary.revision, visibility);
+              }
+              var entry = Object.assign({}, summary, { visibility: visibility });
+              delete entry.state;
+              result.push(entry);
+            } catch (error) { failures += 1; }
+          }
+        }
+        await Promise.all([worker(), worker(), worker()]);
+        result.sort(function (a, b) { return String(b.updatedAt).localeCompare(String(a.updatedAt)); });
+        return { characters: result, failures: failures };
+      }
+
       function setStatus(element, message, kind) {
         element.textContent = message || "";
         element.classList.toggle("is-error", kind === "error");
@@ -8173,6 +8297,7 @@
           characterId: character.id,
           revision: Number(character.revision) || 1,
           name: character.name || "",
+          visibility: character.state && character.state.visibility === "manager" ? "manager" : "public",
           localBackupId: localBackupId || "cloud:" + character.id
         };
         persistContext();
@@ -8180,6 +8305,8 @@
 
       function updateSaveBar() {
         var state = getCurrentState();
+        document.getElementById("character-visibility-field").hidden = !managerUnlocked();
+        visibilityInput.value = state.visibility || "public";
         var configured = isConfigured();
         if (currentContext.characterId) {
           cloudCharacterLabel.textContent =
@@ -8358,6 +8485,7 @@
         meta.className = "character-card-meta";
         var type = document.createElement("span");
         type.textContent = targetLabel(character.targetType);
+        if (character.visibility === "manager") { type.textContent += " / 管理用"; }
         var updated = document.createElement("span");
         updated.textContent = "保存：" + formatDate(character.updatedAt);
         meta.append(type, updated);
@@ -8394,7 +8522,8 @@
         var query = String(searchInput.value || "").trim().toLocaleLowerCase("ja");
         characterList.replaceChildren();
         var filtered = cloudCharacters.filter(function (character) {
-          return !query || String(character.name || "").toLocaleLowerCase("ja").includes(query);
+          return canView(character) && (!managerUnlocked() || scopeInput.value === "all" || scopeInput.value === character.visibility) &&
+            (!query || String(character.name || "").toLocaleLowerCase("ja").includes(query));
         });
         if (!filtered.length) {
           var empty = document.createElement("p");
@@ -8427,6 +8556,7 @@
         var actions = document.createElement("div");
         actions.className = "character-card-actions";
         actions.appendChild(createButton("新規キャラとして復元", "secondary-button", function () {
+          if (!canView(backup.state)) { return; }
           backupCurrentState();
           window.characterSheetBuilder.replaceState(backup.state);
           clearCloudContext(backup.backupId);
@@ -8440,7 +8570,7 @@
 
       function renderLocalBackups() {
         localBackupList.replaceChildren();
-        var backups = Object.values(readBackups()).sort(function (left, right) {
+        var backups = Object.values(readBackups()).filter(function (backup) { return canView(backup.state); }).sort(function (left, right) {
           return String(right.savedAt).localeCompare(String(left.savedAt));
         });
         if (!backups.length) {
@@ -8461,6 +8591,8 @@
           id: character.id,
           name: character.name,
           targetType: character.targetType,
+          visibility: character.state && character.state.visibility === "manager" ? "manager" : "public",
+          thumbnailDataUrl: character.state ? character.state.thumbnailDataUrl : character.thumbnailDataUrl,
           revision: character.revision,
           updatedAt: character.updatedAt
         };
@@ -8472,6 +8604,7 @@
         cloudCharacters.sort(function (left, right) {
           return String(right.updatedAt).localeCompare(String(left.updatedAt));
         });
+        visibilityCache.set(summary.id + ":" + summary.revision, summary.visibility);
         renderCloudCharacters();
       }
 
@@ -8491,11 +8624,12 @@
         listLoading = true;
         setStatus(libraryStatus, "キャラ一覧を読み込んでいます…", "");
         try {
-          var data = await apiGet("list", {});
+          var data = await classifiedList();
           cloudCharacters = Array.isArray(data.characters) ? data.characters : [];
           lastListLoad = Date.now();
           renderCloudCharacters();
-          setStatus(libraryStatus, cloudCharacters.length + "件のキャラクターを表示しています。", "success");
+          setStatus(libraryStatus, cloudCharacters.filter(canView).length + "件" +
+            (data.failures ? "（公開範囲を確認できないデータは非表示）" : ""), data.failures ? "error" : "success");
         } catch (error) {
           setStatus(libraryStatus, error.message, "error");
         } finally {
@@ -8507,6 +8641,7 @@
         setStatus(libraryStatus, "キャラクターを読み込んでいます…", "");
         try {
           var data = await apiGet("get", { id: characterId });
+          assertVisible(data.character && data.character.state);
           backupCurrentState();
           window.characterSheetBuilder.replaceState(data.character.state);
           setCloudContext(data.character);
@@ -8523,6 +8658,7 @@
         setStatus(libraryStatus, "複製元を読み込んでいます…", "");
         try {
           var data = await apiGet("get", { id: characterId });
+          assertVisible(data.character && data.character.state);
           backupCurrentState();
           window.characterSheetBuilder.replaceState(data.character.state);
           clearCloudContext();
@@ -8548,6 +8684,8 @@
           return;
         }
         var state = getCloudState();
+        assertVisible(state);
+        var startedEpoch = lockEpoch;
         var name = String(state.name || "").trim();
         if (!name) {
           setStatus(cloudSaveStatus, "先にキャラクター名を入力してください。", "error");
@@ -8568,6 +8706,8 @@
             state: state
           };
           var data = await apiPost(request);
+          upsertCharacterSummary(data.character);
+          if (startedEpoch !== lockEpoch || !canView(data.character.state)) { return; }
           setCloudContext(data.character);
           backupCurrentState();
           upsertCharacterSummary(data.character);
@@ -8625,7 +8765,10 @@
       async function showHistory(characterId) {
         setStatus(libraryStatus, "保存履歴を読み込んでいます…", "");
         try {
+          var current = await apiGet("get", { id: characterId });
+          assertVisible(current.character && current.character.state);
           var data = await apiGet("history", { id: characterId });
+          assertVisible(current.character.state);
           renderHistory(data);
           setStatus(libraryStatus, "保存履歴を表示しました。", "success");
         } catch (error) {
@@ -8635,10 +8778,12 @@
       }
 
       async function restoreRevision(characterId, sourceRevision, baseRevision) {
-        if (!window.confirm("v" + sourceRevision + "の内容を、新しい最新版として復元しますか？")) {
+        if (!window.confirm("v" + sourceRevision + "を復元しますか？公開範囲も過去版へ戻ります。過去版が公開なら公開一覧に表示されます。")) {
           return;
         }
         try {
+          var current = await apiGet("get", { id: characterId });
+          assertVisible(current.character && current.character.state);
           var data = await apiPost({
             action: "restore",
             requestId: createUuid(),
@@ -8647,6 +8792,12 @@
             baseRevision: Number(baseRevision)
           });
           backupCurrentState();
+          upsertCharacterSummary(data.character);
+          if (!canView(data.character.state)) {
+            if (historyDialog.open) { historyDialog.close(); }
+            setStatus(libraryStatus, "管理用の版へ復元しました。内容を見るには管理用を解除してください。", "");
+            return;
+          }
           window.characterSheetBuilder.replaceState(data.character.state);
           setCloudContext(data.character);
           backupCurrentState();
@@ -8671,6 +8822,7 @@
         try {
           setStatus(libraryStatus, "削除前のローカルバックアップを作成しています…", "");
           var snapshot = await apiGet("get", { id: character.id });
+          assertVisible(snapshot.character && snapshot.character.state);
           storeLocalBackup(
             snapshot.character.state,
             "cloud:" + snapshot.character.id,
@@ -8714,6 +8866,41 @@
       document.getElementById("refresh-character-list").addEventListener("click", function () {
         refreshCharacters(true);
       });
+      function syncManagerMode() {
+        var unlocked = managerUnlocked();
+        document.getElementById("library-unlock-field").hidden = unlocked;
+        document.getElementById("library-unlock").hidden = unlocked;
+        document.getElementById("library-lock").hidden = !unlocked;
+        document.getElementById("library-scope-field").hidden = !unlocked;
+        document.getElementById("library-passphrase").value = "";
+        if (!unlocked) {
+          lockEpoch += 1;
+          scopeInput.value = "all";
+          if (historyDialog.open) { historyDialog.close(); }
+          historyList.replaceChildren();
+          document.getElementById("history-dialog-summary").textContent = "";
+          if (currentContext.visibility === "manager") { clearCloudContext(); }
+          setStatus(cloudSaveStatus, "", "");
+        }
+        renderCloudCharacters(); renderLocalBackups(); updateSaveBar();
+        setStatus(libraryStatus, unlocked ? "管理用を解除しました。" : "公開キャラのみ表示しています。", "");
+      }
+      document.getElementById("library-unlock").addEventListener("click", function () {
+        var entered = window.characterSheetBuilder.tryEnterKpMode(document.getElementById("library-passphrase").value);
+        if (!entered) { setStatus(libraryStatus, "合言葉が違います。", "error"); }
+      });
+      document.getElementById("library-passphrase").addEventListener("keydown", function (event) {
+        if (event.key === "Enter" && !event.isComposing && event.keyCode !== 229) { document.getElementById("library-unlock").click(); }
+      });
+      document.getElementById("library-lock").addEventListener("click", window.characterSheetBuilder.exitKpMode);
+      scopeInput.addEventListener("change", renderCloudCharacters);
+      visibilityInput.addEventListener("change", function () {
+        window.characterSheetBuilder.setVisibility(visibilityInput.value); updateSaveBar(); scheduleLocalBackup();
+      });
+      window.addEventListener("hoshimichi:before-manager-lock", function () {
+        window.clearTimeout(backupTimer); backupCurrentState();
+      });
+      window.addEventListener("hoshimichi:manager-mode", syncManagerMode);
       document.getElementById("new-character-from-list").addEventListener("click", startNewCharacter);
       searchInput.addEventListener("input", renderCloudCharacters);
       saveButton.addEventListener("click", function () { saveToCloud(false, false); });
@@ -8736,6 +8923,12 @@
       });
 
       connectionNote.hidden = isConfigured();
+      if (currentContext.visibility === "manager") { currentContext = {}; persistContext(); }
+      // Retain an uncommitted private draft after a reload without rendering it while locked.
+      var lockedDraft = loadJson("hoshimichi-character-sheet-builder-locked-draft", null);
+      if (lockedDraft && lockedDraft.visibility === "manager") {
+        storeLocalBackup(lockedDraft, "local:locked-draft", "", 0);
+      }
       if (!isConfigured()) {
         usageCounter.textContent = "本日の通信回数：未接続";
       }
@@ -8747,15 +8940,16 @@
         refresh: refreshCharacters,
         listForPlay: async function () {
           if (!isConfigured()) { throw new Error("クラウド保存先が未設定です。"); }
-          var data = await apiGet("list", {});
+          var data = await classifiedList();
           if (!Array.isArray(data.characters)) { throw new Error("一覧を読み取れませんでした。"); }
-          return clone(data.characters);
+          return clone(data.characters.filter(canView));
         },
         getForPlay: async function (id) {
           var data = await apiGet("get", { id: id });
           if (!data.character || data.character.id !== id || !data.character.state) {
             throw new Error("参加者データを読み取れませんでした。");
           }
+          assertVisible(data.character.state);
           return clone(data.character);
         },
         backupCurrentState: backupCurrentState,
