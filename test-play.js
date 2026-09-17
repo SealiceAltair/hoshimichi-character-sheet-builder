@@ -29,6 +29,8 @@ const { chromium } = require("playwright");
       await route.fulfill({ json: response, headers: { "access-control-allow-origin": "*" } });
     });
     await page.goto(pathToFileURL(path.join(__dirname, "index.html")).href);
+    assert.equal(await page.locator('#profile-era').inputValue(), '992');
+    assert.equal((await page.evaluate(() => window.characterSheetBuilder.getState())).profile.referenceYear, 992);
     await page.evaluate(() => {
       const state = window.characterSheetBuilder.getState();
       state.name = "試験PC";
@@ -36,6 +38,124 @@ const { chromium } = require("playwright");
       state.skills = [{ id: "test-skill", name: "試験技", description: "追加効果の全文を保持する", cost: 1 }];
       window.characterSheetBuilder.replaceState(state);
     });
+    await page.locator('#profile-era').selectOption('unknown');
+    assert.equal((await page.evaluate(() => window.characterSheetBuilder.getState())).profile.referenceYear, null);
+    await page.locator('#profile-era').selectOption('custom');
+    await page.locator('#profile-referenceYear').fill('986');
+    assert.equal((await page.evaluate(() => window.characterSheetBuilder.getState())).profile.referenceYear, 986);
+    await page.locator('#profile-era').selectOption('992');
+    await page.locator("#profile-age").fill("22");
+    await page.locator('#profile-gender-choice').selectOption('女性');
+    const profileValues = {
+      gender: "女性", species: "人族", appearance: "銀髪。右腰に剣。",
+      personality: "慎重だが好奇心が強い", background: "辺境で育った職人",
+      speech: "短く穏やかに話す", goals: "故郷に帰る旅費を集めたい"
+    };
+    for (const [key, value] of Object.entries(profileValues)) {
+      if (key === 'gender') { continue; }
+      await page.locator("#profile-" + key).fill(value);
+    }
+    await page.locator('#profile-gender-choice').selectOption('custom');
+    await page.locator('#profile-gender').fill('性別を持たない');
+    await page.reload();
+    assert.equal(await page.locator('#profile-gender-choice').inputValue(), 'custom');
+    assert.equal(await page.locator('#profile-gender').inputValue(), '性別を持たない');
+    await page.locator('#profile-gender-choice').selectOption('女性');
+    await page.locator('#profile-birthdayPeriod').selectOption('1');
+    assert.equal(await page.locator('#profile-birthdayDay option').count(), 31);
+    await page.locator('#profile-birthdayDay').selectOption('30');
+    await page.locator('#profile-birthdayPeriod').selectOption('13');
+    assert.equal(await page.locator('#profile-birthdayDay option').count(), 6);
+    assert.equal(await page.locator('#profile-birthdayDay').inputValue(), '');
+    await page.locator('#profile-birthdayDay').selectOption('5');
+    assert((await page.locator('#profile-identity').textContent()).includes('出生年：未確定'));
+    await page.locator('#profile-birthdayStatus').selectOption('before');
+    assert((await page.locator('#profile-identity').textContent()).includes('出生年：星歴969年'));
+    await page.locator('#profile-birthdayStatus').selectOption('after');
+    assert((await page.locator('#profile-identity').textContent()).includes('出生年：星歴970年'));
+    await page.locator('#profile-era').selectOption('custom');
+    await page.locator('#profile-referenceYear').fill('993');
+    assert.equal(await page.locator('#profile-birthdayStatus').inputValue(), 'unknown');
+    assert.equal(await page.locator('#profile-age').inputValue(), '22');
+    await page.locator('#profile-era').selectOption('992');
+    await page.locator('#profile-birthdayStatus').selectOption('before');
+    const profileCheck = await page.evaluate(() => {
+      const api = window.characterSheetBuilder;
+      const state = api.getState();
+      const markdown = api.buildPlayerMarkdown();
+      const full = api.parseMarkdownState(markdown).state;
+      const plain = api.parseMarkdownState(markdown.replace(/<!-- HOSHIMICHI-PC-V12:[\s\S]*?-->/, "")).state;
+      const kp = api.parseMarkdownState(api.buildKpMarkdown()).state;
+      const old = JSON.parse(JSON.stringify(state)); old.version = 11; delete old.profile;
+      const migrated = api.exportPlaySnapshot(old).state;
+      const invalid = JSON.parse(JSON.stringify(state));
+      invalid.profile = { referenceYear: true, age: -1 };
+      const invalidResult = api.exportPlaySnapshot(invalid).state.profile;
+      const zero = JSON.parse(JSON.stringify(state)); zero.profile = { referenceYear: 0, age: 0 };
+      const fixtures = [
+        { referenceYear: 992, age: 0, birthdayStatus: 'before' },
+        { referenceYear: 992, age: 0, birthdayStatus: 'after' },
+        { referenceYear: 992, age: null, birthdayStatus: 'after' },
+        { referenceYear: null, age: 22, birthdayStatus: 'after' },
+        { referenceYear: 0, age: 100, birthdayStatus: 'after' }
+      ].map(profile => api.exportPlaySnapshot({ ...state, profile }).markdown);
+      const badDay = api.exportPlaySnapshot({ ...state, profile: { birthdayPeriod: 13, birthdayDay: 6 } }).state.profile;
+      const oldPlain = api.parseMarkdownState(markdown.replace(/<!-- HOSHIMICHI-PC-V12:[\s\S]*?-->/, '')
+        .replace(/^(基準年|年齢|誕生日|基準年の誕生日|出生年（年齢から算出）)：.*\n/gm, '')).state;
+      return { state, full, plain, kp, migrated, invalidResult, zero: api.exportPlaySnapshot(zero).state,
+        cloud: api.getCloudState(), summary: api.buildCharacterSummary(), fixtures, badDay, oldPlain };
+    });
+    assert.equal(profileCheck.state.version, 12);
+    for (const state of [profileCheck.full, profileCheck.plain, profileCheck.kp, profileCheck.cloud]) {
+      assert.deepEqual(state.profile, profileCheck.state.profile);
+      assert.equal(state.characterSetting, profileCheck.state.characterSetting);
+    }
+    assert.equal(profileCheck.migrated.characterSetting, profileCheck.state.characterSetting);
+    assert.equal(profileCheck.migrated.profile.age, null);
+    assert.equal(profileCheck.migrated.profile.referenceYear, null);
+    assert.equal(profileCheck.invalidResult.age, null);
+    assert.equal(profileCheck.invalidResult.referenceYear, null);
+    assert.equal(profileCheck.zero.profile.age, 0);
+    assert.equal(profileCheck.zero.profile.referenceYear, 0);
+    assert.equal(profileCheck.state.profile.birthdayPeriod, 13);
+    assert.equal(profileCheck.state.profile.birthdayDay, 5);
+    assert.equal(profileCheck.state.profile.birthdayStatus, 'before');
+    assert.equal(profileCheck.oldPlain.profile.referenceYear, null);
+    assert.equal(profileCheck.oldPlain.profile.age, null);
+    assert.equal(profileCheck.badDay.birthdayDay, null);
+    ['星歴991年', '星歴992年', '未確定', '未確定', '星歴以前（年表記未定）'].forEach((label, index) => {
+      assert(profileCheck.fixtures[index].includes('出生年（年齢から算出）：' + label));
+    });
+    assert(profileCheck.summary.includes("星歴992年時点 / 22歳"));
+    await page.reload();
+    assert.equal(await page.locator("#profile-referenceYear").inputValue(), "992");
+    assert.equal(await page.locator('#profile-era').inputValue(), '992');
+    assert.equal(await page.locator('#profile-birthdayDay').inputValue(), '5');
+    assert.equal(await page.locator('#profile-birthdayStatus').inputValue(), 'before');
+    assert.equal(await page.locator("#profile-goals").inputValue(), profileValues.goals);
+    if (process.env.TEST_ARTIFACT_DIR) {
+      fs.mkdirSync(process.env.TEST_ARTIFACT_DIR, { recursive: true });
+      for (const width of [1365, 390]) {
+        await page.setViewportSize({ width, height: 950 });
+        await page.evaluate(() => {
+          const section = document.querySelector('[aria-labelledby="character-setting-heading"]');
+          const offset = document.querySelector('.points-panel').getBoundingClientRect().height + 24;
+          window.scrollTo({ top: section.getBoundingClientRect().top + window.scrollY - offset, behavior: 'instant' });
+        });
+        await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+        assert(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1));
+        await page.evaluate(() => {
+          const year = document.getElementById('profile-era').getBoundingClientRect();
+          if (document.elementFromPoint(year.x + 10, year.y + 10).id !== 'profile-era') {
+            throw new Error('Profile year is obscured');
+          }
+        });
+        await page.screenshot({
+          path: path.join(process.env.TEST_ARTIFACT_DIR, "profile-" + width + ".png")
+        });
+      }
+      await page.setViewportSize({ width: 1365, height: 1000 });
+    }
     const original = await page.evaluate(() => window.characterSheetBuilder.getState());
     for (let i = 1; i <= 4; i++) {
       const state = JSON.parse(JSON.stringify(original));
@@ -61,11 +181,26 @@ const { chromium } = require("playwright");
     await page.locator("#play-tab").click();
     assert.equal(await page.locator("[data-play-tag]").count(), 44);
     const catalog = await page.locator("#play-scenario-catalog option").allTextContents();
-    assert.deepEqual(catalog.slice(1), ["銅色の初仕事 ｜ 推奨CP：未設定", "森に満ちる足音 ｜ 推奨CP：4", "約束の続きを探して ｜ 推奨CP：未設定"]);
+    assert.deepEqual(catalog.slice(1), ["銅色の初仕事 ｜ 推奨CP：未設定 ｜ 未定", "森に満ちる足音 ｜ 推奨CP：4 ｜ 星歴992年", "約束の続きを探して ｜ 推奨CP：未設定 ｜ 未定"]);
     await page.locator("#play-scenario-catalog").selectOption("SCN-0002");
     await page.locator("#play-difficulty").selectOption("challenge");
     await page.locator('[data-play-tag="雰囲気"]').first().check();
     let catalogText = await page.locator("#play-request-preview").inputValue();
+    assert(catalogText.includes("作中年（正本）：星歴992年"));
+    assert(catalogText.includes("試験PC：星歴992年時点 / 22歳"));
+    assert((await page.locator("#play-roster").textContent()).includes("星歴992年時点 / 22歳"));
+    await page.locator("#play-year-mode").selectOption("custom");
+    await page.locator("#play-year").fill("986");
+    const differentYear = await page.locator("#play-request-preview").inputValue();
+    assert(differentYear.includes("年代相違："));
+    assert(differentYear.includes("年代要確認：試験PC"));
+    assert.equal((await page.evaluate(() => window.characterSheetBuilder.getState())).profile.age, 22);
+    await page.locator("#play-year").fill("");
+    assert((await page.locator("#play-request-preview").inputValue()).includes("作中年（希望）：未定"));
+    await page.locator("#play-year-mode").selectOption("canon");
+    await page.locator("#play-scenario-method").selectOption("new");
+    assert((await page.locator("#play-request-preview").inputValue()).includes("作中年（正本）：未定"));
+    await page.locator("#play-scenario-method").selectOption("existing");
     assert(catalogText.includes("canon/game_rules/SCN-0002_森に満ちる足音.md / F-000098"));
     assert(catalogText.includes("推奨CP（1人あたり）：4"));
     assert(catalogText.includes("ユーザーPC 4名 / AI代理PC 1名"));

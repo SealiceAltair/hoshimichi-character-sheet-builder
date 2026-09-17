@@ -320,7 +320,8 @@ Object.keys(expectedDefenseMultipliers).forEach((grade) => {
     `${grade} defense multiplier`);
 });
 
-assert(/var STORAGE_VERSION = 11;/.test(source), "storage version is not V11");
+assert(/var STORAGE_VERSION = 12;/.test(source), "storage version is not V12");
+assert(/raw\.version !== 11/.test(source), "V11 migration is not accepted");
 assert(/powerInput\.min = "-100"/.test(source), "skill power minimum is not -100");
 assert(/純効果価値Vは0～999の整数/.test(source), "custom effect V integer validation is missing");
 assert(/group\.exclusive/.test(source), "exclusive effect category handling is missing");
@@ -328,8 +329,8 @@ assert(/raw\.version !== 9/.test(source), "V9 migration is not accepted");
 assert(/raw\.version !== 10/.test(source), "V10 migration is not accepted");
 assert(/enhancementStage:\s*0/.test(source), "new weapon enhancement stage is not 0");
 assert(/goblinArmorEnhancement:\s*0/.test(source), "new enemy defense stage is not 0");
-assert(/HOSHIMICHI-PC-V11:/.test(source), "public restore marker is not V11");
-assert(/HOSHIMICHI-KP-V11:/.test(source), "KP restore marker is not V11");
+assert(/HOSHIMICHI-PC-V12:/.test(source), "public restore marker is not V12");
+assert(/HOSHIMICHI-KP-V12:/.test(source), "KP restore marker is not V12");
 assert(/<html lang="ja" data-theme="dark">/.test(source), "dark theme is not the default");
 assert(/id="theme-toggle"/.test(source), "theme toggle button is missing");
 assert(/localStorage\.setItem\(THEME_STORAGE_KEY, normalizedTheme\)/.test(source),

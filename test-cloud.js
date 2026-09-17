@@ -46,7 +46,8 @@ assert(!/<link[^>]+rel=["']stylesheet["']/i.test(html), "The builder must not de
 
 // 従来のlocalStorageとクラウド用データを別キーで維持すること。
 includes(html, 'var STORAGE_KEY = "hoshimichi-character-sheet-builder";');
-includes(html, 'var STORAGE_VERSION = 11;');
+includes(html, 'var STORAGE_VERSION = 12;');
+includes(html, 'raw.version !== 11');
 includes(html, 'raw.version !== 10');
 includes(html, 'var CLOUD_CONTEXT_KEY = "hoshimichi-character-sheet-builder-cloud-context-v1";');
 includes(html, 'var LOCAL_BACKUP_KEY = "hoshimichi-character-sheet-builder-cloud-backups-v1";');
