@@ -40,6 +40,7 @@ const { chromium } = require("playwright");
       await route.fulfill({ json: response, headers: { "access-control-allow-origin": "*" } });
     });
     await page.goto(pathToFileURL(path.join(__dirname, "index.html")).href);
+    assert.equal(await page.locator("#library-passphrase").getAttribute("type"), "text");
     const base = await page.evaluate(() => window.characterSheetBuilder.getState());
     records.public = { id: "public", name: "公開テスト", revision: 1, state: { ...base, name: "公開テスト" } };
     records.private = { id: "private", name: "管理テスト", revision: 1,

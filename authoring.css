@@ -1,0 +1,61 @@
+.primary-tabs { grid-template-columns: repeat(auto-fit, minmax(155px, 1fr)); }
+.primary-tabs .primary-tab { font-size: 18px; letter-spacing: 0; }
+.authoring-panel { min-width: 0; }
+.authoring-panel * { box-sizing: border-box; }
+.authoring-panel h2 { margin: 0; font-size: 24px; }
+.authoring-panel h3 { margin: 0 0 12px; font-size: 17px; }
+.authoring-head, .authoring-row { display: flex; gap: 10px; align-items: end; flex-wrap: wrap; }
+.authoring-head { align-items: center; justify-content: space-between; padding: 18px 0; border-bottom: 1px solid var(--line); }
+.authoring-row { margin: 14px 0; }
+.authoring-panel .field { min-width: 0; }
+.authoring-panel input, .authoring-panel select, .authoring-panel textarea { width: 100%; min-width: 0; font-size: 15px; }
+.authoring-panel textarea { min-height: 100px; resize: vertical; line-height: 1.65; }
+.authoring-row > .field { flex: 1 1 180px; }
+.authoring-row > .compact { flex: 0 1 95px; }
+.authoring-toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--line); }
+.authoring-toolbar button { min-height: 40px; }
+.authoring-icon { width: 42px; height: 42px; padding: 6px; font-size: 23px; flex-shrink: 0; }
+.authoring-tools { display: flex; gap: 6px; flex-wrap: wrap; margin: 0; padding: 0; border: 0; }
+.authoring-tools legend { font-size: 13px; margin-bottom: 6px; color: var(--muted); }
+.authoring-tools label { display: flex; gap: 5px; align-items: center; padding: 6px 8px; border: 1px solid var(--line); border-radius: 4px; font-size: 14px; cursor: pointer; }
+.authoring-tools label:has(input:checked) { border-color: var(--accent-dark); background: var(--accent-soft); }
+.authoring-tools input, .authoring-checks input { width: 16px; height: 16px; margin: 0; flex-shrink: 0; }
+.map-workspace { display: grid; grid-template-columns: minmax(0, 1fr) 280px; gap: 18px; padding: 16px 0; }
+.map-viewport { overflow: auto; height: 560px; max-height: 68vh; background: #edf1ed; border: 1px solid var(--line); overscroll-behavior: contain; }
+.map-viewport canvas { display: block; touch-action: none; cursor: crosshair; }
+.map-viewport canvas:focus-visible { outline: 3px solid #c75820; outline-offset: -3px; }
+.map-inspector { min-width: 0; border-left: 1px solid var(--line); padding-left: 16px; }
+.map-inspector .field { margin: 10px 0; }
+.map-inspector textarea { min-height: 72px; }
+.map-inspector details { border-top: 1px solid var(--line); padding: 12px 0; }
+.map-inspector summary { cursor: pointer; font-weight: 700; }
+.map-coordinate { font-size: 13px; color: var(--muted); min-height: 22px; margin: 6px 0; }
+.map-swatch { width: 18px; height: 18px; border: 1px solid #73818b; display: inline-block; border-radius: 2px; }
+.authoring-status { color: var(--muted); min-height: 24px; margin: 8px 0; overflow-wrap: anywhere; }
+.authoring-status.is-error { color: var(--danger); font-weight: 700; }
+.scenario-layout { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(280px, .8fr); gap: 24px; }
+.scenario-fields { min-width: 0; }
+.scenario-section { padding: 18px 0; border-bottom: 1px solid var(--line); }
+.scenario-section .field + .field { margin-top: 14px; }
+.scenario-preview { min-width: 0; }
+.scenario-preview textarea { min-height: 680px; font-family: ui-monospace, monospace; font-size: 13px; }
+.authoring-checks { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 12px; }
+.authoring-checks label { display: flex; align-items: start; gap: 8px; font-size: 14px; overflow-wrap: anywhere; }
+.authoring-checks input { margin-top: 4px; }
+.authoring-preferences { padding: 12px 0; margin: 0; border: 0; }
+.authoring-preferences legend { font-weight: 700; font-size: 15px; }
+.authoring-output { min-height: 280px !important; font-family: ui-monospace, monospace; font-size: 13px !important; }
+.authoring-panel .inline-check { display: inline-flex; align-items: center; gap: 6px; }
+.authoring-panel .inline-check input { width: 16px; height: 16px; }
+@media (max-width: 900px) {
+  .map-workspace, .scenario-layout { grid-template-columns: minmax(0, 1fr); }
+  .map-inspector { border-left: 0; border-top: 1px solid var(--line); padding: 16px 0; }
+  .scenario-preview textarea { min-height: 360px; }
+}
+@media (max-width: 540px) {
+  .primary-tabs { grid-template-columns: 1fr; }
+  .authoring-head { align-items: start; }
+  .authoring-panel h2 { font-size: 21px; }
+  .map-viewport { height: 390px; }
+  .authoring-checks { grid-template-columns: 1fr; }
+}

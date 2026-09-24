@@ -22,7 +22,7 @@ inlineScripts.forEach((match, index) => {
 });
 assert.doesNotThrow(() => new Function(gas), "Code.gs has a syntax error");
 
-// 3タブと単一HTMLのオフライン動作契約。
+// 既存3タブを保ち、制作モジュールも同梱ファイルだけでオフライン起動する。
 const tabOrder = ["library", "builder", "play"].map((name) => html.indexOf(`data-primary-tab="${name}"`));
 assert(tabOrder.every((position) => position >= 0), "All three primary tabs must exist");
 assert(tabOrder[0] < tabOrder[1] && tabOrder[1] < tabOrder[2], "Primary tabs are in the wrong order");
@@ -41,8 +41,15 @@ assert(
   /window\.HOSHIMICHI_CLOUD_API_URL\s*=\s*"https:\/\/script\.google\.com\/macros\/s\/[A-Za-z0-9_-]+\/exec";/.test(html),
   "Cloud must point to a deployed GAS web app"
 );
-assert(!/<script[^>]+src=/i.test(html), "The builder must not depend on an external script");
-assert(!/<link[^>]+rel=["']stylesheet["']/i.test(html), "The builder must not depend on an external stylesheet");
+const localScripts = Array.from(html.matchAll(/<script[^>]+src="([^"]+)"/gi), match => match[1]);
+assert.deepStrictEqual(localScripts, ["authoring-core.js", "authoring.js"], "Only bundled authoring scripts may be loaded");
+localScripts.forEach(file => {
+  assert(fs.existsSync(path.join(root, file)), "Bundled script is missing");
+  assert.doesNotThrow(() => new Function(fs.readFileSync(path.join(root, file), "utf8")));
+});
+const stylesheets = Array.from(html.matchAll(/<link[^>]+rel="stylesheet"[^>]+href="([^"]+)"/gi), match => match[1]);
+assert.deepStrictEqual(stylesheets, ["authoring.css"], "Only the bundled authoring stylesheet may be loaded");
+assert(fs.existsSync(path.join(root, stylesheets[0])));
 
 // 従来のlocalStorageとクラウド用データを別キーで維持すること。
 includes(html, 'var STORAGE_KEY = "hoshimichi-character-sheet-builder";');

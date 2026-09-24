@@ -1927,6 +1927,7 @@
       }
     }
   </style>
+  <link rel="stylesheet" href="authoring.css">
 </head>
 <body>
   <main class="page-shell">
@@ -1954,6 +1955,10 @@
         aria-selected="true" aria-controls="builder-panel">キャラ作成へ →</button>
       <button id="play-tab" class="primary-tab" type="button" role="tab" data-primary-tab="play"
         aria-selected="false" aria-controls="play-panel" tabindex="-1">シナリオ・RPへ →</button>
+      <button id="map-tab" class="primary-tab" type="button" role="tab" data-primary-tab="map"
+        aria-selected="false" aria-controls="map-panel" tabindex="-1" hidden>マップ制作</button>
+      <button id="scenario-tab" class="primary-tab" type="button" role="tab" data-primary-tab="scenario"
+        aria-selected="false" aria-controls="scenario-panel" tabindex="-1" hidden>シナリオ制作</button>
     </nav>
 
     <section id="library-panel" class="primary-tab-panel panel section-panel library-panel" role="tabpanel"
@@ -1986,7 +1991,7 @@
       <div class="library-toolbar">
         <div class="field" id="library-unlock-field">
           <label for="library-passphrase">管理用の合言葉</label>
-          <input id="library-passphrase" type="password" autocomplete="off">
+          <input id="library-passphrase" type="text" maxlength="64" autocomplete="off" lang="ja" spellcheck="false">
         </div>
         <button id="library-unlock" type="button" class="secondary-button">管理用を解除</button>
         <button id="library-lock" type="button" class="secondary-button" hidden>管理用をロック</button>
@@ -2823,6 +2828,8 @@
         <p id="play-status" class="play-status" aria-live="polite"></p>
       </div>
     </section>
+    <section id="map-panel" class="primary-tab-panel authoring-panel" role="tabpanel" aria-labelledby="map-tab" hidden></section>
+    <section id="scenario-panel" class="primary-tab-panel authoring-panel" role="tabpanel" aria-labelledby="scenario-tab" hidden></section>
   </main>
 
   <dialog id="manual-copy-dialog" aria-labelledby="manual-copy-heading">
@@ -2972,7 +2979,7 @@
       var freeFieldDefinitions = [
         {
           key: "uniqueAbility",
-          label: "固有能力",
+          label: "固有能力（ギフト）",
           placeholder: "能力の内容を入力（任意）"
         }
       ];
@@ -6544,6 +6551,8 @@
         freeFieldDefinitions.forEach(function (field) {
           freeLabels[field.label] = field.key;
         });
+        freeLabels["固有能力"] = "uniqueAbility";
+        freeLabels["固有能力(ギフト)"] = "uniqueAbility";
         freeLabels["スキル"] = "legacySkills";
         freeLabels["武器"] = "legacyWeapons";
         freeLabels["装備"] = "legacyEquipment";
@@ -7696,7 +7705,7 @@
       var fieldIds = ["play-scenario-method", "play-scenario", "play-history-status",
         "play-environment", "play-ai", "play-wish", "play-boundaries",
         "play-scenario-catalog", "play-difficulty", "play-year-mode", "play-year"];
-      var tabs = ["library", "builder", "play"].map(function (name) {
+      var tabs = ["library", "builder", "play", "map", "scenario"].map(function (name) {
         return { name: name, button: document.getElementById(name + "-tab"),
           panel: document.getElementById(name + "-panel") };
       });
@@ -8055,6 +8064,7 @@
       }
       function refreshView() { renderRoster(); updateRequest(); }
       function activateTab(name, focus) {
+        if ((name === "map" || name === "scenario") && !window.characterSheetBuilder.isKpMode()) { name = "library"; }
         var active = tabs.find(function (x) { return x.name === name; }) || tabs[1];
         tabs.forEach(function (tab) {
           tab.button.setAttribute("aria-selected", tab === active ? "true" : "false");
@@ -8066,17 +8076,20 @@
         }
         if (active.name === "library" && window.hoshimichiCloudLibrary) { window.hoshimichiCloudLibrary.refresh(false); }
         if (focus) { active.button.focus(); }
+        window.dispatchEvent(new CustomEvent("hoshimichi:tab", { detail: { name: active.name } }));
       }
       tabs.forEach(function (tab, index) {
         tab.button.addEventListener("click", function () { activateTab(tab.name, false); });
         tab.button.addEventListener("keydown", function (event) {
-          var next = index;
-          if (event.key === "ArrowRight" || event.key === "ArrowDown") { next = (index + 1) % tabs.length; }
-          else if (event.key === "ArrowLeft" || event.key === "ArrowUp") { next = (index + tabs.length - 1) % tabs.length; }
+          var visibleTabs = tabs.filter(function (item) { return !item.button.hidden; });
+          var currentIndex = visibleTabs.indexOf(tab);
+          var next = currentIndex;
+          if (event.key === "ArrowRight" || event.key === "ArrowDown") { next = (currentIndex + 1) % visibleTabs.length; }
+          else if (event.key === "ArrowLeft" || event.key === "ArrowUp") { next = (currentIndex + visibleTabs.length - 1) % visibleTabs.length; }
           else if (event.key === "Home") { next = 0; }
-          else if (event.key === "End") { next = tabs.length - 1; }
+          else if (event.key === "End") { next = visibleTabs.length - 1; }
           else { return; }
-          event.preventDefault(); activateTab(tabs[next].name, true);
+          event.preventDefault(); activateTab(visibleTabs[next].name, true);
         });
       });
       useCurrent.addEventListener("change", function () { refreshView(); renderChoices(); });
@@ -8957,5 +8970,7 @@
       });
     }());
   </script>
+  <script src="authoring-core.js"></script>
+  <script src="authoring.js"></script>
 </body>
 </html>

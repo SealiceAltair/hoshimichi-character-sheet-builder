@@ -34,6 +34,7 @@ const { chromium } = require("playwright");
     await page.evaluate(() => {
       const state = window.characterSheetBuilder.getState();
       state.name = "試験PC";
+      state.uniqueAbility = "遠くの声を聞き分ける。条件は任意のメモ。";
       state.characterSetting = "慎重な旅人。本人の判断を待つ。";
       state.skills = [{ id: "test-skill", name: "試験技", description: "追加効果の全文を保持する", cost: 1 }];
       window.characterSheetBuilder.replaceState(state);
@@ -84,7 +85,10 @@ const { chromium } = require("playwright");
       const state = api.getState();
       const markdown = api.buildPlayerMarkdown();
       const full = api.parseMarkdownState(markdown).state;
-      const plain = api.parseMarkdownState(markdown.replace(/<!-- HOSHIMICHI-PC-V12:[\s\S]*?-->/, "")).state;
+      const plainMarkdown = markdown.replace(/<!-- HOSHIMICHI-PC-V12:[\s\S]*?-->/, "");
+      const plain = api.parseMarkdownState(plainMarkdown).state;
+      const legacyGift = api.parseMarkdownState(plainMarkdown.replace("## 固有能力（ギフト）", "## 固有能力")).state;
+      const asciiGift = api.parseMarkdownState(plainMarkdown.replace("## 固有能力（ギフト）", "## 固有能力(ギフト)")).state;
       const kp = api.parseMarkdownState(api.buildKpMarkdown()).state;
       const old = JSON.parse(JSON.stringify(state)); old.version = 11; delete old.profile;
       const migrated = api.exportPlaySnapshot(old).state;
@@ -102,10 +106,14 @@ const { chromium } = require("playwright");
       const badDay = api.exportPlaySnapshot({ ...state, profile: { birthdayPeriod: 13, birthdayDay: 6 } }).state.profile;
       const oldPlain = api.parseMarkdownState(markdown.replace(/<!-- HOSHIMICHI-PC-V12:[\s\S]*?-->/, '')
         .replace(/^(基準年|年齢|誕生日|基準年の誕生日|出生年（年齢から算出）)：.*\n/gm, '')).state;
-      return { state, full, plain, kp, migrated, invalidResult, zero: api.exportPlaySnapshot(zero).state,
+      return { state, full, plain, legacyGift, asciiGift, markdown, kp, migrated, invalidResult, zero: api.exportPlaySnapshot(zero).state,
         cloud: api.getCloudState(), summary: api.buildCharacterSummary(), fixtures, badDay, oldPlain };
     });
     assert.equal(profileCheck.state.version, 12);
+    assert(profileCheck.markdown.includes("## 固有能力（ギフト）"));
+    for (const state of [profileCheck.full, profileCheck.plain, profileCheck.legacyGift, profileCheck.asciiGift, profileCheck.kp, profileCheck.cloud]) {
+      assert.equal(state.uniqueAbility, profileCheck.state.uniqueAbility);
+    }
     for (const state of [profileCheck.full, profileCheck.plain, profileCheck.kp, profileCheck.cloud]) {
       assert.deepEqual(state.profile, profileCheck.state.profile);
       assert.equal(state.characterSetting, profileCheck.state.characterSetting);
