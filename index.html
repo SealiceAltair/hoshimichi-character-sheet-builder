@@ -1559,6 +1559,44 @@
       white-space: pre-wrap;
     }
 
+    .ai-consult-panel { border-color: var(--accent); }
+    .ai-consult-lead { margin: 0 0 0.85rem; color: var(--muted); }
+    .ai-consult-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 0.7rem; }
+    .ai-consult-actions button { padding: 0.7rem 1rem; }
+    .ai-return-field { margin-top: 1rem; }
+    .ai-return-field textarea {
+      min-height: 10rem;
+      font-family: ui-monospace, "Cascadia Mono", "Yu Gothic UI", monospace;
+      font-size: 0.82rem;
+    }
+    .ai-consult-status {
+      min-height: 1.5em;
+      margin: 0.65rem 0 0;
+      color: var(--muted);
+      font-size: 0.84rem;
+      font-weight: 800;
+    }
+    .ai-consult-status.is-error { color: var(--danger); }
+    .ai-consult-status.is-success { color: var(--success); }
+    .ai-feedback-review { display: grid; gap: 0.7rem; margin-top: 1rem; }
+    .ai-feedback-review[hidden] { display: none; }
+    .ai-feedback-item {
+      display: grid;
+      gap: 0.55rem;
+      padding: 0.75rem;
+      border: 1px solid var(--line);
+      border-radius: 9px;
+      background: var(--surface-soft);
+    }
+    .ai-feedback-item p { margin: 0; color: var(--text); }
+    .ai-feedback-item .field { margin-top: 0.2rem; }
+    .action-group-label {
+      margin: 0.9rem 0 0.45rem;
+      color: var(--muted);
+      font-size: 0.82rem;
+      font-weight: 800;
+    }
+
     .import-box {
       margin-top: 1rem;
       padding-top: 1rem;
@@ -2028,6 +2066,30 @@
         <button id="save-character-copy" type="button" class="secondary-button">別キャラとして保存</button>
         <button id="show-current-history" type="button" class="secondary-button">過去2版を見る</button>
       </div>
+    </section>
+
+    <section id="ai-consult-panel" class="panel section-panel ai-consult-panel" aria-labelledby="ai-consult-heading">
+      <div class="section-heading">
+        <h2 id="ai-consult-heading">AIとキャラクリ相談</h2>
+        <p class="section-note">相談は自由、反映前にビルダーが再検証します</p>
+      </div>
+      <p class="ai-consult-lead">
+        今のキャラクター情報をAIへ持っていき、一緒にキャラクリできます。
+        相談後に「ビルダーへ戻す」と伝え、返されたデータをここへ貼り付けてください。
+      </p>
+      <div class="ai-consult-actions">
+        <button id="copy-ai-consult" type="button">AIに相談する｜相談文をコピー</button>
+      </div>
+      <div class="field ai-return-field">
+        <label for="ai-return-input">AIからの返却データ</label>
+        <textarea id="ai-return-input"
+          placeholder="ChatGPTで「ビルダーへ戻す」と伝え、返されたデータをここへ貼り付け"></textarea>
+        <span class="field-hint">返却JSONはそのまま反映せず、内容・計算・相談IDを確認してから反映します。</span>
+      </div>
+      <div class="ai-consult-actions">
+        <button id="preview-ai-return" type="button" class="secondary-button">AI相談結果を反映</button>
+      </div>
+      <p id="ai-consult-status" class="ai-consult-status" aria-live="polite"></p>
     </section>
 
     <section class="panel section-panel" aria-labelledby="basic-heading">
@@ -2666,9 +2728,18 @@
         <h2 id="actions-heading">11. コピー・リセット操作</h2>
         <p class="section-note">ポイント超過中はコピーできません</p>
       </div>
+      <p class="action-group-label">通常出力</p>
       <div class="action-buttons">
         <button id="copy-player" type="button">プレイヤー用Markdownをコピー</button>
         <button id="copy-chappy" type="button" class="secondary-button">チャッピー用データをコピー</button>
+      </div>
+      <p class="action-group-label">AIキャラクリ</p>
+      <div class="action-buttons">
+        <button id="copy-ai-consult-bottom" type="button" class="secondary-button">AIに相談する｜相談文をコピー</button>
+        <button id="apply-ai-return-bottom" type="button" class="secondary-button">AI相談結果を反映</button>
+      </div>
+      <p class="action-group-label">管理</p>
+      <div class="action-buttons">
         <button id="reset-all" type="button" class="danger-button">すべてリセット</button>
       </div>
       <div class="import-box">
@@ -2838,6 +2909,17 @@
     <textarea id="manual-copy-text" readonly aria-label="コピーする内容"></textarea>
     <div class="dialog-actions">
       <button id="close-copy-dialog" type="button">閉じる</button>
+    </div>
+  </dialog>
+
+  <dialog id="ai-import-dialog" aria-labelledby="ai-import-dialog-heading">
+    <h2 id="ai-import-dialog-heading">AI相談結果の確認</h2>
+    <p>現在のキャラクターとの差分と、ビルダー側の再計算結果を確認してください。</p>
+    <pre id="ai-import-summary" class="import-summary"></pre>
+    <div id="ai-feedback-review" class="ai-feedback-review" hidden></div>
+    <div class="dialog-actions">
+      <button id="cancel-ai-import" type="button" class="secondary-button">キャンセル</button>
+      <button id="apply-ai-import" type="button">反映する</button>
     </div>
   </dialog>
 
