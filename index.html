@@ -4354,6 +4354,342 @@
         return true;
       }
 
+      function requireAiObject(value, label) {
+        if (!value || typeof value !== "object" || Array.isArray(value)) {
+          throw new Error(label + "がありません。");
+        }
+        return value;
+      }
+
+      function requireAiArray(value, label) {
+        if (!Array.isArray(value)) {
+          throw new Error(label + "は配列で返してください。");
+        }
+        return value;
+      }
+
+      function requireAiString(value, label) {
+        if (typeof value !== "string") {
+          throw new Error(label + "は文字列で返してください。");
+        }
+        return value;
+      }
+
+      function requireAiInteger(value, minimum, maximum, label) {
+        if (!Number.isInteger(value) || value < minimum || value > maximum) {
+          throw new Error(label + "は" + minimum + "～" + maximum + "の整数で返してください。");
+        }
+        return value;
+      }
+
+      function requireAiNumber(value, minimum, maximum, label) {
+        if (typeof value !== "number" || !Number.isFinite(value) ||
+            value < minimum || value > maximum) {
+          throw new Error(label + "は" + minimum + "～" + maximum + "の数値で返してください。");
+        }
+        return value;
+      }
+
+      function validateAiMetricGroup(source, groupName) {
+        var raw = requireAiObject(source, groupName);
+        var result = {};
+        definitions[groupName].forEach(function (item) {
+          if (!Object.prototype.hasOwnProperty.call(raw, item.key)) {
+            throw new Error(groupName + "." + item.key + "がありません。");
+          }
+          result[item.key] = requireAiInteger(
+            raw[item.key], 0, item.max, groupName + "." + item.key
+          );
+        });
+        return result;
+      }
+
+      function validateAiProfile(source) {
+        var raw = requireAiObject(source, "character.profile");
+        [
+          "referenceYear", "age", "birthdayPeriod", "birthdayDay", "birthdayStatus",
+          "gender", "species", "appearance", "personality", "background", "speech", "goals"
+        ].forEach(function (key) {
+          if (!Object.prototype.hasOwnProperty.call(raw, key)) {
+            throw new Error("character.profile." + key + "がありません。");
+          }
+        });
+        ["referenceYear", "age", "birthdayPeriod", "birthdayDay"].forEach(function (key) {
+          var value = raw[key];
+          if (value !== null && (!Number.isInteger(value) || value < 0 || value > 99999)) {
+            throw new Error("character.profile." + key + "は整数またはnullで返してください。");
+          }
+        });
+        if (["unknown", "before", "after"].indexOf(raw.birthdayStatus) < 0) {
+          throw new Error("character.profile.birthdayStatusが不正です。");
+        }
+        profileFieldDefinitions.forEach(function (field) {
+          requireAiString(raw[field.key], "character.profile." + field.key);
+        });
+        return sanitizeProfile(raw);
+      }
+
+      function validateAiWeapon(source, index) {
+        var raw = requireAiObject(source, "character.weapons[" + index + "]");
+        requireAiString(raw.name, "武器名");
+        requireAiString(raw.description, "武器説明");
+        if (!Object.prototype.hasOwnProperty.call(attackTypeDefinitions, raw.attackType)) {
+          throw new Error("武器" + (index + 1) + "のattackTypeが不正です。");
+        }
+        requireAiNumber(raw.power, 0, 999, "武器" + (index + 1) + "のpower");
+        requireAiInteger(raw.enhancementStage, 0, 3, "武器" + (index + 1) + "のenhancementStage");
+        if (!definitions.baseStats.some(function (item) { return item.key === raw.accuracyStat; })) {
+          throw new Error("武器" + (index + 1) + "のaccuracyStatが不正です。");
+        }
+        return sanitizeWeapon(raw);
+      }
+
+      function validateAiArmor(source) {
+        var raw = requireAiObject(source, "character.armor");
+        requireAiString(raw.name, "防具名");
+        requireAiString(raw.description, "防具説明");
+        requireAiNumber(raw.protection, 0, 999, "防具のprotection");
+        requireAiInteger(raw.enhancementStage, 0, 3, "防具のenhancementStage");
+        return sanitizeArmor(raw);
+      }
+
+      function makeAiSkillId(rawId, index) {
+        var id = requireAiString(rawId, "skills[" + index + "].id");
+        if (/^new-\d+$/.test(id)) {
+          return "skill-ai-" + Date.now() + "-" + index + "-" +
+            Math.floor(Math.random() * 100000);
+        }
+        if (state.skills.some(function (skill) { return skill.id === id; })) {
+          return id;
+        }
+        throw new Error(
+          "skills[" + index + "].idが現在のスキルIDと一致しません。新規スキルはnew-1形式にしてください。"
+        );
+      }
+
+      function validateAiSkill(source, index, adjustments) {
+        var raw = requireAiObject(source, "character.skills[" + index + "]");
+        var resourceType = raw.resourceType;
+        if (!Object.prototype.hasOwnProperty.call(resourceDefinitions, resourceType)) {
+          throw new Error("スキル「" + sanitizeText(raw.name) + "」のresourceTypeが不正です。");
+        }
+        if (!Object.prototype.hasOwnProperty.call(attackTypeDefinitions, raw.attackType)) {
+          throw new Error("スキル「" + sanitizeText(raw.name) + "」のattackTypeが不正です。");
+        }
+        if (!Object.prototype.hasOwnProperty.call(targetModeDefinitions, raw.targetMode)) {
+          throw new Error("スキル「" + sanitizeText(raw.name) + "」のtargetModeが不正です。");
+        }
+        if (!Object.prototype.hasOwnProperty.call(rangeShapeDefinitions, raw.rangeShape)) {
+          throw new Error("スキル「" + sanitizeText(raw.name) + "」のrangeShapeが不正です。");
+        }
+
+        requireAiString(raw.name, "スキル名");
+        requireAiString(raw.description, "スキル説明");
+        requireAiInteger(raw.powerDisplay, -100, 999, "powerDisplay");
+        requireAiInteger(raw.accuracy, -999, 80, "accuracy");
+        var desiredCost = requireAiInteger(raw.desiredCost, 0, 10, "desiredCost");
+        requireAiInteger(raw.maxTargets, 1, 99, "maxTargets");
+        requireAiNumber(raw.rangeDistance, 1, 999, "rangeDistance");
+        requireAiInteger(raw.rangeAngle, 15, 180, "rangeAngle");
+        requireAiNumber(raw.areaRadius, 1, 999, "areaRadius");
+
+        var effectSelections = requireAiArray(raw.effectSelections, "effectSelections");
+        effectSelections.forEach(function (effectKey) {
+          if (typeof effectKey !== "string" || !getSkillEffectOption(resourceType, effectKey)) {
+            throw new Error("スキル「" + raw.name + "」に不明な追加効果があります：" + effectKey);
+          }
+        });
+        var sanitizedEffects = sanitizeEffectSelections(resourceType, effectSelections);
+        if (sanitizedEffects.length !== effectSelections.length) {
+          throw new Error("スキル「" + raw.name + "」の追加効果に重複または排他競合があります。");
+        }
+
+        var customEffects = requireAiArray(raw.customEffects, "customEffects");
+        if (customEffects.length > 3) {
+          throw new Error("スキル「" + raw.name + "」のcustomEffectsは最大3件です。");
+        }
+        customEffects.forEach(function (effect, effectIndex) {
+          requireAiObject(effect, "customEffects[" + effectIndex + "]");
+          if (typeof effect.enabled !== "boolean") {
+            throw new Error("customEffects[" + effectIndex + "].enabledはtrue/falseで返してください。");
+          }
+          requireAiString(effect.label, "customEffects[" + effectIndex + "].label");
+          requireAiInteger(effect.value, 0, 999, "customEffects[" + effectIndex + "].value");
+        });
+
+        var clean = sanitizeSkill({
+          id: makeAiSkillId(raw.id, index),
+          name: raw.name,
+          resourceType: resourceType,
+          attackType: raw.attackType,
+          powerDisplay: raw.powerDisplay,
+          accuracy: raw.accuracy,
+          cost: desiredCost,
+          effectSelections: sanitizedEffects,
+          customEffects: customEffects,
+          targetMode: raw.targetMode,
+          maxTargets: raw.maxTargets,
+          rangeShape: raw.rangeShape,
+          rangeDistance: raw.rangeDistance,
+          rangeAngle: raw.rangeAngle,
+          areaRadius: raw.areaRadius,
+          description: raw.description
+        }, index);
+
+        var performance = getSkillPerformance(clean);
+        var finalCost = Math.max(desiredCost, performance.requiredCost);
+        if (finalCost > 10) {
+          throw new Error("スキル「" + clean.name + "」は必要消費が10を超えています。");
+        }
+        if (desiredCost < performance.requiredCost) {
+          adjustments.push({
+            name: clean.name || "名称未設定",
+            desiredCost: desiredCost,
+            requiredCost: performance.requiredCost
+          });
+        }
+        clean.cost = finalCost;
+        clean.effectBudget = getSkillEffectBudget(clean);
+        return clean;
+      }
+
+      function getUsedPointsForState(source) {
+        var total = 0;
+        Object.keys(definitions).forEach(function (groupName) {
+          if (groupName === "practicalSkills" && source.targetType === "monster") {
+            return;
+          }
+          definitions[groupName].forEach(function (item) {
+            total += source[groupName][item.key];
+          });
+        });
+        return total;
+      }
+
+      function extractAiReturnJson(text) {
+        var raw = sanitizeText(text).trim();
+        if (!raw) {
+          throw new Error("AIからの返却データを貼り付けてください。");
+        }
+        var start = raw.indexOf(AI_RETURN_START);
+        var end = raw.indexOf(AI_RETURN_END);
+        if (start >= 0 || end >= 0) {
+          if (start < 0 || end < 0 || end <= start) {
+            throw new Error("AI返却データの開始・終了マーカーが揃っていません。");
+          }
+          raw = raw.slice(start + AI_RETURN_START.length, end).trim();
+        }
+        raw = raw.replace(/^\x60\x60\x60(?:json)?\s*/i, "")
+          .replace(/\s*\x60\x60\x60$/, "").trim();
+        if (!raw.startsWith("{")) {
+          var objectStart = raw.indexOf("{");
+          var objectEnd = raw.lastIndexOf("}");
+          if (objectStart >= 0 && objectEnd > objectStart) {
+            raw = raw.slice(objectStart, objectEnd + 1);
+          }
+        }
+        return raw;
+      }
+
+      function parseAiCharacterReturn(text) {
+        var payload;
+        try {
+          payload = JSON.parse(extractAiReturnJson(text));
+        } catch (error) {
+          throw new Error("返却JSONを解析できませんでした。" + (error.message ? " " + error.message : ""));
+        }
+        if (!payload || payload.format !== AI_RETURN_FORMAT) {
+          throw new Error("AI返却データのformatが不正です。");
+        }
+        if (payload.schemaVersion !== AI_RETURN_SCHEMA_VERSION) {
+          throw new Error("未対応のAI返却Schemaです。schemaVersion=" + payload.schemaVersion);
+        }
+        var consultationId = requireAiString(payload.consultationId, "consultationId");
+        if (aiConsultationSettings.activeConsultationId &&
+            consultationId !== aiConsultationSettings.activeConsultationId) {
+          throw new Error(
+            "相談IDが一致しません。現在：" + aiConsultationSettings.activeConsultationId +
+            "／返却：" + consultationId
+          );
+        }
+
+        var character = requireAiObject(payload.character, "character");
+        var candidate = JSON.parse(JSON.stringify(state));
+        candidate.name = requireAiString(character.name, "character.name").slice(0, 100);
+        if (!Number.isInteger(character.build)) {
+          throw new Error("character.buildは整数で返してください。");
+        }
+        candidate.build = String(character.build);
+        candidate.profile = validateAiProfile(character.profile);
+        candidate.baseStats = validateAiMetricGroup(character.baseStats, "baseStats");
+        candidate.potentialStats = validateAiMetricGroup(character.potentialStats, "potentialStats");
+        candidate.practicalSkills = validateAiMetricGroup(character.practicalSkills, "practicalSkills");
+        candidate.uniqueAbility = requireAiString(character.uniqueAbility, "character.uniqueAbility");
+        candidate.characterSetting = requireAiString(
+          character.characterSetting, "character.characterSetting"
+        ).slice(0, 10000);
+
+        var weapons = requireAiArray(character.weapons, "character.weapons");
+        if (weapons.length > 2) {
+          throw new Error("武器は最大2本です。");
+        }
+        candidate.weapons = [
+          weapons[0] ? validateAiWeapon(weapons[0], 0) : createDefaultWeapon(),
+          weapons[1] ? validateAiWeapon(weapons[1], 1) : createDefaultWeapon()
+        ];
+        candidate.hasWeapon2 = weapons.length > 1;
+        candidate.armor = validateAiArmor(character.armor);
+
+        var skillAdjustments = [];
+        var skills = requireAiArray(character.skills, "character.skills");
+        if (skills.length > 50) {
+          throw new Error("スキルは最大50件です。");
+        }
+        candidate.skills = skills.map(function (skill, index) {
+          return validateAiSkill(skill, index, skillAdjustments);
+        });
+
+        Object.keys(resourceDefinitions).forEach(function (resourceType) {
+          var statKey = resourceDefinitions[resourceType].statKey;
+          var capacity = candidate.potentialStats[statKey];
+          var matching = candidate.skills.filter(function (skill) {
+            return skill.resourceType === resourceType;
+          });
+          if (matching.length > capacity) {
+            throw new Error(
+              resourceDefinitions[resourceType].label + "スキルが習得枠を超えています。" +
+              matching.length + "件／枠" + capacity
+            );
+          }
+          matching.forEach(function (skill) {
+            if (skill.cost > capacity) {
+              throw new Error(
+                "スキル「" + skill.name + "」の正式必要消費" + skill.cost +
+                "が" + resourceDefinitions[resourceType].label + capacity + "を超えています。"
+              );
+            }
+          });
+        });
+
+        candidate.version = STORAGE_VERSION;
+        candidate = sanitizeState(candidate);
+
+        var feedback = requireAiArray(
+          payload.consultationFeedback === undefined ? [] : payload.consultationFeedback,
+          "consultationFeedback"
+        ).slice(0, 20).map(sanitizeAiFeedbackEntry)
+          .filter(function (item) {
+            return item.userIntent || item.suggestedInstruction || item.reason;
+          });
+
+        return {
+          consultationId: consultationId,
+          state: candidate,
+          feedback: feedback,
+          skillAdjustments: skillAdjustments
+        };
+      }
+
       function getUsedPoints() {
         var total = 0;
         Object.keys(definitions).forEach(function (groupName) {
