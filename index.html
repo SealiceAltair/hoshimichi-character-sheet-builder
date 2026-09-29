@@ -4094,6 +4094,266 @@
         }
       }
 
+      function sanitizeAiFeedbackEntry(raw) {
+        var source = raw && typeof raw === "object" ? raw : {};
+        var categories = [
+          "proposal_style", "question_flow", "conversation_style",
+          "character_design", "rules_explanation", "builder_handoff",
+          "worldbuilding", "other"
+        ];
+        var category = categories.indexOf(source.category) >= 0 ? source.category : "other";
+        return {
+          status: "candidate",
+          category: category,
+          userIntent: sanitizeText(source.userIntent).slice(0, 1000),
+          suggestedInstruction: sanitizeText(source.suggestedInstruction).slice(0, 2000),
+          reason: sanitizeText(source.reason).slice(0, 1000)
+        };
+      }
+
+      function loadAiConsultationSettings() {
+        var fallback = {
+          version: 1,
+          activeConsultationId: "",
+          acceptedInstructions: [],
+          heldFeedback: []
+        };
+        try {
+          var stored = window.localStorage.getItem(AI_CONSULTATION_STORAGE_KEY);
+          if (!stored) {
+            return fallback;
+          }
+          var raw = JSON.parse(stored);
+          var accepted = Array.isArray(raw.acceptedInstructions)
+            ? raw.acceptedInstructions.map(sanitizeText).map(function (item) {
+              return item.trim().slice(0, 2000);
+            }).filter(Boolean).slice(0, 50)
+            : [];
+          var held = Array.isArray(raw.heldFeedback)
+            ? raw.heldFeedback.map(sanitizeAiFeedbackEntry)
+              .filter(function (item) { return item.suggestedInstruction; }).slice(0, 50)
+            : [];
+          return {
+            version: 1,
+            activeConsultationId: /^[A-Z0-9_-]{4,100}$/.test(sanitizeText(raw.activeConsultationId))
+              ? raw.activeConsultationId : "",
+            acceptedInstructions: Array.from(new Set(accepted)),
+            heldFeedback: held
+          };
+        } catch (error) {
+          return fallback;
+        }
+      }
+
+      var aiConsultationSettings = loadAiConsultationSettings();
+
+      function saveAiConsultationSettings() {
+        try {
+          window.localStorage.setItem(
+            AI_CONSULTATION_STORAGE_KEY,
+            JSON.stringify(aiConsultationSettings)
+          );
+        } catch (error) {
+          setAiConsultStatus("AI相談設定をこのブラウザへ保存できません。", "error");
+        }
+      }
+
+      function setAiConsultStatus(message, type) {
+        var status = document.getElementById("ai-consult-status");
+        if (!status) {
+          return;
+        }
+        status.textContent = message || "";
+        status.className = "ai-consult-status";
+        if (type === "error") {
+          status.classList.add("is-error");
+        } else if (type === "success") {
+          status.classList.add("is-success");
+        }
+      }
+
+      function updateAiConsultationStatus() {
+        var accepted = aiConsultationSettings.acceptedInstructions.length;
+        var held = aiConsultationSettings.heldFeedback.length;
+        var parts = ["採用済み相談ルール：" + accepted + "件"];
+        if (held) {
+          parts.push("保留中：" + held + "件");
+        }
+        setAiConsultStatus(parts.join("／"), "");
+      }
+
+      function clearActiveAiConsultation() {
+        aiConsultationSettings.activeConsultationId = "";
+        saveAiConsultationSettings();
+      }
+
+      function generateAiConsultationId() {
+        var randomPart = "";
+        if (window.crypto && window.crypto.getRandomValues) {
+          var bytes = new Uint8Array(4);
+          window.crypto.getRandomValues(bytes);
+          randomPart = Array.from(bytes).map(function (value) {
+            return value.toString(16).padStart(2, "0");
+          }).join("").toUpperCase();
+        } else {
+          randomPart = Math.floor(Math.random() * 4294967295)
+            .toString(16).padStart(8, "0").toUpperCase();
+        }
+        return "CC-" + Date.now().toString(36).toUpperCase() + "-" + randomPart;
+      }
+
+      function getAiSkillSnapshot(skill) {
+        var performance = getSkillPerformance(skill);
+        return {
+          id: skill.id,
+          name: skill.name,
+          resourceType: skill.resourceType,
+          attackType: skill.attackType,
+          powerDisplay: skill.powerDisplay,
+          accuracy: skill.accuracy,
+          desiredCost: skill.cost,
+          calculatedCost: performance.requiredCost,
+          effectSelections: skill.effectSelections.slice(),
+          customEffects: skill.customEffects.map(function (item) {
+            return {
+              enabled: item.enabled === true,
+              label: item.label,
+              value: item.value
+            };
+          }),
+          targetMode: skill.targetMode,
+          maxTargets: skill.maxTargets,
+          rangeShape: skill.rangeShape,
+          rangeDistance: skill.rangeDistance,
+          rangeAngle: skill.rangeAngle,
+          areaRadius: skill.areaRadius,
+          description: skill.description
+        };
+      }
+
+      function getAiCharacterSnapshot() {
+        var totals = getTotals();
+        return {
+          name: state.name,
+          build: Number(state.build),
+          profile: JSON.parse(JSON.stringify(state.profile)),
+          baseStats: JSON.parse(JSON.stringify(state.baseStats)),
+          potentialStats: JSON.parse(JSON.stringify(state.potentialStats)),
+          practicalSkills: JSON.parse(JSON.stringify(state.practicalSkills)),
+          uniqueAbility: state.uniqueAbility,
+          characterSetting: state.characterSetting,
+          weapons: state.weapons.filter(function (weapon, index) {
+            return index === 0 || state.hasWeapon2;
+          }).map(function (weapon) {
+            return JSON.parse(JSON.stringify(weapon));
+          }),
+          armor: JSON.parse(JSON.stringify(state.armor)),
+          skills: state.skills.map(getAiSkillSnapshot),
+          _builderContext: {
+            totalPoints: totals.total,
+            usedPoints: totals.used,
+            remainingPoints: totals.remaining
+          }
+        };
+      }
+
+      function buildAiConsultationPacket() {
+        var consultationId = generateAiConsultationId();
+        aiConsultationSettings.activeConsultationId = consultationId;
+        saveAiConsultationSettings();
+
+        var snapshot = getAiCharacterSnapshot();
+        var returnCharacter = JSON.parse(JSON.stringify(snapshot));
+        delete returnCharacter._builderContext;
+        var acceptedLines = aiConsultationSettings.acceptedInstructions.length
+          ? aiConsultationSettings.acceptedInstructions.map(function (instruction, index) {
+            return (index + 1) + ". " + instruction;
+          }).join("\n")
+          : "現在、追加の採用済みキャラクリ方針はありません。";
+
+        var lines = [
+          "# 星みちTRPG キャラクター作成相談",
+          "",
+          "相談ID：" + consultationId,
+          "",
+          "あなたは「星みちTRPG」のキャラクター作成相談役です。",
+          "単なるデータ入力補助ではなく、ユーザーと一緒にキャラクターを考えること自体を楽しんでください。",
+          "人物像、性格、価値観、得意不得意、戦い方、武器、防具、スキル、出自、経歴、口調、冒険者としての日常などを積極的に提案してください。",
+          "複数の面白い方向がある場合は複数案を出してください。ただし提案を勝手に確定しないでください。",
+          "数値だけでなく「この能力ならどんな人物になりそうか」まで結び付けてください。",
+          "",
+          "## 正本・公開ルール参照",
+          "",
+          "このChatGPTが星みちの非公開正本を参照できる場合は、必要に応じて関連正本を確認してください。",
+          "参照できない場合でも問題ありません。知らない世界設定を事実として補完せず、候補として相談してください。",
+          "",
+          "ゲーム数値を具体的に提案する前に、WebまたはGitHubを参照できる場合は次の公開資料の現行版を確認してください。",
+          "公開ビルダー：" + AI_BUILDER_URL,
+          "公開リポジトリ：" + AI_REPOSITORY_URL,
+          "キャラクリ・計算仕様：" + AI_RULES_URL,
+          "",
+          "特にCP、武器、防具、スキル、性能予算、威力、命中、対象、範囲、追加効果、必要消費を扱う時はRULES.mdを確認してください。",
+          "参照できない場合は、現在データと会話から人物像・方向性を相談し、確認できない計算を推測で確定しないでください。",
+          "正式な成立判定は最後にキャラクタービルダーが再計算します。",
+          "",
+          "## このユーザーの採用済みキャラクリ方針",
+          "",
+          acceptedLines,
+          "",
+          "キャラクリ中にユーザーが「次からこうした方がいい」「この進め方が好き」など相談方法への改善意見を述べた場合は、キャラクター設定と混ぜず、最終返却の consultationFeedback に候補として残してください。",
+          "その改善意見を勝手に恒久ルールへ昇格させないでください。",
+          "",
+          "## 現在のキャラクターデータ",
+          "",
+          "合計CPはビルダー側の固定予算です。返却JSONでは変更しません。",
+          JSON.stringify(snapshot, null, 2),
+          "",
+          "## キャラクリ中",
+          "",
+          "完成を急がず普通に会話してください。ユーザーが「ビルダーへ戻す」または「/ビルダー返却」と言うまでは返却JSONを出さないでください。",
+          "スキル作成では、やりたい技のイメージを先に一緒に作り、公開RULES.mdを参照できる場合は現在の性能予算で数値案まで調整してください。",
+          "skills[].desiredCost は「この消費にしたい」という希望値です。calculatedCost はAI側で計算できた場合だけ参考値として付けて構いません。",
+          "",
+          "## 最終返却契約",
+          "",
+          "返却時は次の開始・終了マーカーとJSONだけを出力してください。",
+          "consultationId は絶対に変更しないでください。",
+          "character は現在のキャラクター全体を返してください。合計CP、HP、AP、残りCP、性能予算などビルダーが計算する結果値は追加しないでください。",
+          "既存スキルの id は維持してください。新規スキルだけ new-1、new-2 のようなIDを使用してください。",
+          "未決定の文章は空文字、未決定のプロフィール数値は null、存在しないスキル等は空配列を使ってください。",
+          "",
+          AI_RETURN_START,
+          JSON.stringify({
+            format: AI_RETURN_FORMAT,
+            schemaVersion: AI_RETURN_SCHEMA_VERSION,
+            consultationId: consultationId,
+            character: returnCharacter,
+            consultationFeedback: []
+          }, null, 2),
+          AI_RETURN_END,
+          "",
+          "consultationFeedback の要素は次の形式です。",
+          '{"status":"candidate","category":"proposal_style","userIntent":"ユーザーの希望","suggestedInstruction":"次回指示へ入れるならどう書くか","reason":"今回そう感じた理由"}',
+          "category は proposal_style / question_flow / conversation_style / character_design / rules_explanation / builder_handoff / worldbuilding / other のいずれかです。"
+        ];
+        return lines.join("\n");
+      }
+
+      async function handleAiConsultCopy() {
+        if (state.targetType !== "character") {
+          setAiConsultStatus("AIキャラクリ相談v1はキャラクター作成で使用してください。", "error");
+          return false;
+        }
+        var packet = buildAiConsultationPacket();
+        await copyText(packet, "AIキャラクリ相談文をコピーしました。");
+        setAiConsultStatus(
+          "相談文を作成しました。好きなChatGPTへそのまま貼り付けてください。相談ID：" +
+            aiConsultationSettings.activeConsultationId,
+          "success"
+        );
+        return true;
+      }
+
       function getUsedPoints() {
         var total = 0;
         Object.keys(definitions).forEach(function (groupName) {
