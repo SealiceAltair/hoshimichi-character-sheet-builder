@@ -6872,6 +6872,13 @@
         targetHint.textContent = isMonster
           ? "実務技能は非表示・ポイント計算対象外です"
           : "実務技能を表示・ポイント計算します";
+        ["copy-ai-consult", "preview-ai-return", "copy-ai-consult-bottom", "apply-ai-return-bottom"]
+          .forEach(function (id) {
+            var button = document.getElementById(id);
+            if (button) {
+              button.disabled = isMonster;
+            }
+          });
       }
 
       function formatSilver(value) {
@@ -8002,6 +8009,7 @@
         }
         state = sanitizeState(source);
         state.version = STORAGE_VERSION;
+        clearActiveAiConsultation();
         saveState();
         updateBasicInputs();
         updateView();
@@ -8012,6 +8020,7 @@
 
       function startNewCharacter() {
         state = createInitialState();
+        clearActiveAiConsultation();
         saveState();
         updateBasicInputs();
         updateView();
@@ -8037,6 +8046,7 @@
           // localStorageを使用できなくても画面上の初期化は続行する。
         }
         state = createInitialState();
+        clearActiveAiConsultation();
         updateBasicInputs();
         updateView();
         document.getElementById("name-error").textContent = "";
@@ -8458,6 +8468,13 @@
           handleCopy(true);
         });
 
+        document.getElementById("copy-ai-consult").addEventListener("click", handleAiConsultCopy);
+        document.getElementById("copy-ai-consult-bottom").addEventListener("click", handleAiConsultCopy);
+        document.getElementById("preview-ai-return").addEventListener("click", previewAiReturn);
+        document.getElementById("apply-ai-return-bottom").addEventListener("click", handleAiReturnShortcut);
+        document.getElementById("cancel-ai-import").addEventListener("click", cancelPendingAiImport);
+        document.getElementById("apply-ai-import").addEventListener("click", applyPendingAiImport);
+
         document.getElementById("copy-summary").addEventListener("click", function () {
           copyText(buildCharacterSummary(), "キャラクターシート要約をコピーしました。");
         });
@@ -8486,6 +8503,7 @@
         updateBasicInputs();
         bindEvents();
         updateView();
+        updateAiConsultationStatus();
         if (loadNotice) {
           setFeedback(loadNotice, "error", false);
         }
@@ -8520,6 +8538,19 @@
         },
         buildChappyMarkdown: function () {
           return buildMarkdown(true, true);
+        },
+        buildAiConsultationPacket: buildAiConsultationPacket,
+        parseAiCharacterReturn: function (text) {
+          var result = parseAiCharacterReturn(text);
+          return {
+            consultationId: result.consultationId,
+            state: JSON.parse(JSON.stringify(result.state)),
+            feedback: JSON.parse(JSON.stringify(result.feedback)),
+            skillAdjustments: JSON.parse(JSON.stringify(result.skillAdjustments))
+          };
+        },
+        getAiConsultationSettings: function () {
+          return JSON.parse(JSON.stringify(aiConsultationSettings));
         },
         buildKpMarkdown: buildKpMarkdown,
         exportPlaySnapshot: exportPlaySnapshot,
