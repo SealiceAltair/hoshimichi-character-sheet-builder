@@ -4608,8 +4608,12 @@
           throw new Error("未対応のAI返却Schemaです。schemaVersion=" + payload.schemaVersion);
         }
         var consultationId = requireAiString(payload.consultationId, "consultationId");
-        if (aiConsultationSettings.activeConsultationId &&
-            consultationId !== aiConsultationSettings.activeConsultationId) {
+        if (!aiConsultationSettings.activeConsultationId) {
+          throw new Error(
+            "このキャラクターに有効な相談IDがありません。先に「AIに相談する」で相談文を発行してください。"
+          );
+        }
+        if (consultationId !== aiConsultationSettings.activeConsultationId) {
           throw new Error(
             "相談IDが一致しません。現在：" + aiConsultationSettings.activeConsultationId +
             "／返却：" + consultationId
