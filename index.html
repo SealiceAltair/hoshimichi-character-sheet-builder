@@ -2987,6 +2987,14 @@
 
       var STORAGE_KEY = "hoshimichi-character-sheet-builder";
       var STORAGE_VERSION = 12;
+      var AI_CONSULTATION_STORAGE_KEY = "hoshimichi-character-ai-consultation-v1";
+      var AI_RETURN_FORMAT = "hoshimichi_character_return";
+      var AI_RETURN_SCHEMA_VERSION = 1;
+      var AI_RETURN_START = "===HOSHIMICHI_CHARACTER_RETURN_START===";
+      var AI_RETURN_END = "===HOSHIMICHI_CHARACTER_RETURN_END===";
+      var AI_RULES_URL = "https://github.com/SealiceAltair/hoshimichi-character-sheet-builder/blob/main/RULES.md";
+      var AI_REPOSITORY_URL = "https://github.com/SealiceAltair/hoshimichi-character-sheet-builder";
+      var AI_BUILDER_URL = "https://sealicealtair.github.io/hoshimichi-character-sheet-builder/";
       var THUMBNAIL_MAX_CHARS = 42000;
       var THUMBNAIL_MAX_WIDTH = 200;
       var THUMBNAIL_MAX_HEIGHT = 300;
@@ -2997,6 +3005,7 @@
       var managerEpoch = 0;
       var pendingImportState = null;
       var pendingImportHasKpSettings = false;
+      var pendingAiImport = null;
 
       var definitions = {
         baseStats: [
