@@ -4690,6 +4690,243 @@
         };
       }
 
+      function describeAiMetricChanges(current, next, groupName) {
+        var lines = [];
+        definitions[groupName].forEach(function (item) {
+          if (current[groupName][item.key] !== next[groupName][item.key]) {
+            lines.push(item.label + "：" +
+              current[groupName][item.key] + " → " + next[groupName][item.key]);
+          }
+        });
+        return lines;
+      }
+
+      function buildAiImportSummary(result) {
+        var next = result.state;
+        var used = getUsedPointsForState(next);
+        var remaining = next.totalPoints - used;
+        var lines = [
+          "相談ID：" + result.consultationId,
+          "",
+          "名前：" + (state.name || "未入力") + " → " + (next.name || "未入力"),
+          "体格：" + state.build + " → " + next.build,
+          "合計ポイント：" + next.totalPoints + "（ビルダー側を維持）",
+          "使用ポイント：" + used,
+          "残りポイント：" + remaining
+        ];
+        if (remaining < 0) {
+          lines.push("警告：CPを" + Math.abs(remaining) + "ポイント超過しています。");
+        }
+
+        var metricChanges = []
+          .concat(describeAiMetricChanges(state, next, "baseStats"))
+          .concat(describeAiMetricChanges(state, next, "potentialStats"))
+          .concat(describeAiMetricChanges(state, next, "practicalSkills"));
+        if (metricChanges.length) {
+          lines.push("", "能力・技能の変更", metricChanges.join("\n"));
+        }
+
+        if (JSON.stringify(state.profile) !== JSON.stringify(next.profile)) {
+          lines.push("", "プロフィール：変更あり");
+        }
+        if (state.uniqueAbility !== next.uniqueAbility) {
+          lines.push("固有能力：変更あり");
+        }
+        if (state.characterSetting !== next.characterSetting) {
+          lines.push("キャラクター設定：変更あり");
+        }
+
+        var currentWeapons = state.weapons.filter(function (weapon, index) {
+          return index === 0 || state.hasWeapon2;
+        }).map(function (weapon) { return weapon.name || "未設定"; });
+        var nextWeapons = next.weapons.filter(function (weapon, index) {
+          return index === 0 || next.hasWeapon2;
+        }).map(function (weapon) { return weapon.name || "未設定"; });
+        lines.push(
+          "",
+          "武器：" + currentWeapons.join("／") + " → " + nextWeapons.join("／"),
+          "防具：" + (state.armor.name || "未設定") + " → " + (next.armor.name || "未設定"),
+          "スキル：" +
+            (state.skills.map(function (skill) { return skill.name || "名称未設定"; }).join("／") || "なし") +
+            " → " +
+            (next.skills.map(function (skill) { return skill.name || "名称未設定"; }).join("／") || "なし")
+        );
+
+        if (result.skillAdjustments.length) {
+          lines.push("", "ビルダー再計算によるスキル消費調整");
+          result.skillAdjustments.forEach(function (adjustment) {
+            lines.push(
+              "・" + adjustment.name + "：希望" + adjustment.desiredCost +
+              " → 正式必要消費" + adjustment.requiredCost
+            );
+          });
+        }
+
+        if (result.feedback.length) {
+          lines.push("", "キャラクリ相談方法への改善候補：" + result.feedback.length + "件");
+        }
+        return lines.join("\n");
+      }
+
+      function renderAiFeedbackReview(feedback) {
+        var container = document.getElementById("ai-feedback-review");
+        container.replaceChildren();
+        container.hidden = feedback.length === 0;
+        feedback.forEach(function (item, index) {
+          var wrapper = document.createElement("div");
+          wrapper.className = "ai-feedback-item";
+
+          var title = document.createElement("strong");
+          title.textContent = item.userIntent || item.suggestedInstruction || "改善候補";
+          wrapper.appendChild(title);
+
+          if (item.suggestedInstruction) {
+            var instruction = document.createElement("p");
+            instruction.textContent = "次回指示案：" + item.suggestedInstruction;
+            wrapper.appendChild(instruction);
+          }
+          if (item.reason) {
+            var reason = document.createElement("p");
+            reason.textContent = "理由：" + item.reason;
+            wrapper.appendChild(reason);
+          }
+
+          var field = document.createElement("div");
+          field.className = "field";
+          var label = document.createElement("label");
+          label.htmlFor = "ai-feedback-decision-" + index;
+          label.textContent = "この改善候補";
+          var select = document.createElement("select");
+          select.id = "ai-feedback-decision-" + index;
+          select.dataset.aiFeedbackIndex = String(index);
+          [
+            ["hold", "保留"],
+            ["accept", "次回から採用"],
+            ["reject", "不採用"]
+          ].forEach(function (optionData) {
+            select.add(new Option(optionData[1], optionData[0]));
+          });
+          field.appendChild(label);
+          field.appendChild(select);
+          wrapper.appendChild(field);
+          container.appendChild(wrapper);
+        });
+      }
+
+      function previewAiReturn() {
+        var textarea = document.getElementById("ai-return-input");
+        var dialog = document.getElementById("ai-import-dialog");
+        try {
+          var result = parseAiCharacterReturn(textarea.value);
+          pendingAiImport = result;
+          document.getElementById("ai-import-summary").textContent =
+            buildAiImportSummary(result);
+          renderAiFeedbackReview(result.feedback);
+          if (typeof dialog.showModal === "function") {
+            dialog.showModal();
+          } else if (window.confirm(
+            buildAiImportSummary(result) + "\n\nこの内容を反映しますか？"
+          )) {
+            applyPendingAiImport();
+          }
+          setAiConsultStatus("返却データを確認しました。反映前の確認画面を開いています。", "success");
+          return true;
+        } catch (error) {
+          pendingAiImport = null;
+          setAiConsultStatus(error.message || "AI返却データを確認できませんでした。", "error");
+          return false;
+        }
+      }
+
+      function storeAiFeedbackDecisions(result) {
+        var accepted = aiConsultationSettings.acceptedInstructions.slice();
+        var held = aiConsultationSettings.heldFeedback.slice();
+
+        result.feedback.forEach(function (item, index) {
+          var select = document.querySelector(
+            "[data-ai-feedback-index='" + index + "']"
+          );
+          var decision = select ? select.value : "hold";
+          var instruction = item.suggestedInstruction.trim();
+          held = held.filter(function (existing) {
+            return existing.suggestedInstruction !== instruction;
+          });
+
+          if (decision === "accept" && instruction) {
+            if (accepted.indexOf(instruction) < 0) {
+              accepted.push(instruction);
+            }
+          } else if (decision === "hold") {
+            held.push(item);
+          }
+        });
+
+        aiConsultationSettings.acceptedInstructions =
+          Array.from(new Set(accepted)).slice(0, 50);
+        aiConsultationSettings.heldFeedback = held.slice(0, 50);
+        aiConsultationSettings.activeConsultationId = "";
+        saveAiConsultationSettings();
+      }
+
+      function applyPendingAiImport() {
+        if (!pendingAiImport) {
+          setAiConsultStatus("反映するAI相談結果がありません。", "error");
+          return false;
+        }
+        var result = pendingAiImport;
+        storeAiFeedbackDecisions(result);
+        state = result.state;
+        state.version = STORAGE_VERSION;
+        pendingAiImport = null;
+        saveState();
+        updateBasicInputs();
+        updateView();
+        document.getElementById("ai-return-input").value = "";
+        var dialog = document.getElementById("ai-import-dialog");
+        if (dialog.open) {
+          dialog.close();
+        }
+        updateAiConsultationStatus();
+        setAiConsultStatus(
+          "AI相談結果を反映しました。ビルダー側で再計算済みです。" +
+          (result.skillAdjustments.length
+            ? " スキル消費を" + result.skillAdjustments.length + "件調整しました。"
+            : ""),
+          "success"
+        );
+        window.dispatchEvent(new CustomEvent("hoshimichi:ai-consultation-imported"));
+        return true;
+      }
+
+      function cancelPendingAiImport() {
+        pendingAiImport = null;
+        var dialog = document.getElementById("ai-import-dialog");
+        if (dialog.open) {
+          dialog.close();
+        }
+        setAiConsultStatus("AI相談結果の反映を取り消しました。", "");
+      }
+
+      function focusAiReturnInput() {
+        var panel = document.getElementById("ai-consult-panel");
+        var textarea = document.getElementById("ai-return-input");
+        panel.scrollIntoView({ behavior: "smooth", block: "start" });
+        window.setTimeout(function () {
+          textarea.focus();
+        }, 180);
+      }
+
+      function handleAiReturnShortcut() {
+        var textarea = document.getElementById("ai-return-input");
+        if (textarea.value.trim()) {
+          previewAiReturn();
+        } else {
+          setAiConsultStatus("AIから返されたデータを上の入力欄へ貼り付けてください。", "");
+          focusAiReturnInput();
+        }
+      }
+
+
       function getUsedPoints() {
         var total = 0;
         Object.keys(definitions).forEach(function (groupName) {
