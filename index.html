@@ -200,6 +200,42 @@
       max-width: 21rem;
     }
 
+    .header-kp-gate {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr) 34px;
+      align-items: center;
+      gap: 0.35rem;
+      width: 100%;
+      max-width: 18rem;
+      margin-left: auto;
+      font-size: 0.78rem;
+    }
+
+    .header-kp-gate input,
+    .header-kp-gate button {
+      min-height: 34px;
+      height: 34px;
+    }
+
+    .header-kp-gate input {
+      min-width: 0;
+      padding: 0.3rem 0.5rem;
+    }
+
+    .header-kp-gate button {
+      width: 34px;
+      padding: 0;
+    }
+
+    .header-kp-gate .kp-mode-status:not(:empty) {
+      grid-column: 1 / -1;
+      text-align: right;
+    }
+
+    .header-kp-gate .kp-mode-status:empty {
+      display: none;
+    }
+
     .usage-counter {
       margin: 0;
       padding: 0.35rem 0.65rem;
@@ -1974,6 +2010,13 @@
         <button id="theme-toggle" class="theme-toggle" type="button" aria-pressed="true"
           aria-label="ライトモードに切り替える">☀ ライト</button>
         <p id="usage-counter" class="usage-counter" aria-live="polite">本日の通信回数：—回</p>
+        <div class="header-kp-gate" aria-label="管理用の合言葉">
+          <label for="header-kp-passphrase">管理用</label>
+          <input id="header-kp-passphrase" type="text" maxlength="64" autocomplete="off" lang="ja"
+            placeholder="合言葉" aria-describedby="header-kp-mode-status">
+          <button id="header-kp-enter" type="button" aria-label="合言葉を確認して管理用を解除">✓</button>
+          <span id="header-kp-mode-status" class="kp-mode-status" aria-live="polite"></span>
+        </div>
       </div>
       <p class="eyebrow">試作ツール</p>
       <h1>星みちTRPG キャラクタービルダー</h1>
@@ -5636,14 +5679,16 @@
       }
 
       function setKpModeStatus(message, type) {
-        var status = document.getElementById("kp-mode-status");
-        status.textContent = message || "";
-        status.className = "kp-mode-status";
-        if (type === "success") {
-          status.classList.add("is-success");
-        } else if (type === "error") {
-          status.classList.add("is-error");
-        }
+        ["kp-mode-status", "header-kp-mode-status"].forEach(function (id) {
+          var status = document.getElementById(id);
+          status.textContent = message || "";
+          status.className = "kp-mode-status";
+          if (type === "success") {
+            status.classList.add("is-success");
+          } else if (type === "error") {
+            status.classList.add("is-error");
+          }
+        });
       }
 
       function getBaseStatMultiplier(value) {
@@ -5920,6 +5965,7 @@
         window.dispatchEvent(new CustomEvent("hoshimichi:manager-mode", { detail: { unlocked: true } }));
         setKpModeStatus("星の裏側へ接続しました。", "success");
         document.getElementById("kp-passphrase").value = "";
+        document.getElementById("header-kp-passphrase").value = "";
         return true;
       }
 
@@ -8063,17 +8109,16 @@
       }
 
       function bindEvents() {
-        document.getElementById("kp-enter").addEventListener("click", function () {
-          tryEnterKpMode(document.getElementById("kp-passphrase").value);
-        });
-
-        document.getElementById("kp-passphrase").addEventListener("keydown", function (event) {
-          if (event.isComposing || event.keyCode === 229) {
-            return;
-          }
-          if (event.key === "Enter") {
-            tryEnterKpMode(event.target.value);
-          }
+        ["kp", "header-kp"].forEach(function (prefix) {
+          var input = document.getElementById(prefix + "-passphrase");
+          document.getElementById(prefix + "-enter").addEventListener("click", function () {
+            tryEnterKpMode(input.value);
+          });
+          input.addEventListener("keydown", function (event) {
+            if (event.key === "Enter" && !event.isComposing && event.keyCode !== 229) {
+              tryEnterKpMode(input.value);
+            }
+          });
         });
 
         document.getElementById("kp-exit").addEventListener("click", exitKpMode);

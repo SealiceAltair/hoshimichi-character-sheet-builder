@@ -13,6 +13,10 @@ const { chromium } = require("playwright");
     page.on("pageerror", e => errors.push(e.message));
     await page.route("https://script.google.com/**", route => { calls.push(route.request().method()); return route.fulfill({ json: { ok: true, data: { characters: [] } } }); });
     await page.goto(pathToFileURL(path.join(__dirname, "index.html")).href);
+    await page.evaluate(() => {
+      const C = window.HoshimichiAuthoringCore;
+      localStorage.setItem("hoshimichi-authoring-drafts-v1", JSON.stringify({ version: 1, maps: [C.newMap("legacy-grid-test")], scenarios: [C.newScenario("legacy-scenario-test")] }));
+    });
     const initialCharacter = await page.evaluate(() => JSON.stringify(window.characterSheetBuilder.getState()));
     const drafts = () => page.evaluate(() => window.hoshimichiAuthoring.getDrafts());
     const unlock = () => page.evaluate(() => window.characterSheetBuilder.tryEnterKpMode("ばに"));

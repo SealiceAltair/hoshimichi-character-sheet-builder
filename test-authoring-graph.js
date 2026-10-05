@@ -1,0 +1,120 @@
+"use strict";
+const assert = require("node:assert/strict");
+const fs = require("node:fs");
+const path = require("node:path");
+const { pathToFileURL } = require("node:url");
+const { chromium } = require("playwright");
+
+(async () => {
+  const browser = await chromium.launch({ headless: true, channel: process.env.TEST_BROWSER_CHANNEL || undefined });
+  try {
+    const page = await browser.newPage({ viewport: { width: 1440, height: 950 }, acceptDownloads: true });
+    const errors = [];
+    page.on("pageerror", error => errors.push(error.message));
+    await page.route("https://script.google.com/**", route => route.fulfill({ json: { ok: true, data: { characters: [] } } }));
+    await page.goto(pathToFileURL(path.join(__dirname, "index.html")).href);
+    await page.evaluate(() => window.characterSheetBuilder.tryEnterKpMode("ばに"));
+    await page.locator("#map-tab").click();
+    const draft = () => page.evaluate(() => window.hoshimichiAuthoring.getDrafts().maps[0]);
+    assert.equal((await draft()).kind, "graph");
+    await page.locator("#map-name").fill("旧採石坑");
+    await page.locator("#graph-canon-id").fill("SCN-0003");
+    await page.getByRole("button", { name: "+ 場所" }).click();
+    await page.locator("#graph-name-0").fill("坑道入口");
+    await page.locator("#graph-situation-0").fill("落石の跡がある");
+    await page.locator(".graph-node-events > button").first().click();
+    await page.locator(".graph-event-row textarea").fill("壊れた箱から食料が見つかるかもしれない");
+    const first = await page.locator(".graph-node-drag").first().boundingBox();
+    await page.mouse.move(first.x + 75, first.y + 16); await page.mouse.down();
+    await page.mouse.move(first.x - 240, first.y + 16, { steps: 7 }); await page.mouse.up();
+    const moved = (await draft()).points[0];
+    await page.getByRole("button", { name: "+ 場所" }).click();
+    await page.locator("#graph-name-1").fill("坑道内部");
+    assert.equal((await draft()).points.length, 2);
+    assert((await draft()).points[0].x < (await draft()).points[1].x);
+    assert((await draft()).points[0].x <= moved.x);
+    await page.locator(".graph-port-right").first().click();
+    await page.locator(".graph-port-left").nth(1).click();
+    assert.equal((await draft()).routes.length, 1);
+    assert.equal((await draft()).routes[0].oneWay, false);
+    await page.locator("#graph-route-condition").fill("棚を除ける必要がある");
+    await page.locator("#graph-route-distance").fill("およそ50歩");
+    await page.locator("#graph-route-time").fill("約4分");
+    assert.deepEqual(await page.locator(".graph-edge-label tspan").allTextContents(), ["約4分", "条件あり"]);
+    assert(!(await page.locator(".graph-edge-label").textContent()).includes("50歩"));
+    await page.locator("#graph-route-condition").fill("");
+    assert.deepEqual(await page.locator(".graph-edge-label tspan").allTextContents(), ["約4分"]);
+    await page.locator("#graph-route-time").fill("");
+    assert.deepEqual(await page.locator(".graph-edge-label tspan").allTextContents(), ["徒歩時間未定"]);
+    await page.locator("#graph-route-time").fill("約4分");
+    await page.locator("#graph-route-condition").fill("棚を除ける必要がある");
+    await page.getByRole("button", { name: "+ 人物" }).click();
+    await page.locator("#graph-actor-name-0").fill("見張り");
+    await page.locator("#graph-actor-kind-0").selectOption("enemy");
+    await page.locator("#graph-actor-species-0").fill("ゴブリン");
+    await page.locator("#graph-actor-place-0").selectOption((await draft()).points[1].id);
+    assert.equal((await draft()).actors[0].initialNodeId, (await draft()).points[1].id);
+    await page.locator(".graph-output summary").click();
+    const output = await page.locator("#map-output").inputValue();
+    for (const phrase of ["坑道入口", "落石", "食料", "棚を除ける", "見張り", "およそ50歩"]) { assert(output.includes(phrase), phrase); }
+    await page.locator(".graph-ai-panel summary").click();
+    const original = await draft();
+    const proposed = structuredClone(original);
+    proposed.points[1].contents = "奥から音がする";
+    proposed.points.push({ ...structuredClone(proposed.points[1]), id: "proposal-new-point", name: "旧資材置場", x: 1200, y: 400, eventIdeas: [] });
+    await page.locator("#graph-ai-json").fill(JSON.stringify({ schema: "hoshimichi.scene-map-proposal/1", map: proposed }));
+    await page.getByRole("button", { name: "案を確認" }).click();
+    assert((await page.locator("#graph-ai-preview").innerText()).includes("旧資材置場"));
+    page.once("dialog", dialog => dialog.accept());
+    await page.locator("#graph-ai-adopt").click();
+    assert.equal((await draft()).points.length, 3);
+    await page.locator("#map-undo").click();
+    assert.equal((await draft()).points.length, 2);
+    await page.locator("#map-redo").click();
+    assert.equal((await draft()).points.length, 3);
+    const nodeBody = page.locator(".graph-node-body").first();
+    await nodeBody.hover({ position: { x: 12, y: 12 } });
+    await page.mouse.wheel(0, 120);
+    await page.waitForFunction(() => document.querySelector(".graph-node-body").scrollTop > 0);
+    assert.equal(await page.locator("#graph-zoom-label").innerText(), "100%");
+    const viewportBox = await page.locator("#map-viewport").boundingBox();
+    await page.mouse.move(viewportBox.x + 12, viewportBox.y + 12);
+    await page.mouse.wheel(0, -100);
+    assert.equal(await page.locator("#graph-zoom-label").innerText(), "110%");
+    await page.mouse.wheel(0, 100);
+    assert.equal(await page.locator("#graph-zoom-label").innerText(), "100%");
+    await page.getByRole("button", { name: "拡大" }).click();
+    assert.equal(await page.locator("#graph-zoom-label").innerText(), "120%");
+    await page.getByRole("button", { name: "縮小" }).click();
+    await page.getByRole("button", { name: "+ 場所" }).click();
+    const placed = (await draft()).points;
+    const last = placed.at(-1);
+    assert(placed.slice(0, -1).every(point => Math.abs(point.x - last.x) >= 280 || Math.abs(point.y - last.y) >= 260));
+    if (process.env.TEST_ARTIFACT_DIR) {
+      fs.mkdirSync(process.env.TEST_ARTIFACT_DIR, { recursive: true });
+      for (const width of [1440, 390]) {
+        await page.setViewportSize({ width, height: 950 });
+        await page.locator("#map-panel").scrollIntoViewIfNeeded();
+        assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
+        await page.screenshot({ path: path.join(process.env.TEST_ARTIFACT_DIR, "graph-" + width + ".png") });
+        if (width === 390) {
+          await page.locator("#map-viewport").scrollIntoViewIfNeeded();
+          await page.screenshot({ path: path.join(process.env.TEST_ARTIFACT_DIR, "graph-390-canvas.png") });
+        }
+      }
+    }
+    const received = page.waitForEvent("download");
+    await page.locator("#map-panel").getByRole("button", { name: "下書きJSONを出力" }).click();
+    const download = await received;
+    const exported = JSON.parse(fs.readFileSync(await download.path(), "utf8"));
+    assert.equal(exported.maps[0].kind, "graph");
+    await page.evaluate(() => window.characterSheetBuilder.exitKpMode());
+    assert.equal(await page.locator("#map-panel").innerHTML(), "");
+    await page.reload();
+    await page.evaluate(() => window.characterSheetBuilder.tryEnterKpMode("ばに"));
+    await page.locator("#map-tab").click();
+    assert.equal((await draft()).points.length, 4);
+    assert.deepEqual(errors, []);
+    console.log("Authoring graph: PASS (node edit, drag, link, actors, AI review, history, export, responsive, relock)");
+  } finally { await browser.close(); }
+})().catch(error => { console.error(error); process.exitCode = 1; });
