@@ -1,7 +1,21 @@
 (function (root) {
   "use strict";
   const clone = value => JSON.parse(JSON.stringify(value));
-  const graphSize = { width: 2000, height: 1300, nodeWidth: 260, nodeHeight: 240 };
+  const graphSize = { width: 2800, height: 1850, nodeWidth: 260, nodeHeight: 240 };
+  const graphPorts = Object.freeze({
+    "top-left":     Object.freeze({ x: 87,  y: 0,   nx: 0,  ny: -1, label: "上辺・左" }),
+    "top-right":    Object.freeze({ x: 173, y: 0,   nx: 0,  ny: -1, label: "上辺・右" }),
+    "right-upper":  Object.freeze({ x: graphSize.nodeWidth, y: 70,  nx: 1,  ny: 0, label: "右辺・上" }),
+    "right-lower":  Object.freeze({ x: graphSize.nodeWidth, y: 170, nx: 1,  ny: 0, label: "右辺・下" }),
+    "bottom-right": Object.freeze({ x: 173, y: graphSize.nodeHeight, nx: 0, ny: 1, label: "下辺・右" }),
+    "bottom-left":  Object.freeze({ x: 87,  y: graphSize.nodeHeight, nx: 0, ny: 1, label: "下辺・左" }),
+    "left-lower":   Object.freeze({ x: 0, y: 170, nx: -1, ny: 0, label: "左辺・下" }),
+    "left-upper":   Object.freeze({ x: 0, y: 70,  nx: -1, ny: 0, label: "左辺・上" })
+  });
+  function graphAnchor(point, portId) {
+    const port = graphPorts[portId];
+    return { x: point.x + port.x, y: point.y + port.y, nx: port.nx, ny: port.ny };
+  }
   const tiles = [
     { id: "void", label: "空白", color: "#edf1ed", glyph: " " },
     { id: "floor", label: "床", color: "#d4c9b5", glyph: "." },
@@ -14,7 +28,18 @@
     { id: "door", label: "扉", color: "#b26c43", glyph: "+" }
   ];
   const pointFields = ["name", "contents", "danger", "possibleEnemies", "events", "conditions", "notes"];
+  const locationAdditionKinds = Object.freeze(["イベント", "使えるもの", "痕跡", "目立つもの", "持っていけるもの", "仕掛け", "植物", "その他"]);
+  const locationAdditionReveal = Object.freeze({ arrival: "入ると分かる", roll: "ロールで見つかる" });
   const routeFields = ["from", "to", "distance", "time", "roughness", "notes"];
+  const routeRoughnessLevels = Object.freeze([
+    { name: "低い", color: "#63b7a8", examples: ["街道・平地"] },
+    { name: "やや険しい", color: "#b5bc68", examples: ["森・林道"] },
+    { name: "険しい", color: "#e9a15b", examples: ["悪路"] },
+    { name: "非常に険しい", color: "#ed7376", examples: ["急斜面", "浅瀬", "雪中"] }
+  ]);
+  function routeRoughnessLevel(value) {
+    return routeRoughnessLevels.find(level => level.name === value || level.examples.includes(value));
+  }
   const scenarioFields = ["name", "canonId", "year", "period", "place", "cp", "party", "duration", "difficulty", "certainty", "summary", "hook", "cast", "events", "branches", "ending", "secrets", "clues", "deadline", "failure", "rewards", "boundaries", "pending"];
   const preferences = [
     { name: "体験", items: ["探索", "戦闘", "交渉", "調査・推理", "救出", "護衛", "採取・制作", "日常・交流"] },
@@ -70,19 +95,42 @@
       pointFields.forEach(key => { item[key] = string(graph ? point[key] ?? "" : point[key], key, key === "name" ? 200 : 10000); });
       if (graph) {
         const ideas = point.eventIdeas === undefined ? (point.events ? [point.events] : []) : point.eventIdeas;
-        check(Array.isArray(ideas) && ideas.length <= 30, "イベント案は1地点30件までです。");
-        item.eventIdeas = ideas.map(idea => string(idea, "イベント案", 3000));
+        check(Array.isArray(ideas) && ideas.length <= 30, "以前のイベント入力は1ロケーション30件までです。");
+        item.eventIdeas = ideas.map(idea => string(idea, "以前のイベント入力", 3000));
+        if (point.additions !== undefined) {
+          check(Array.isArray(point.additions) && point.additions.length <= 30, "追加内容は1ロケーション30件までです。");
+          const additionIds = new Set();
+          item.additions = point.additions.map(addition => {
+            check(addition && typeof addition === "object", "追加内容の形式が不正です。");
+            const id = string(addition.id, "追加内容ID", 160);
+            check(id.trim() && !additionIds.has(id), "追加内容IDの空欄または重複があります。");
+            additionIds.add(id);
+            check(locationAdditionKinds.includes(addition.kind), "追加内容の種類を確認してください。");
+            check(addition.reveal === "" || Object.hasOwn(locationAdditionReveal, addition.reveal), "追加内容の発見方法を確認してください。");
+            return { id, kind: addition.kind, reveal: addition.reveal, text: string(addition.text, "追加内容", 3000) };
+          });
+        }
       }
       return item;
     });
     const ids = new Set(map.points.map(point => point.id));
     check(ids.size === map.points.length, "地点IDが重複しています。");
+    const pointsById = new Map(map.points.map(point => [point.id, point]));
     check(Array.isArray(source.routes) && source.routes.length <= 300, "ルート数が多すぎます。");
     map.routes = source.routes.map(route => {
       const item = { id: string(route.id, "ルートID", 160) };
       routeFields.forEach(key => { item[key] = string(route[key], key, key === "notes" ? 10000 : 300); });
-      if (graph) { item.condition = string(route.condition ?? "", "通行条件", 3000); item.oneWay = route.oneWay === true; }
       check(ids.has(item.from) && ids.has(item.to) && item.from !== item.to, "移動ルートの地点を確認してください。");
+      if (graph) {
+        item.condition = string(route.condition ?? "", "通行条件", 3000);
+        item.oneWay = route.oneWay === true;
+        // Older drafts only stored places. Preserve the sides shown when first read.
+        const forward = pointsById.get(item.to).x >= pointsById.get(item.from).x;
+        item.fromPort = route.fromPort === undefined ? (forward ? "right-upper" : "left-upper") : route.fromPort;
+        item.toPort = route.toPort === undefined ? (forward ? "left-upper" : "right-upper") : route.toPort;
+        check([item.fromPort, item.toPort].every(port => typeof port === "string" && Object.hasOwn(graphPorts, port)),
+          "接続端子の位置を確認してください。");
+      }
       return item;
     });
     check(new Set(map.routes.map(route => route.id)).size === map.routes.length, "ルートIDが重複しています。");
@@ -188,11 +236,18 @@
         "凡例：" + tiles.map(t => (t.glyph === " " ? "空白" : t.glyph) + "=" + t.label).join(" / "));
     }
     lines.push("### 地点・候補（KP用）");
+    if (graph) { lines.push("入ると分かる追加内容と、ロール成功で見つかる追加内容を区別する。ロールは発見の条件とし、イベントの発生は卓で条件を確認する。"); }
     map.points.forEach((p, i) => {
       lines.push("#### " + (i + 1) + ". " + p.name + (graph ? "" : "（列" + (p.x + 1) + "・行" + (p.y + 1) + "）"));
       if (graph) {
-        lines.push("状況：" + (p.contents || "空欄。AIは正本と卓の現在状態に合わせて人や物を配置してよい"),
-          "イベント案：" + (p.eventIdeas.filter(Boolean).join(" / ") || "なし。発生を保証しない"));
+        lines.push("描写：" + (p.contents || "空欄。AIは正本と卓の現在状態に合わせて人や物を配置してよい"));
+        for (const addition of p.additions || []) {
+          if (addition.text.trim()) {
+            lines.push("追加（" + addition.kind + "／" + (locationAdditionReveal[addition.reveal] || "発見方法未設定") + "）：" + addition.text);
+          }
+        }
+        const oldEvents = p.eventIdeas.filter(Boolean);
+        if (oldEvents.length) { lines.push("以前のイベント入力（発生未確定）：" + oldEvents.join(" / ")); }
         const legacy = [p.danger, p.possibleEnemies, p.conditions, p.notes].filter(Boolean);
         if (legacy.length) { lines.push("以前のメモ：" + legacy.join(" / ")); }
       } else {
@@ -207,12 +262,16 @@
         lines.push(actor.name + "（" + actor.kind + (actor.species ? "・" + actor.species : "") + "） / 初期位置：" + (place ? place.name : "未配置") + " / 目的：" + (actor.goal || "未定"));
       });
     }
-    lines.push("### 移動ルート・見積もり");
+    lines.push("### 移動ルート・見積もり",
+      "険しさの段階は通りにくさの目安です。街道や森などは例です。地形や足場は描写の内容を参照してください。");
     map.routes.forEach(r => {
+      const level = routeRoughnessLevel(r.roughness)?.name || "未設定";
       lines.push(map.points.find(p => p.id === r.from).name + (graph && !r.oneWay ? " ↔ " : " → ") + map.points.find(p => p.id === r.to).name,
-        "距離：" + (r.distance || "未定") + " / 所要時間：" + (r.time || "未定") + " / 険しさ：" + (r.roughness || "未定"),
-        (graph ? "通行必須条件：" + (hasRequiredPassageCondition(r.condition) ? r.condition : "なし") : "条件：" + (r.notes || "未定")),
-        "補足：" + (r.notes || "なし"));
+        "距離：" + (r.distance || "未定") + " / 所要時間：" + (r.time || "未定") + " / 険しさの段階：" + level);
+      if (r.roughness && r.roughness !== level) { lines.push("以前の険しさ欄（参考）：" + r.roughness); }
+      lines.push(
+        (graph ? "通行条件：" + (hasRequiredPassageCondition(r.condition) ? r.condition : "なし") : "条件：" + (r.notes || "未定")),
+        "描写：" + (r.notes || "なし"));
     });
     lines.push("### マップ全体メモ", map.notes || "未定");
     return lines.join("\n");
@@ -230,8 +289,11 @@
     check(map.kind === "graph", "場所ノードMAPを選んでください。");
     return ["# シナリオ場所MAP案の作成・修正（KP用）",
       "正本を参照し、既存の決定・保留・候補を混同しない。下書きの内容を黙って消さず、PCが通る一本道や強制遭遇を作らない。",
-      "地点ノードは場所名・状況・追加できるイベント案だけを持つ。状況空欄は無人・無物を意味しない。イベント案は発生確定ではない。",
-      "接続は往復を標準とし、一方通行のみoneWayをtrueにする。conditionは満たさなければその経路を移動できない必須条件だけに使う。通れるが危険・遅い場合はroughnessやnotesへ、調べる・確認するなどの行動案は地点のeventIdeasへ記す。条件がなければ空文字とし、確率や自動判定を作らない。",
+      "地点ノードのnameはロケーション名、contentsは描写。描写が空欄の場合、正本と卓の現在状態に合わせて人や物を配置できる。additionsはそのロケーションに追加する内容。各項目はid、kind（" + locationAdditionKinds.join("、") + "）、reveal（arrival＝入ると分かる、roll＝ロールで見つかる、空文字＝未設定）、text（内容）を持つ。既存項目のIDを維持し、新しい項目にはその地点内で一意のIDを付ける。",
+      "rollは発見の条件。対象の存在は配置で扱い、成功前は本人が知った情報へ加えない。イベントの発生条件はtextに記し、成立は卓で扱う。以前のeventIdeasは発生未確定の入力として保持する。",
+      "接続は往復を標準とし、一方通行のみoneWayをtrueにする。conditionは満たさなければその経路を移動できない必須条件だけに使う。条件がなければ空文字。地点の内容はadditionsへ記し、確率や自動判定を作らない。",
+      "roughnessは通りにくさの段階。新しい入力には「" + routeRoughnessLevels.map(level => level.name).join("」「") + "」のいずれか、未定なら空文字を使う。街道・森・急斜面などは段階の例。どんな地形でも、路面や足場、通れるが危険・遅い理由などはnotes（描写）へ自由に記す。既存の自由記述は元の情報を保持する。",
+      "既存接続のfromPort・toPortは同じ地点につながる限り維持する。新しい接続で未指定の端子はアプリが初回だけ決める。",
       "敵・NPCは開始前の人数・種族・初期位置・目的の案として個体ごとに記す。卓中の現在地や行動、勝敗を確定しない。既存個体のIDを保ち、新しいIDは重複しない文字列にする。",
       "回答は説明やコードフェンスを付けず、JSONオブジェクトのみ。schemaはhoshimichi.scene-map-proposal/1、mapは下記の構造を保つ。map.idを変更しない。",
       fence(JSON.stringify({ schema: "hoshimichi.scene-map-proposal/1", map }, null, 2), "json")].join("\n\n");
@@ -240,6 +302,15 @@
     check(source && source.schema === "hoshimichi.scene-map-proposal/1", "AI案の形式が違います。");
     const proposal = validateMap(source.map);
     check(proposal.kind === "graph" && proposal.id === baseMap.id, "別のシナリオMAPの案です。");
+    const originalRoutes = new Map(validateMap(baseMap).routes.map(route => [route.id, route]));
+    for (const route of proposal.routes) {
+      const previous = originalRoutes.get(route.id);
+      if (!previous) { continue; }
+      for (const end of ["from", "to"]) {
+        if (route[end] === previous.from) { route[end + "Port"] = previous.fromPort; }
+        else if (route[end] === previous.to) { route[end + "Port"] = previous.toPort; }
+      }
+    }
     return proposal;
   }
   function scenarioText(scenario, maps) {
@@ -254,7 +325,7 @@
     lines.push("## 依頼する成果", "一シナリオ一Markdownの候補案として、PC向け案内とKP専用本文を分離してください。成立事実ではなく制作案として扱い、未決定事項・参照元・主KP確認が必要な点を併記してください。engine.py用WORKSETの生成やREADY判定、卓の開始はこの依頼には含めません。");
     return lines.join("\n\n");
   }
-  const api = { clone, tiles, graphSize, pointFields, routeFields, scenarioFields, preferences, newMap, newGraphMap, newScenario, validateMap, validateScenario, validateStore, paintLine, rectangle, fill, resize, hasRequiredPassageCondition, mapText, mapRequest, sceneMapPrompt, validateSceneMapProposal, scenarioText };
+  const api = { clone, tiles, graphSize, graphPorts, graphAnchor, pointFields, locationAdditionKinds, locationAdditionReveal, routeFields, routeRoughnessLevels, routeRoughnessLevel, scenarioFields, preferences, newMap, newGraphMap, newScenario, validateMap, validateScenario, validateStore, paintLine, rectangle, fill, resize, hasRequiredPassageCondition, mapText, mapRequest, sceneMapPrompt, validateSceneMapProposal, scenarioText };
   if (typeof module !== "undefined" && module.exports) { module.exports = api; }
   else { root.HoshimichiAuthoringCore = Object.freeze(api); }
 })(typeof window !== "undefined" ? window : globalThis);

@@ -6,7 +6,10 @@
   const panels = { map: document.getElementById("map-panel"), scenario: document.getElementById("scenario-panel") };
   let store = null, storedText = null, mapId = null, scenarioId = null, selectedPoint = null, selectedRoute = null;
   let undo = [], redo = [], gesture = null, mode = "brush", tile = 2, zoom = 1, cursor = [0, 0], epoch = 0;
-  let graphZoom = 1, graphLinkFrom = null;
+  let graphZoom = 1, graphLinkFrom = null, graphLinkMode = false;
+  const graphViewMargin = 120;
+
+  let graphRouteDetailsOpen = false, graphActorEditorId = null;
   let pendingProposal = null;
   let statusText = "", statusError = false;
   let pendingRecovery = null, recovering = false;
@@ -231,6 +234,9 @@
   function renderGraphMap(panel) {
     panel.classList.add("graph-editor-panel");
     const layout = el("div", null, { class: "graph-editor-layout" });
+    layout.addEventListener("keydown", graphDeleteKey);
+    graphRouteDetailsOpen = false;
+    graphActorEditorId = null;
     const sidebar = el("aside", null, { class: "graph-sidebar", "aria-label": "シナリオと登場人物" });
     sidebar.append(el("h3", "シナリオ基本情報"));
     field(sidebar, "シナリオ名", "map-name", map().name, value => changeMap(m => { m.name = value; }), { max: 200 });
@@ -238,37 +244,50 @@
     field(sidebar, "概要", "graph-summary", map().summary, value => changeMap(m => { m.summary = value; }), { area: true, max: 10000 });
     field(sidebar, "全体メモ", "map-notes", map().notes, value => changeMap(m => { m.notes = value; }), { area: true });
     const actors = el("section", null, { id: "graph-actors", class: "graph-sidebar-section" }); sidebar.append(actors);
-    const route = el("section", null, { id: "graph-route-editor", class: "graph-sidebar-section" }); sidebar.append(route);
     const main = el("div", null, { class: "graph-main" });
     const tools = el("div", null, { class: "authoring-toolbar graph-toolbar" });
     button(tools, "↶", () => history(true), { id: "map-undo", class: "secondary-button authoring-icon", title: "取り消し", "aria-label": "取り消し" });
     button(tools, "↷", () => history(false), { id: "map-redo", class: "secondary-button authoring-icon", title: "やり直し", "aria-label": "やり直し" });
     button(tools, "+ 場所", () => {
-      const viewport = byId("map-viewport");
-      addGraphPoint(Math.round((viewport.scrollLeft + viewport.clientWidth / 2) / graphZoom - C.graphSize.nodeWidth / 2),
-        Math.round((viewport.scrollTop + viewport.clientHeight / 2) / graphZoom - C.graphSize.nodeHeight / 2));
+      const viewport = byId("map-viewport"), rect = viewport.getBoundingClientRect();
+      addGraphPointAt(rect.left + viewport.clientLeft + viewport.clientWidth / 2,
+        rect.top + viewport.clientTop + viewport.clientHeight / 2);
     });
     button(tools, "−", () => graphSetZoom(graphZoom - .2), { title: "縮小", "aria-label": "縮小", class: "secondary-button authoring-icon" });
-    const zoomText = el("span", "", { id: "graph-zoom-label", class: "graph-zoom-label" }); tools.append(zoomText);
+    const zoomSlider = el("input", null, { type: "range", id: "graph-zoom-slider", min: 10, max: 100, step: 1,
+      value: Math.round(graphZoom * 100), "aria-label": "MAP表示倍率" });
+    zoomSlider.addEventListener("input", () => graphSetZoom(Number(zoomSlider.value) / 100));
+    const zoomText = el("output", "", { id: "graph-zoom-label", class: "graph-zoom-label", for: "graph-zoom-slider" });
+    tools.append(zoomSlider, zoomText);
     button(tools, "+", () => graphSetZoom(graphZoom + .2), { title: "拡大", "aria-label": "拡大", class: "secondary-button authoring-icon" });
+    button(tools, "接続モード", () => {
+      graphLinkMode = !graphLinkMode;
+      graphLinkFrom = null;
+      drawGraph();
+    }, { id: "graph-link-mode", "aria-pressed": String(graphLinkMode) });
     button(tools, "AI用依頼をコピー", () => { C.validateMap(map()); copy(C.sceneMapPrompt(map())); });
     main.append(tools);
-    const viewport = el("div", null, { id: "map-viewport", class: "map-viewport graph-viewport" });
+    const stage = el("div", null, { class: "graph-stage" });
+    const viewport = el("div", null, { id: "map-viewport", class: "map-viewport graph-viewport", tabindex: 0 });
+    const route = el("section", null, { id: "graph-route-editor", class: "graph-map-editor",
+      "aria-label": "選んだ接続の詳細", hidden: true });
+    const actor = el("section", null, { id: "graph-actor-editor", class: "graph-map-editor",
+      "aria-label": "人物設定", hidden: true });
     const spacer = el("div", null, { id: "graph-spacer", class: "graph-spacer" });
     const surface = el("div", null, { id: "graph-surface", class: "graph-surface", "aria-label": "場所ノードMAP" });
-    surface.addEventListener("pointerdown", graphPanDown);
-    surface.addEventListener("pointermove", graphPanMove);
-    surface.addEventListener("pointerup", graphPanUp);
-    surface.addEventListener("pointercancel", cancelGesture);
+    viewport.addEventListener("pointerdown", graphPanDown);
+    viewport.addEventListener("pointermove", graphPanMove);
+    viewport.addEventListener("pointerup", graphPanUp);
+    viewport.addEventListener("pointercancel", cancelGesture);
     surface.addEventListener("dblclick", event => {
       if (!unlocked() || event.target !== surface) { return; }
-      const rect = surface.getBoundingClientRect(), size = C.graphSize;
-      addGraphPoint(Math.round((event.clientX - rect.left) / graphZoom - size.nodeWidth / 2),
-        Math.round((event.clientY - rect.top) / graphZoom - size.nodeHeight / 2));
+      addGraphPointAt(event.clientX, event.clientY);
     });
     viewport.addEventListener("wheel", graphWheel, { passive: false });
-    spacer.append(surface); viewport.append(spacer); main.append(viewport);
+    viewport.addEventListener("scroll", positionGraphEditors, { passive: true });
+    spacer.append(surface); viewport.append(spacer); stage.append(viewport, route, actor); main.append(stage);
     main.append(el("p", "", { id: "graph-status", class: "map-coordinate", role: "status" }));
+    main.append(el("p", "枠内に場所を配置できます。外側の余白もドラッグで移動できます。", { class: "map-coordinate" }));
     const ai = el("details", null, { class: "graph-ai-panel" }); ai.append(el("summary", "AIのMAP案を確認・採用"));
     field(ai, "AIの返答JSON", "graph-ai-json", "", null, { area: true, max: MAX_FILE });
     const aiActions = el("div", null, { class: "authoring-toolbar" });
@@ -286,23 +305,47 @@
     frameGraphStart();
     byId("graph-ai-json").addEventListener("input", () => { pendingProposal = null; byId("graph-ai-adopt").disabled = true; byId("graph-ai-preview").textContent = ""; });
   }
+  function layoutGraphViewport() {
+    const surface = byId("graph-surface"), viewport = byId("map-viewport");
+    if (!surface || !viewport.clientWidth || !viewport.clientHeight) { return; }
+    const spacer = byId("graph-spacer"), size = C.graphSize;
+    const width = size.width * graphZoom, height = size.height * graphZoom;
+    const left = graphViewMargin + Math.max(0, (viewport.clientWidth - width) / 2);
+    const top = graphViewMargin + Math.max(0, (viewport.clientHeight - height) / 2);
+    spacer.style.width = (width + 2 * left) + "px";
+    spacer.style.height = (height + 2 * top) + "px";
+    surface.style.width = size.width + "px";
+    surface.style.height = size.height + "px";
+    surface.style.left = left + "px";
+    surface.style.top = top + "px";
+    surface.style.transform = `scale(${graphZoom})`;
+    const percent = Math.round(graphZoom * 100);
+    byId("graph-zoom-slider").value = String(percent);
+    byId("graph-zoom-label").textContent = percent + "%";
+  }
   function frameGraphStart() {
-    const viewport = byId("map-viewport"), first = map() && map().points[0];
-    if (!viewport || !viewport.clientWidth || !first || viewport.scrollLeft || viewport.scrollTop) { return; }
-    viewport.scrollLeft = Math.max(0, first.x * graphZoom - viewport.clientWidth * .2);
-    viewport.scrollTop = Math.max(0, first.y * graphZoom - viewport.clientHeight * .25);
+    const viewport = byId("map-viewport"), surface = byId("graph-surface");
+    if (!viewport || !surface || !viewport.clientWidth || viewport.dataset.framed) { return; }
+    const first = map().points[0];
+    viewport.scrollLeft = first ? surface.offsetLeft + first.x * graphZoom - viewport.clientWidth * .2 : surface.offsetLeft - 24;
+    viewport.scrollTop = first ? surface.offsetTop + first.y * graphZoom - viewport.clientHeight * .25 : surface.offsetTop - 24;
+    viewport.dataset.framed = "true";
   }
   function graphSetZoom(value, clientX, clientY) {
-    const viewport = byId("map-viewport"); if (!viewport) { return; }
-    const rect = viewport.getBoundingClientRect(), old = graphZoom;
-    const x = clientX === undefined ? rect.width / 2 : clientX - rect.left;
-    const y = clientY === undefined ? rect.height / 2 : clientY - rect.top;
-    graphZoom = Math.max(.4, Math.min(1.8, Math.round(value * 100) / 100));
-    if (graphZoom === old) { return; }
-    const nextX = (viewport.scrollLeft + x) * graphZoom / old - x;
-    const nextY = (viewport.scrollTop + y) * graphZoom / old - y;
-    drawGraph();
-    viewport.scrollLeft = nextX; viewport.scrollTop = nextY;
+    const viewport = byId("map-viewport"), surface = byId("graph-surface");
+    if (!viewport || !surface) { return; }
+    const next = Math.max(.1, Math.min(1, Math.round(value * 100) / 100));
+    if (next === graphZoom) { return; }
+    const view = viewport.getBoundingClientRect(), before = surface.getBoundingClientRect();
+    const x = clientX ?? view.left + viewport.clientLeft + viewport.clientWidth / 2;
+    const y = clientY ?? view.top + viewport.clientTop + viewport.clientHeight / 2;
+    const worldX = (x - before.left) / graphZoom, worldY = (y - before.top) / graphZoom;
+    graphZoom = next;
+    layoutGraphViewport();
+    const after = surface.getBoundingClientRect();
+    viewport.scrollLeft += after.left + worldX * graphZoom - x;
+    viewport.scrollTop += after.top + worldY * graphZoom - y;
+    positionGraphEditors();
   }
   function graphWheel(event) {
     if (!unlocked() || !event.deltaY) { return; }
@@ -315,7 +358,7 @@
       const delta = event.deltaY * scale;
       const canScroll = element => element && element.scrollHeight > element.clientHeight + 1 &&
         (delta < 0 ? element.scrollTop > 0 : element.scrollTop + element.clientHeight < element.scrollHeight - 1);
-      const target = canScroll(textarea) ? textarea : body;
+      const target = event.target.closest(".graph-node-actors") || (canScroll(textarea) ? textarea : body);
       if (target) { target.scrollTop += delta; }
       return;
     }
@@ -323,11 +366,13 @@
     graphSetZoom(graphZoom + (event.deltaY < 0 ? .1 : -.1), event.clientX, event.clientY);
   }
   function graphPanDown(event) {
-    if (!unlocked() || event.target !== event.currentTarget || gesture || event.button !== 0) { return; }
+    const viewport = event.currentTarget;
+    if (!unlocked() || gesture || event.button !== 0 ||
+        ![viewport, byId("graph-surface"), byId("graph-spacer")].includes(event.target)) { return; }
     event.preventDefault();
-    const viewport = byId("map-viewport");
-    gesture = { mode: "graph-pan", pointer: event.pointerId, client: [event.clientX, event.clientY], scroll: [viewport.scrollLeft, viewport.scrollTop] };
-    event.currentTarget.setPointerCapture(event.pointerId);
+    gesture = { mode: "graph-pan", pointer: event.pointerId, target: event.target,
+      client: [event.clientX, event.clientY], scroll: [viewport.scrollLeft, viewport.scrollTop] };
+    event.target.setPointerCapture(event.pointerId);
   }
   function graphPanMove(event) {
     if (!gesture || gesture.mode !== "graph-pan" || gesture.pointer !== event.pointerId) { return; }
@@ -337,56 +382,324 @@
   }
   function graphPanUp(event) {
     if (!gesture || gesture.mode !== "graph-pan" || gesture.pointer !== event.pointerId) { return; }
+    const target = gesture.target;
     gesture = null;
-    if (event.currentTarget.hasPointerCapture(event.pointerId)) { event.currentTarget.releasePointerCapture(event.pointerId); }
+    if (target.hasPointerCapture(event.pointerId)) { target.releasePointerCapture(event.pointerId); }
+  }
+  function graphActorLabel(actor) {
+    return (map().actors.indexOf(actor) + 1) + ". " + (actor.name || actor.species || "名前未設定");
+  }
+  function syncGraphActorListEntry(actor) {
+    const entry = byId("graph-actor-list-" + actor.id);
+    if (!entry) { return; }
+    entry.querySelector(".graph-actor-open-name").textContent = graphActorLabel(actor);
+    const location = map().points.find(point => point.id === actor.initialNodeId);
+    entry.querySelector(".graph-actor-open-place").textContent = location ? (location.name || "名称未設定の場所") : "未配置";
+  }
+  function clearGraphActorDrag() {
+    const current = gesture;
+    gesture = null;
+    current.ghost?.remove();
+    current.dropNode?.classList.remove("is-actor-drop-target");
+    current.source.classList.remove("is-actor-dragging");
+    if (current.source.hasPointerCapture(current.pointer)) { current.source.releasePointerCapture(current.pointer); }
+  }
+  function bindGraphActorDrag(handle, actor, openOnClick) {
+    let suppressClick = false;
+    const ownsGesture = event => gesture?.mode === "graph-actor" && gesture.source === handle && gesture.pointer === event.pointerId;
+    handle.addEventListener("pointerdown", event => {
+      if (!unlocked() || gesture || event.button !== 0) { return; }
+      suppressClick = false;
+      gesture = { mode: "graph-actor", source: handle, pointer: event.pointerId, client: [event.clientX, event.clientY] };
+      handle.setPointerCapture(event.pointerId);
+    });
+    function move(event) {
+      if (!ownsGesture(event)) { return; }
+      if (!gesture.ghost) {
+        if (Math.hypot(event.clientX - gesture.client[0], event.clientY - gesture.client[1]) < 5) { return; }
+        suppressClick = true;
+        closeGraphActorEditor();
+        if (graphRouteDetailsOpen) { graphRouteDetailsOpen = false; renderGraphRoute(); }
+        gesture.ghost = el("div", graphActorLabel(actor), { class: "graph-actor-drag-ghost", "aria-hidden": "true" });
+        document.body.append(gesture.ghost);
+        handle.classList.add("is-actor-dragging");
+      }
+      event.preventDefault();
+      gesture.ghost.style.left = (event.clientX + 12) + "px";
+      gesture.ghost.style.top = (event.clientY + 12) + "px";
+      const node = document.elementFromPoint(event.clientX, event.clientY)?.closest(".graph-node");
+      const next = node && byId("graph-surface")?.contains(node) ? node : null;
+      if (next !== gesture.dropNode) {
+        gesture.dropNode?.classList.remove("is-actor-drop-target");
+        gesture.dropNode = next;
+        next?.classList.add("is-actor-drop-target");
+      }
+    }
+    handle.addEventListener("pointermove", move);
+    handle.addEventListener("pointerup", event => {
+      if (!ownsGesture(event)) { return; }
+      move(event);
+      const destination = gesture.dropNode?.dataset.pointId;
+      clearGraphActorDrag();
+      if (destination && destination !== actor.initialNodeId && unlocked()) {
+        changeMap(() => { actor.initialNodeId = destination; });
+        syncGraphActorListEntry(actor);
+      }
+    });
+    for (const type of ["pointercancel", "lostpointercapture"]) {
+      handle.addEventListener(type, event => { if (ownsGesture(event)) { clearGraphActorDrag(); } });
+    }
+    handle.addEventListener("click", event => {
+      if (unlocked() && (event.detail === 0 || (openOnClick && !suppressClick))) { safely(() => openGraphActorEditor(actor.id)); }
+    });
+    if (!openOnClick) {
+      handle.addEventListener("dblclick", () => {
+        if (unlocked() && !suppressClick) { safely(() => openGraphActorEditor(actor.id)); }
+      });
+    }
   }
   function renderGraphActors() {
     const panel = byId("graph-actors"); if (!panel || !map() || map().kind !== "graph") { return; }
-    panel.replaceChildren(el("h3", "登場人物・初期配置案"));
+    panel.replaceChildren(el("h3", "登場人物・初期配置"));
     button(panel, "+ 人物", () => {
       if (map().actors.length >= 200) { throw new Error("登場人物は200人までです。"); }
-      changeMap(m => m.actors.push({ id: uid(), name: "新しい人物", kind: "npc", species: "", initialNodeId: selectedPoint || "", goal: "" }));
+      const id = uid();
+      changeMap(m => m.actors.push({ id, name: "新しい人物", kind: "npc", species: "", initialNodeId: selectedPoint || "", goal: "" }));
       renderGraphActors();
+      openGraphActorEditor(id);
     });
-    map().actors.forEach((actor, i) => {
-      const section = el("section", null, { class: "graph-actor" });
-      const title = el("h4", (i + 1) + ". " + actor.name, { draggable: true, title: "場所ノードへドラッグして初期配置" });
-      title.addEventListener("dragstart", event => { event.dataTransfer.setData("application/x-hoshimichi-actor", actor.id); event.dataTransfer.effectAllowed = "move"; });
-      section.append(title);
-      field(section, "名前", "graph-actor-name-" + i, actor.name, value => {
-        changeMap(m => { m.actors.find(item => item.id === actor.id).name = value; });
-        section.querySelector("h4").textContent = (i + 1) + ". " + value;
-      }, { max: 200 });
-      field(section, "区分", "graph-actor-kind-" + i, actor.kind, value => changeMap(m => { m.actors.find(item => item.id === actor.id).kind = value; }),
-        { choices: [["pc", "PC"], ["npc", "NPC"], ["enemy", "敵・モンスター"]] });
-      field(section, "種族・分類", "graph-actor-species-" + i, actor.species, value => changeMap(m => { m.actors.find(item => item.id === actor.id).species = value; }), { max: 200 });
-      field(section, "初期位置", "graph-actor-place-" + i, actor.initialNodeId, value => changeMap(m => { m.actors.find(item => item.id === actor.id).initialNodeId = value; }),
-        { choices: [["", "未配置"], ...map().points.map(point => [point.id, point.name])] });
-      field(section, "目的・行動の軸", "graph-actor-goal-" + i, actor.goal, value => changeMap(m => { m.actors.find(item => item.id === actor.id).goal = value; }), { area: true, max: 3000 });
-      button(section, "削除", () => {
-        if (!window.confirm("「" + actor.name + "」を初期配置案から削除しますか？")) { return; }
-        changeMap(m => { m.actors = m.actors.filter(item => item.id !== actor.id); }); renderGraphActors();
-      }, { class: "danger-button" });
-      panel.append(section);
+    if (map().actors.length) {
+      panel.append(el("p", "一覧や札を場所カードまでドラッグして離すと配置できます。札はダブルクリックで設定。", { class: "map-coordinate" }));
+    }
+    for (const actor of map().actors) {
+      const entry = el("button", null, { type: "button", id: "graph-actor-list-" + actor.id, class: "secondary-button graph-actor-open",
+        title: "クリックで人物設定・ドラッグで初期配置", "aria-controls": "graph-actor-editor" });
+      entry.append(el("span", "", { class: "graph-actor-open-name" }), el("span", "", { class: "graph-actor-open-place" }));
+      panel.append(entry);
+      syncGraphActorListEntry(actor);
+      bindGraphActorDrag(entry, actor, true);
+    }
+  }
+  function openGraphActorEditor(id) {
+    selectedPoint = null;
+    selectedRoute = null;
+    graphLinkFrom = null;
+    graphRouteDetailsOpen = false;
+    graphActorEditorId = id;
+    byId("graph-link-preview")?.remove();
+    syncGraphSelection();
+    renderGraphRoute();
+    renderGraphActorEditor();
+    byId("graph-actor-editor")?.querySelector("input")?.focus({ preventScroll: true });
+  }
+  function closeGraphActorEditor() {
+    if (!graphActorEditorId) { return; }
+    graphActorEditorId = null;
+    renderGraphActorEditor();
+  }
+  function renderGraphActorEditor() {
+    const panel = byId("graph-actor-editor"); if (!panel || !map() || map().kind !== "graph") { return; }
+    const i = map().actors.findIndex(actor => actor.id === graphActorEditorId);
+    panel.hidden = i < 0;
+    panel.replaceChildren();
+    if (i < 0) { return; }
+
+    const actor = map().actors[i];
+    const heading = el("div", null, { class: "graph-route-heading" });
+    const title = el("h3", graphActorLabel(actor));
+    heading.append(title);
+    button(heading, "閉じる", () => {
+      closeGraphActorEditor();
+      (byId("graph-actor-tag-" + actor.id) || byId("graph-actor-list-" + actor.id))?.focus({ preventScroll: true });
     });
+    panel.append(heading);
+    const update = (key, value) => {
+      changeMap(m => { m.actors.find(item => item.id === actor.id)[key] = value; });
+      title.textContent = graphActorLabel(actor);
+      syncGraphActorListEntry(actor);
+      positionGraphEditors();
+    };
+    field(panel, "名前", "graph-actor-name-" + i, actor.name, value => update("name", value), { max: 200 });
+    field(panel, "区分", "graph-actor-kind-" + i, actor.kind, value => update("kind", value),
+      { choices: [["pc", "PC"], ["npc", "NPC"], ["enemy", "敵・モンスター"]] });
+    field(panel, "種族・分類", "graph-actor-species-" + i, actor.species, value => update("species", value), { max: 200 });
+    field(panel, "初期位置", "graph-actor-place-" + i, actor.initialNodeId, value => update("initialNodeId", value),
+      { choices: [["", "未配置"], ...map().points.map(point => [point.id, point.name])] });
+    field(panel, "目的・行動の軸", "graph-actor-goal-" + i, actor.goal, value => update("goal", value), { area: true, max: 3000 });
+    button(panel, "削除", () => {
+      if (!window.confirm("「" + actor.name + "」を初期配置から削除しますか？")) { return; }
+      closeGraphActorEditor();
+      changeMap(m => { m.actors = m.actors.filter(item => item.id !== actor.id); });
+      renderGraphActors();
+    }, { class: "danger-button" });
+    positionGraphEditors();
+  }
+  function routeTravelFields(parent, prefix, route) {
+    const update = (key, value) => changeMap(m => { m.routes.find(item => item.id === route.id)[key] = value; });
+    const withSavedValue = (choices, saved) => saved && !choices.some(([value]) => value === saved)
+      ? [...choices, [saved, saved + "（保存値）"]] : choices;
+    const presets = [10, 25, 50, 100, 200, 300, 500, 1000, 2000, 5000].map(m => [m + " m", m + " m"]);
+    const distance = field(parent, "移動距離（m）", prefix + "-distance", route.distance, value => {
+      const enteringCustom = distance.selectedOptions[0] === customOption;
+      custom.parentElement.hidden = !enteringCustom;
+      if (enteringCustom) {
+        custom.value = route.distance.match(/^([0-9]+)\s*m$/)?.[1] || "";
+        positionGraphEditors();
+        custom.focus({ preventScroll: true });
+      } else {
+        update("distance", value);
+      }
+    }, { choices: withSavedValue([["", "未設定"], ...presets], route.distance) });
+    const customOption = new Option("任意の距離を入力…", "");
+    distance.append(customOption);
+    const custom = field(parent, "任意の距離（m）", prefix + "-distance-custom", "", null, { type: "number" });
+    custom.min = "0";
+    custom.step = "1";
+    custom.parentElement.hidden = true;
+    custom.addEventListener("change", () => {
+      if (!unlocked()) { return; }
+      const meters = custom.valueAsNumber;
+      if (!Number.isSafeInteger(meters) || meters < 0) { status("距離は0以上の整数で入力してください。", true); return; }
+      safely(() => update("distance", meters + " m"));
+    });
+    custom.addEventListener("keydown", event => {
+      if (event.key === "Enter") { event.preventDefault(); custom.blur(); }
+    });
+
+    const roughness = C.routeRoughnessLevels.map(level => [level.name, level.name + "（例：" + level.examples.join("・") + "）"]);
+    const select = field(parent, "険しさの段階", prefix + "-roughness", route.roughness, value => update("roughness", value),
+      { choices: withSavedValue([["", "未設定"], ...roughness], route.roughness) });
+    const hintId = prefix + "-roughness-hint";
+    select.setAttribute("aria-describedby", hintId);
+    select.parentElement.append(el("small", "地形は自由です。道の様子は「描写」に書けます。", { id: hintId }));
   }
   function renderGraphRoute() {
     const panel = byId("graph-route-editor"); if (!panel || !map() || map().kind !== "graph") { return; }
-    panel.replaceChildren(el("h3", "接続・移動条件"));
-    field(panel, "接続", "map-route-select", selectedRoute || "", id => { selectedRoute = id || null; renderGraphRoute(); drawGraph(); },
-      { choices: [["", "未選択"], ...map().routes.map((r, i) => [r.id, (i + 1) + ". " + map().points.find(p => p.id === r.from).name + (r.oneWay ? " → " : " ↔ ") + map().points.find(p => p.id === r.to).name])] });
-    const route = map().routes.find(r => r.id === selectedRoute);
+    const route = graphRouteDetailsOpen && map().routes.find(r => r.id === selectedRoute);
+    panel.hidden = !route;
+    panel.replaceChildren();
     if (!route) { return; }
+    const from = map().points.find(point => point.id === route.from);
+    const to = map().points.find(point => point.id === route.to);
+    const heading = el("div", null, { class: "graph-route-heading" });
+    heading.append(el("h3", from.name + (route.oneWay ? " → " : " ↔ ") + to.name));
+    button(heading, "閉じる", () => {
+      graphRouteDetailsOpen = false;
+      renderGraphRoute();
+      byId("graph-links").querySelector(".graph-edge-hit.is-selected")?.focus({ preventScroll: true });
+    });
+    panel.append(heading);
+    routeTravelFields(panel, "graph-route", route);
     const direction = el("label", null, { class: "inline-check" }), check = el("input", null, { type: "checkbox", id: "graph-route-one-way" });
     check.checked = route.oneWay; check.addEventListener("change", () => { changeMap(m => { m.routes.find(r => r.id === selectedRoute).oneWay = check.checked; }); renderGraphRoute(); });
     append(direction, check, document.createTextNode("一方通行")); panel.append(direction);
-    const condition = field(panel, "通行必須条件（未達なら移動不可）", "graph-route-condition", route.condition,
+    const condition = field(panel, "通行条件（通常は条件なし）", "graph-route-condition", route.condition,
       value => changeMap(m => { m.routes.find(r => r.id === selectedRoute).condition = value; }), { area: true, max: 3000 });
-    condition.placeholder = "例：鍵を開けないと扉を通れない。条件がなければ空欄";
-    [["distance", "距離の目安"], ["time", "徒歩所要時間（分の目安）"], ["roughness", "険しさ"], ["notes", "補足"]].forEach(([key, label]) =>
-      field(panel, label, "graph-route-" + key, route[key], value => changeMap(m => { m.routes.find(r => r.id === selectedRoute)[key] = value; }), { area: key === "notes", max: key === "notes" ? 10000 : 300 }));
-    byId("graph-route-time").placeholder = "例：約4分";
-    button(panel, "接続を削除", () => { changeMap(m => { m.routes = m.routes.filter(r => r.id !== selectedRoute); }); selectedRoute = null; renderGraphRoute(); }, { class: "danger-button" });
+    condition.placeholder = "条件があるときだけ入力（例：鍵が必要）";
+    field(panel, "描写", "graph-route-notes", route.notes,
+      value => changeMap(m => { m.routes.find(r => r.id === selectedRoute).notes = value; }), { area: true, max: 10000 });
+    button(panel, "接続を削除", () => deleteGraphRoute(route.id), { class: "danger-button" });
+    positionGraphEditors();
+  }
+  function positionGraphEditors() {
+    positionGraphEditor(byId("graph-route-editor"), byId("graph-links")?.querySelector(".graph-edge-label.is-selected"));
+    if (graphActorEditorId) {
+      const anchor = byId("graph-actor-tag-" + graphActorEditorId) || byId("graph-actor-list-" + graphActorEditorId);
+      positionGraphEditor(byId("graph-actor-editor"), anchor);
+    }
+  }
+  function positionGraphEditor(panel, label) {
+    if (!panel || panel.hidden) { return; }
+    const viewport = byId("map-viewport");
+    if (!viewport || !label || !viewport.clientWidth || !viewport.clientHeight) { return; }
+
+    const area = viewport.getBoundingClientRect();
+    const stage = panel.parentElement.getBoundingClientRect();
+    const anchor = label.getBoundingClientRect();
+    const margin = 8, gap = 8;
+    const left = Math.max(0, area.left) + margin;
+    const right = Math.min(window.innerWidth, area.left + viewport.clientWidth) - margin;
+    const top = Math.max(0, area.top) + margin;
+    const bottom = Math.min(window.innerHeight, area.top + viewport.clientHeight) - margin;
+    if (right <= left || bottom <= top) { return; }
+
+    const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
+    const anchorTop = clamp(anchor.top, top, bottom);
+    const anchorBottom = clamp(anchor.bottom, top, bottom);
+    const above = Math.max(0, anchorTop - gap - top);
+    const below = Math.max(0, bottom - anchorBottom - gap);
+    const opensAbove = above >= Math.min(panel.scrollHeight, 160) || above >= below;
+    const room = opensAbove ? above : below;
+
+    panel.style.maxWidth = (right - left) + "px";
+    panel.style.maxHeight = (room >= 40 ? room : bottom - top) + "px";
+    const center = (anchor.left + anchor.right) / 2;
+    panel.style.left = (clamp(center - panel.offsetWidth / 2, left, right - panel.offsetWidth) - stage.left) + "px";
+    panel.style.top = room < 40 ? (top - stage.top) + "px" : opensAbove ? "auto" : (anchorBottom + gap - stage.top) + "px";
+    panel.style.bottom = room >= 40 && opensAbove ? (stage.bottom - anchorTop + gap) + "px" : "auto";
+  }
+  function syncGraphSelection() {
+    const surface = byId("graph-surface");
+    for (const node of surface.querySelectorAll(".graph-node")) {
+      node.classList.toggle("is-selected", node.dataset.pointId === selectedPoint);
+      node.classList.toggle("is-link-origin", node.dataset.pointId === graphLinkFrom?.pointId);
+      for (const port of node.querySelectorAll(".graph-port")) {
+        port.setAttribute("aria-pressed", String(node.dataset.pointId === graphLinkFrom?.pointId && port.dataset.portId === graphLinkFrom.portId));
+      }
+    }
+    for (const line of surface.querySelectorAll("[data-route-id]")) {
+      line.classList.toggle("is-selected", line.dataset.routeId === selectedRoute);
+    }
+  }
+  function selectGraphPoint(id) {
+    closeGraphActorEditor();
+    selectedPoint = id;
+    selectedRoute = null;
+    graphRouteDetailsOpen = false;
+    syncGraphSelection();
+    renderGraphRoute();
+  }
+  function selectGraphRoute(id, openDetails) {
+    if (!unlocked()) { return; }
+    closeGraphActorEditor();
+    if (selectedRoute !== id || openDetails) { graphRouteDetailsOpen = openDetails; }
+    selectedRoute = id;
+    selectedPoint = null;
+    graphLinkFrom = null;
+    byId("graph-link-preview")?.remove();
+    syncGraphSelection();
+    renderGraphRoute();
+  }
+  function deleteGraphRoute(id) {
+    selectedRoute = null;
+    graphRouteDetailsOpen = false;
+    changeMap(m => { m.routes = m.routes.filter(r => r.id !== id); });
+    renderGraphRoute();
+    byId("map-viewport").focus({ preventScroll: true });
+  }
+  function deleteGraphPoint(id) {
+    selectedPoint = null;
+    selectedRoute = null;
+    graphLinkFrom = null;
+    graphRouteDetailsOpen = false;
+    changeMap(m => {
+      m.points = m.points.filter(p => p.id !== id);
+      m.routes = m.routes.filter(r => r.from !== id && r.to !== id);
+      for (const actor of m.actors) {
+        if (actor.initialNodeId === id) { actor.initialNodeId = ""; }
+      }
+    });
+    renderGraphActors();
+    renderGraphRoute();
+    byId("map-viewport").focus({ preventScroll: true });
+  }
+  function graphDeleteKey(event) {
+    if (event.key !== "Delete" || event.repeat || event.isComposing || gesture || !unlocked()
+        || event.target.closest("input, textarea, select, [contenteditable], dialog")) { return; }
+    if (!selectedRoute && !selectedPoint) { return; }
+    event.preventDefault();
+    if (selectedRoute) { deleteGraphRoute(selectedRoute); }
+    else { deleteGraphPoint(selectedPoint); }
   }
   function previewGraphProposal() {
     const raw = byId("graph-ai-json").value;
@@ -417,6 +730,11 @@
     pendingProposal = null; pushUndo(before); selectedPoint = null; selectedRoute = null; graphLinkFrom = null;
     persist(); renderMap(); renderScenario();
   }
+  function addGraphPointAt(clientX, clientY) {
+    const rect = byId("graph-surface").getBoundingClientRect(), size = C.graphSize;
+    addGraphPoint(Math.round((clientX - rect.left) / graphZoom - size.nodeWidth / 2),
+      Math.round((clientY - rect.top) / graphZoom - size.nodeHeight / 2));
+  }
   function addGraphPoint(x, y) {
     if (map().points.length >= 200) { status("地点は200件までです。", true); return; }
     const size = C.graphSize, id = uid();
@@ -439,11 +757,13 @@
       if (found) { break; }
     }
     changeMap(m => { m.points.push(Object.assign(Object.fromEntries(C.pointFields.map(key => [key, ""])),
-      { id, name: "場所" + (m.points.length + 1), eventIdeas: [],
+      { id, name: "場所" + (m.points.length + 1), eventIdeas: [], additions: [],
         x: place[0], y: place[1] })); });
     selectedPoint = id; selectedRoute = null; renderGraphActors(); drawGraph();
   }
-  function connectGraphNodes(from, to) {
+  function connectGraphNodes(source, target) {
+    const { pointId: from, portId: fromPort } = source;
+    const { pointId: to, portId: toPort } = target;
     graphLinkFrom = null;
     if (from === to) { drawGraph(); return; }
     if (map().routes.length >= 300) { status("接続は300件までです。", true); drawGraph(); return; }
@@ -451,38 +771,53 @@
       status("この場所どうしは接続済みです。", true); drawGraph(); return;
     }
     const routeId = uid();
-    changeMap(m => { m.routes.push({ id: routeId, from, to, distance: "", time: "", roughness: "", notes: "", condition: "", oneWay: false }); });
-    selectedPoint = null; selectedRoute = routeId; renderGraphRoute(); drawGraph();
+    changeMap(m => { m.routes.push({ id: routeId, from, to, fromPort, toPort, distance: "", time: "", roughness: "", notes: "", condition: "", oneWay: false }); });
+    selectedPoint = null; selectedRoute = routeId; graphRouteDetailsOpen = false;
+    renderGraphRoute(); drawGraph();
+    byId("graph-links").querySelector(".graph-edge-hit.is-selected")?.focus({ preventScroll: true });
   }
-  function graphPortDown(event, id) {
-    if (!unlocked() || gesture || event.button !== 0) { return; }
+  function graphPortDown(event, endpoint) {
+    if (!unlocked() || !graphLinkMode || gesture || event.button !== 0) { return; }
     event.stopPropagation(); event.preventDefault();
-    gesture = { mode: "graph-link", pointer: event.pointerId, from: graphLinkFrom || id, client: [event.clientX, event.clientY] };
+    const from = graphLinkFrom?.pointId === endpoint.pointId ? endpoint : graphLinkFrom || endpoint;
+    gesture = { mode: "graph-link", pointer: event.pointerId, from, client: [event.clientX, event.clientY] };
     event.currentTarget.setPointerCapture(event.pointerId);
-    graphLinkFrom = gesture.from; drawGraphEdges();
+    graphLinkFrom = from; drawGraphEdges();
+  }
+  function selectGraphPort(endpoint) {
+    if (!unlocked() || !graphLinkMode) { return; }
+    if (graphLinkFrom && graphLinkFrom.pointId !== endpoint.pointId) {
+      connectGraphNodes(graphLinkFrom, endpoint);
+    } else {
+      graphLinkFrom = endpoint;
+      drawGraph();
+    }
   }
   function graphPortMove(event) {
     if (!gesture || gesture.mode !== "graph-link" || gesture.pointer !== event.pointerId) { return; }
     gesture.client = [event.clientX, event.clientY];
-    const preview = byId("graph-link-preview"), source = map().points.find(p => p.id === gesture.from), surface = byId("graph-surface");
+    const preview = byId("graph-link-preview"), source = map().points.find(p => p.id === gesture.from.pointId), surface = byId("graph-surface");
     if (!preview || !source || !surface) { return; }
     const rect = surface.getBoundingClientRect(), x = (event.clientX - rect.left) / graphZoom, y = (event.clientY - rect.top) / graphZoom;
-    const ax = source.x + C.graphSize.nodeWidth / 2, ay = source.y + C.graphSize.nodeHeight / 2;
-    preview.setAttribute("d", `M ${ax} ${ay} L ${x} ${y}`);
+    const anchor = C.graphAnchor(source, gesture.from.portId);
+    preview.setAttribute("d", `M ${anchor.x} ${anchor.y} L ${x} ${y}`);
   }
   function graphPortUp(event) {
     if (!gesture || gesture.mode !== "graph-link" || gesture.pointer !== event.pointerId) { return; }
     const from = gesture.from; gesture = null;
     if (event.currentTarget.hasPointerCapture(event.pointerId)) { event.currentTarget.releasePointerCapture(event.pointerId); }
-    const target = document.elementFromPoint(event.clientX, event.clientY)?.closest(".graph-node");
-    const targetId = target && target.dataset.pointId;
-    if (targetId && targetId !== from) { connectGraphNodes(from, targetId); }
-    else { graphLinkFrom = from; drawGraphEdges(); byId("graph-status").textContent = "接続元：" + (map().points.find(p => p.id === from)?.name || ""); }
+    const target = document.elementFromPoint(event.clientX, event.clientY)?.closest(".graph-port");
+    if (target) {
+      selectGraphPort({ pointId: target.closest(".graph-node").dataset.pointId, portId: target.dataset.portId });
+    } else {
+      graphLinkFrom = from;
+      drawGraph();
+    }
   }
   function graphNodeDown(event, id) {
     if (!unlocked() || gesture || event.button !== 0) { return; }
     const point = map().points.find(p => p.id === id); if (!point) { return; }
-    event.preventDefault(); selectedPoint = id; selectedRoute = null;
+    event.preventDefault(); selectGraphPoint(id);
     gesture = { mode: "graph-drag", pointer: event.pointerId, before: C.clone(map()), id,
       client: [event.clientX, event.clientY], origin: [point.x, point.y], moved: false };
     event.currentTarget.setPointerCapture(event.pointerId);
@@ -503,7 +838,8 @@
     const current = gesture; gesture = null;
     if (event.currentTarget.hasPointerCapture(event.pointerId)) { event.currentTarget.releasePointerCapture(event.pointerId); }
     if (current.moved) { pushUndo(current.before); saveMap(); }
-    drawGraph();
+    else { drawGraph(); }
+    byId("graph-surface").querySelector(".graph-node.is-selected .graph-node-drag")?.focus({ preventScroll: true });
   }
   function svgElement(tag, attrs) {
     const node = document.createElementNS("http://www.w3.org/2000/svg", tag);
@@ -513,27 +849,49 @@
   function drawGraphEdges() {
     const svg = byId("graph-links"); if (!svg || !map() || map().kind !== "graph") { return; }
     svg.replaceChildren();
-    const size = C.graphSize, defs = svgElement("defs", {}), marker = svgElement("marker", { id: "graph-arrow", markerWidth: 8, markerHeight: 8, refX: 7, refY: 4, orient: "auto" });
-    marker.append(svgElement("path", { d: "M 0 0 L 8 4 L 0 8 z", fill: "#63b7a8" })); defs.append(marker); svg.append(defs);
+    const defs = svgElement("defs", {});
+    for (const color of new Set(C.routeRoughnessLevels.map(level => level.color))) {
+      const marker = svgElement("marker", { id: "graph-arrow-" + color.slice(1), markerWidth: 8,
+        markerHeight: 8, refX: 7, refY: 4, orient: "auto" });
+      marker.append(svgElement("path", { d: "M 0 0 L 8 4 L 0 8 z", fill: color }));
+      defs.append(marker);
+    }
+    svg.append(defs);
     map().routes.forEach(route => {
       const from = map().points.find(p => p.id === route.from), to = map().points.find(p => p.id === route.to);
       if (!from || !to) { return; }
-      const forward = to.x >= from.x;
-      const ax = from.x + (forward ? size.nodeWidth : 0), ay = from.y + 70;
-      const bx = to.x + (forward ? 0 : size.nodeWidth), by = to.y + 70;
-      const bend = Math.max(65, Math.abs(bx - ax) * .45), sign = forward ? 1 : -1;
-      const d = `M ${ax} ${ay} C ${ax + sign * bend} ${ay} ${bx - sign * bend} ${by} ${bx} ${by}`;
-      const line = svgElement("path", { d, class: route.id === selectedRoute ? "graph-edge is-selected" : "graph-edge" });
-      if (route.oneWay) { line.setAttribute("marker-end", "url(#graph-arrow)"); }
-      const hit = svgElement("path", { d, class: "graph-edge-hit", role: "button", tabindex: 0, "aria-label": from.name + (route.oneWay ? "から" : "と") + to.name + "の接続" });
-      const select = event => { event.stopPropagation(); graphLinkFrom = null; selectedPoint = null; selectedRoute = route.id; renderGraphRoute(); drawGraph(); };
-      hit.addEventListener("click", select);
-      hit.addEventListener("keydown", event => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); select(event); } });
-      svg.append(line, hit);
-      const hasGate = C.hasRequiredPassageCondition(route.condition), labelX = (ax + bx) / 2;
-      const label = svgElement("text", { x: labelX, y: (ay + by) / 2 - (hasGate ? 18 : 10), class: "graph-edge-label" });
-      const time = svgElement("tspan", { x: labelX, dy: 0 });
-      time.textContent = route.time.trim() || "徒歩時間未定"; label.append(time);
+      const a = C.graphAnchor(from, route.fromPort), b = C.graphAnchor(to, route.toPort);
+      const bend = Math.max(65, Math.hypot(b.x - a.x, b.y - a.y) * .45);
+      const c1x = a.x + a.nx * bend, c1y = a.y + a.ny * bend;
+      const c2x = b.x + b.nx * bend, c2y = b.y + b.ny * bend;
+      const d = `M ${a.x} ${a.y} C ${c1x} ${c1y} ${c2x} ${c2y} ${b.x} ${b.y}`;
+      const selected = route.id === selectedRoute ? " is-selected" : "";
+      const color = C.routeRoughnessLevel(route.roughness)?.color || C.routeRoughnessLevels[0].color;
+      const line = svgElement("path", { d, class: "graph-edge" + selected, stroke: color, "data-route-id": route.id });
+      if (route.oneWay) { line.setAttribute("marker-end", "url(#graph-arrow-" + color.slice(1) + ")"); }
+      const hit = svgElement("path", { d, class: "graph-edge-hit" + selected, "data-route-id": route.id,
+        role: "button", tabindex: 0, "aria-label": from.name + (route.oneWay ? "から" : "と") + to.name + "の接続" });
+      // Keep the hit target mounted across both clicks of a double-click.
+      const select = (event, openDetails) => {
+        event.stopPropagation();
+        selectGraphRoute(route.id, openDetails);
+        hit.focus({ preventScroll: true });
+      };
+      hit.addEventListener("click", event => select(event, false));
+      hit.addEventListener("dblclick", event => select(event, true));
+      hit.addEventListener("keydown", event => {
+        if (event.key === "Enter" || event.key === " ") { event.preventDefault(); select(event, true); }
+      });
+      svg.append(hit, line);
+      const hasGate = C.hasRequiredPassageCondition(route.condition);
+      const labelX = (a.x + 3 * c1x + 3 * c2x + b.x) / 8;
+      const labelY = (a.y + 3 * c1y + 3 * c2y + b.y) / 8;
+      const label = svgElement("text", { x: labelX, y: labelY - (hasGate ? 18 : 10),
+        class: "graph-edge-label" + selected, "data-route-id": route.id });
+      label.addEventListener("click", event => select(event, false));
+      label.addEventListener("dblclick", event => select(event, true));
+      const distance = svgElement("tspan", { x: labelX, dy: 0 });
+      distance.textContent = route.distance.trim() || route.time.trim() || "距離未設定"; label.append(distance);
       if (hasGate) {
         const gate = svgElement("tspan", { x: labelX, dy: 19, class: "graph-edge-condition" });
         gate.textContent = "条件あり"; label.append(gate);
@@ -541,30 +899,111 @@
       svg.append(label);
     });
     if (graphLinkFrom) { svg.append(svgElement("path", { id: "graph-link-preview", class: "graph-link-preview", d: "" })); }
+    positionGraphEditors();
+  }
+  function renderGraphLocationAdditions(point) {
+    const panel = el("div", null, { class: "graph-node-events" });
+    panel.append(el("span", "追加内容", { class: "graph-node-label" }));
+    const current = (draft = map()) => draft.points.find(item => item.id === point.id);
+    for (const addition of point.additions || []) {
+      const row = el("div", null, { class: "graph-addition-row" });
+      const options = el("div", null, { class: "graph-addition-options" });
+      const find = (draft = map()) => current(draft).additions.find(item => item.id === addition.id);
+      for (const [key, label, choices] of [
+        ["kind", "種類", C.locationAdditionKinds.map(kind => [kind, kind])],
+        ["reveal", "発見方法", [["", "発見方法を選ぶ"], ...Object.entries(C.locationAdditionReveal)]]
+      ]) {
+        const select = el("select", null, { class: "graph-addition-" + key, "aria-label": label });
+        choices.forEach(([value, text]) => select.append(new Option(text, value)));
+        select.value = addition[key];
+        bindGraphNodeInput(select, point.id, value => { find()[key] = value; });
+        options.append(select);
+      }
+      const content = el("div", null, { class: "graph-event-row" });
+      const input = el("textarea", null, { id: "graph-addition-" + point.id + "-" + addition.id,
+        maxlength: 3000, rows: 2, placeholder: "何があるか、内容を入力", "aria-label": "追加内容" });
+      input.value = addition.text;
+      bindGraphNodeInput(input, point.id, value => { find().text = value; });
+      content.append(input);
+      button(content, "×", () => {
+        changeMap(draft => { current(draft).additions = current(draft).additions.filter(item => item.id !== addition.id); });
+      }, { title: "追加内容を削除", "aria-label": "追加内容を削除" });
+      row.append(options, content);
+      panel.append(row);
+    }
+    button(panel, "+ 追加", () => {
+      if ((current().additions || []).length >= 30) { throw new Error("追加内容は1ロケーション30件までです。"); }
+      const id = uid();
+      changeMap(draft => { (current(draft).additions ??= []).push({ id, kind: "その他", reveal: "", text: "" }); });
+      const input = byId("graph-addition-" + point.id + "-" + id);
+      const body = input.closest(".graph-node-body");
+      body.scrollTop = body.scrollHeight;
+      input.focus({ preventScroll: true });
+    });
+    if (point.eventIdeas.length) {
+      panel.append(el("span", "以前のイベント入力（発生未確定）", { class: "graph-node-label" }));
+      point.eventIdeas.forEach((text, index) => {
+        const row = el("div", null, { class: "graph-event-row" });
+        const input = el("textarea", null, { maxlength: 3000, rows: 2, "aria-label": "以前のイベント入力" });
+        input.value = text;
+        bindGraphNodeInput(input, point.id, value => { current().eventIdeas[index] = value; });
+        row.append(input);
+        button(row, "×", () => { changeMap(draft => { current(draft).eventIdeas.splice(index, 1); }); },
+          { title: "以前のイベント入力を削除", "aria-label": "以前のイベント入力を削除" });
+        panel.append(row);
+      });
+    }
+    return panel;
+  }
+  function renderGraphActorTags(point) {
+    const assigned = map().actors.filter(actor => actor.initialNodeId === point.id);
+    if (!assigned.length) { return null; }
+    const tags = el("ul", null, { class: "graph-node-actors", role: "list", "aria-label": point.name + "の初期配置" });
+    const kindLabels = { pc: "PC", npc: "NPC", enemy: "敵" };
+    for (const actor of assigned) {
+      const kind = kindLabels[actor.kind], name = actor.name || actor.species || "名前未設定";
+      const slot = el("li");
+      const tag = el("button", null, { id: "graph-actor-tag-" + actor.id, type: "button", class: "graph-actor-tag",
+        "data-actor-kind": actor.kind, "aria-controls": "graph-actor-editor",
+        title: name + "（" + [kind, actor.species].filter(Boolean).join("／") + "）" });
+      tag.append(el("span", kind, { class: "graph-actor-tag-kind" }),
+        el("span", graphActorLabel(actor), { class: "graph-actor-tag-name" }));
+      bindGraphActorDrag(tag, actor, false);
+      slot.append(tag); tags.append(slot);
+    }
+    return tags;
   }
   function drawGraph() {
     const surface = byId("graph-surface"); if (!surface || !unlocked() || !map() || map().kind !== "graph") { return; }
-    const size = C.graphSize, spacer = byId("graph-spacer");
-    spacer.style.width = size.width * graphZoom + "px"; spacer.style.height = size.height * graphZoom + "px";
-    surface.style.transform = `scale(${graphZoom})`;
+    if (gesture?.mode === "graph-actor") { clearGraphActorDrag(); }
+    const size = C.graphSize;
+    layoutGraphViewport();
+    byId("graph-link-mode").setAttribute("aria-pressed", String(graphLinkMode));
     surface.replaceChildren();
     const svg = svgElement("svg", { id: "graph-links", width: size.width, height: size.height, viewBox: `0 0 ${size.width} ${size.height}`, "aria-label": "地点間のルート" });
     surface.append(svg); drawGraphEdges();
     map().points.forEach((point, i) => {
-      const node = el("section", null, { class: "graph-node" + (point.id === selectedPoint ? " is-selected" : "") + (point.id === graphLinkFrom ? " is-link-origin" : ""),
+      const node = el("section", null, { class: "graph-node" + (point.id === selectedPoint ? " is-selected" : "") + (point.id === graphLinkFrom?.pointId ? " is-link-origin" : ""),
         "data-point-id": point.id, "aria-label": "場所" + (i + 1) + " " + point.name });
       node.style.left = point.x + "px"; node.style.top = point.y + "px";
-      for (const side of ["left", "right"]) {
-        const port = el("button", null, { type: "button", class: "graph-port graph-port-" + side,
-          title: "接続端子", "aria-label": point.name + "の接続端子" });
-        port.addEventListener("pointerdown", event => graphPortDown(event, point.id));
+      for (const [portId, placement] of graphLinkMode ? Object.entries(C.graphPorts) : []) {
+        const endpoint = { pointId: point.id, portId };
+        const active = graphLinkFrom?.pointId === point.id && graphLinkFrom.portId === portId;
+        const label = point.name + "の接続端子（" + placement.label + "）";
+        const port = el("button", null, { type: "button", class: "graph-port", "data-port-id": portId,
+          title: label, "aria-label": label, "aria-pressed": String(active) });
+        // Absolutely positioned children start at the inside edge of the 1px card border.
+        port.style.left = (placement.x - 1) + "px";
+        port.style.top = (placement.y - 1) + "px";
+        port.addEventListener("pointerdown", event => graphPortDown(event, endpoint));
+        port.addEventListener("click", event => { if (event.detail === 0) { selectGraphPort(endpoint); } });
         port.addEventListener("pointermove", graphPortMove);
         port.addEventListener("pointerup", graphPortUp);
         port.addEventListener("pointercancel", cancelGesture);
         node.append(port);
       }
       const header = el("div", null, { class: "graph-node-drag", tabindex: 0, role: "button", "aria-label": point.name + "を移動" });
-      header.append(el("span", String(i + 1), { class: "graph-node-number" }), el("span", "場所", { class: "graph-node-type" }));
+      header.append(el("span", String(i + 1), { class: "graph-node-number" }), el("span", "⋮⋮", { class: "graph-node-grip", "aria-hidden": "true" }));
       header.addEventListener("pointerdown", event => graphNodeDown(event, point.id));
       header.addEventListener("pointermove", graphNodeMove);
       header.addEventListener("pointerup", graphNodeUp);
@@ -572,73 +1011,57 @@
       header.addEventListener("lostpointercapture", () => { if (gesture && gesture.mode === "graph-drag") { cancelGesture(); } });
       header.addEventListener("keydown", event => {
         const shift = event.shiftKey ? 64 : 16, delta = { ArrowLeft: [-shift, 0], ArrowRight: [shift, 0], ArrowUp: [0, -shift], ArrowDown: [0, shift] }[event.key];
-        if (!delta) { return; } event.preventDefault();
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault(); selectGraphPoint(point.id); return;
+        }
+        if (!delta) { return; }
+        event.preventDefault(); selectGraphPoint(point.id);
         changeMap(m => { const p = m.points.find(item => item.id === point.id);
           p.x = Math.max(0, Math.min(size.width - size.nodeWidth, p.x + delta[0]));
           p.y = Math.max(0, Math.min(size.height - size.nodeHeight, p.y + delta[1])); });
+        byId("graph-surface").querySelector(".graph-node.is-selected .graph-node-drag")?.focus({ preventScroll: true });
       });
       node.append(header);
       const body = el("div", null, { class: "graph-node-body" });
-      const nameLabel = el("label", "場所名", { for: "graph-name-" + i });
-      const name = el("input", null, { id: "graph-name-" + i, type: "text", maxlength: 200, value: point.name });
+      const name = el("input", null, { id: "graph-name-" + i, type: "text", maxlength: 200,
+        value: point.name, placeholder: "ロケーション名", "aria-label": "ロケーション名" });
       name.value = point.name; bindGraphNodeInput(name, point.id, value => { map().points.find(p => p.id === point.id).name = value; });
-      const situationLabel = el("label", "状況", { for: "graph-situation-" + i });
+      const situationLabel = el("label", "描写", { for: "graph-situation-" + i });
       const situation = el("textarea", null, { id: "graph-situation-" + i, maxlength: 10000, rows: 3 });
       situation.value = point.contents;
       bindGraphNodeInput(situation, point.id, value => { map().points.find(p => p.id === point.id).contents = value; });
-      body.append(nameLabel, name, situationLabel, situation);
-      const events = el("div", null, { class: "graph-node-events" });
-      events.append(el("span", "イベント案", { class: "graph-node-label" }));
-      point.eventIdeas.forEach((idea, index) => {
-        const row = el("div", null, { class: "graph-event-row" });
-        const input = el("textarea", null, { maxlength: 3000, rows: 2, "aria-label": point.name + "のイベント案" + (index + 1) });
-        input.value = idea;
-        bindGraphNodeInput(input, point.id, value => { map().points.find(p => p.id === point.id).eventIdeas[index] = value; });
-        const remove = button(row, "×", () => { changeMap(m => { m.points.find(p => p.id === point.id).eventIdeas.splice(index, 1); }); },
-          { title: "イベント案を削除", "aria-label": "イベント案を削除" });
-        row.insertBefore(input, remove); events.append(row);
-      });
-      button(events, "+ 案", () => {
-        if (map().points.find(p => p.id === point.id).eventIdeas.length >= 30) { throw new Error("イベント案は1地点30件までです。"); }
-        changeMap(m => { m.points.find(p => p.id === point.id).eventIdeas.push(""); });
-      });
-      body.append(events);
-      const assigned = map().actors.filter(actor => actor.initialNodeId === point.id);
-      if (assigned.length) { body.append(el("div", assigned.map(actor => actor.name).join("、"), { class: "graph-node-actors", title: "初期配置案" })); }
-      button(body, "場所を削除", () => {
+      body.append(name, situationLabel, situation, renderGraphLocationAdditions(point));
+
+      button(body, "削除", () => {
         if (!window.confirm("「" + point.name + "」と接続を削除しますか？初期配置中の人物は未配置になります。")) { return; }
-        changeMap(m => {
-          m.points = m.points.filter(p => p.id !== point.id);
-          m.routes = m.routes.filter(r => r.from !== point.id && r.to !== point.id);
-          m.actors.forEach(actor => { if (actor.initialNodeId === point.id) { actor.initialNodeId = ""; } });
-        });
-        selectedPoint = null; selectedRoute = null; graphLinkFrom = null; renderGraphActors(); renderGraphRoute();
-      }, { class: "graph-node-delete" });
+        deleteGraphPoint(point.id);
+      }, { class: "graph-node-delete", "aria-label": "場所を削除" });
       node.append(body);
-      node.addEventListener("dragover", event => { if (event.dataTransfer.types.includes("application/x-hoshimichi-actor")) { event.preventDefault(); } });
-      node.addEventListener("drop", event => {
-        const actorId = event.dataTransfer.getData("application/x-hoshimichi-actor");
-        if (!map().actors.some(actor => actor.id === actorId)) { return; }
-        event.preventDefault(); changeMap(m => { m.actors.find(actor => actor.id === actorId).initialNodeId = point.id; }); renderGraphActors();
+      const tags = renderGraphActorTags(point);
+      if (tags) { node.append(tags); }
+      node.addEventListener("click", event => {
+        if (event.target.closest("button, input, textarea, select, label, .graph-node-drag")) { return; }
+        selectGraphPoint(point.id);
+        header.focus({ preventScroll: true });
       });
       surface.append(node);
     });
-    const origin = map().points.find(p => p.id === graphLinkFrom);
-    byId("graph-status").textContent = origin ? "接続元：" + origin.name :
+    positionGraphEditors();
+    const origin = map().points.find(p => p.id === graphLinkFrom?.pointId);
+    byId("graph-status").textContent = origin ? "接続元：" + origin.name + "（" + C.graphPorts[graphLinkFrom.portId].label + "）" :
       "場所 " + map().points.length + " / 接続 " + map().routes.length + " / 登場人物 " + map().actors.length;
-    byId("graph-zoom-label").textContent = Math.round(graphZoom * 100) + "%";
     byId("map-undo").disabled = !undo.length; byId("map-redo").disabled = !redo.length;
   }
   function bindGraphNodeInput(input, pointId, assign) {
     let before = null;
-    input.addEventListener("focus", () => { before = C.clone(map()); selectedPoint = pointId; });
+    input.addEventListener("focus", () => { before = C.clone(map()); selectGraphPoint(pointId); });
     input.addEventListener("input", () => {
       if (!unlocked()) { return; }
       assign(input.value); persist(); updateMapOutput(); updateScenarioOutput();
     });
     input.addEventListener("blur", () => {
       if (!before || !unlocked()) { return; }
-      pushUndo(before); before = null; drawGraphEdges(); renderGraphActors(); renderGraphRoute();
+      pushUndo(before); before = null; renderGraphActors(); renderGraphRoute();
       byId("map-undo").disabled = !undo.length; byId("map-redo").disabled = !redo.length;
     });
   }
@@ -678,6 +1101,7 @@
   }
   function cancelGesture() {
     if (!gesture) { return; }
+    if (gesture.mode === "graph-actor") { clearGraphActorDrag(); return; }
     if (gesture.before && map()) { Object.assign(map(), gesture.before); }
     if (gesture.mode === "graph-link") { graphLinkFrom = null; }
     gesture = null; draw();
@@ -779,7 +1203,9 @@
         if (value === route[key === "from" ? "to" : "from"]) { byId("map-route-" + key).value = route[key]; throw new Error("別の地点を選んでください。"); }
         changeMap(m => { m.routes.find(r => r.id === selectedRoute)[key] = value; }); renderInspector();
       }, { choices: map().points.map(p => [p.id, p.name]) }));
-      [["distance", "距離の目安"], ["time", "所要時間の目安"], ["roughness", "険しさ・通行条件"], ["notes", "移動中の条件・補足"]].forEach(([key, label]) => field(routes, label, "map-route-" + key, route[key], value => changeMap(m => { m.routes.find(r => r.id === selectedRoute)[key] = value; }), { area: key === "notes", max: key === "notes" ? 10000 : 300 }));
+      routeTravelFields(routes, "map-route", route);
+      field(routes, "描写・条件メモ", "map-route-notes", route.notes,
+        value => changeMap(m => { m.routes.find(r => r.id === selectedRoute).notes = value; }), { area: true, max: 10000 });
       button(routes, "ルートを削除", () => { changeMap(m => { m.routes = m.routes.filter(r => r.id !== selectedRoute); }); selectedRoute = null; renderInspector(); draw(); }, { class: "danger-button" });
     }
   }
@@ -859,6 +1285,11 @@
     if (event.detail.name === "map") { draw(); if (map().kind === "graph") { frameGraphStart(); } }
     if (event.detail.name === "scenario") { renderScenario(); }
   });
+  window.addEventListener("resize", () => {
+    layoutGraphViewport();
+    positionGraphEditors();
+  });
+  window.addEventListener("scroll", positionGraphEditors, { passive: true });
   window.hoshimichiAuthoring = Object.freeze({
     getDrafts: () => unlocked() && store ? C.clone(store) : null,
     storageKey: KEY,

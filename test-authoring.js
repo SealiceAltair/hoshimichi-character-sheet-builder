@@ -53,17 +53,19 @@ const { chromium } = require("playwright");
     await page.getByRole("button", { name: "地点を移動", exact: true }).click();
     assert.equal((await drafts()).maps[0].points[1].x, 18);
     await page.getByRole("button", { name: "ルート追加", exact: true }).click();
-    await page.locator("#map-route-distance").fill("約1km"); await page.locator("#map-route-time").fill("20〜40分"); await page.locator("#map-route-roughness").fill("足場の悪い急坂");
+    await page.locator("#map-route-distance").selectOption("1000 m");
+    await page.locator("#map-route-roughness").selectOption("非常に険しい");
     state = await drafts(); assert.equal(state.maps[0].points.length, 2); assert.equal(state.maps[0].routes.length, 1);
     const mapRequest = await page.locator("#map-output").inputValue();
-    for (const text of ["約1km", "20〜40分", "候補", "増水"]) { assert(mapRequest.includes(text)); }
+    for (const text of ["1000 m", "険しさの段階：非常に険しい", "候補", "増水"]) { assert(mapRequest.includes(text)); }
     // Private data never survives a relock in DOM or a delayed import.
     await lock();
     assert.equal(await page.locator("#map-panel").innerHTML(), ""); assert.equal(await drafts(), null);
     assert(!(await page.locator("body").innerText()).includes("沢沿いの道"));
     await page.reload(); assert.equal(await page.locator("#map-tab").isVisible(), false);
     await unlock(); await page.locator("#map-tab").click();
-    assert.equal((await drafts()).maps[0].routes[0].time, "20〜40分");
+    assert.equal((await drafts()).maps[0].routes[0].distance, "1000 m");
+    assert.equal((await drafts()).maps[0].routes[0].roughness, "非常に険しい");
     const countBeforeDelay = (await drafts()).maps.length;
     await page.evaluate(() => {
       const data = JSON.stringify({ schema: "hoshimichi.authoring/1", ...window.hoshimichiAuthoring.getDrafts() });
@@ -91,7 +93,7 @@ const { chromium } = require("playwright");
     await page.locator('[data-scenario-tag][value="戦わずに解決"]').check();
     await page.locator('[data-scenario-map]').first().check();
     let output = await page.locator("#scenario-output").inputValue();
-    for (const phrase of ["谷を越えて", "秘密の抜け道", "戦わずに解決", "廃坑への道", "20〜40分", "ここでは採番しない"]) { assert(output.includes(phrase), phrase); }
+    for (const phrase of ["谷を越えて", "秘密の抜け道", "戦わずに解決", "廃坑への道", "1000 m", "ここでは採番しない"]) { assert(output.includes(phrase), phrase); }
     const current = await drafts(), exported = { schema: "hoshimichi.authoring/1", ...current };
     const downloadPromise = page.waitForEvent("download");
     await page.locator("#scenario-panel").getByRole("button", { name: "下書きJSONを出力", exact: true }).click();
