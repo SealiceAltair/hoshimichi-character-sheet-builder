@@ -76,6 +76,21 @@
 }
 .authoring-panel .graph-node.is-selected { border-color: #e4a06c; box-shadow: 0 0 0 2px #e4a06c77, 0 5px 18px #050a0ccc; }
 .authoring-panel .graph-node.is-link-origin { border-color: #78c9b7; box-shadow: 0 0 0 2px #78c9b777, 0 5px 18px #050a0ccc; }
+.authoring-panel .graph-node.is-territory {
+  border-color: #9de6b2; box-shadow: 0 0 0 2px #9de6b2, 0 0 20px #79d7a0aa;
+}
+.authoring-panel .graph-territory-point {
+  position: absolute; inset: 0; z-index: 3; display: flex; align-items: flex-end; justify-content: center;
+  width: 100%; padding: 10px; border: 1px solid #96b2a8; border-radius: inherit;
+  background: linear-gradient(transparent 50%, #132721); color: #fff; font-size: 18px; font-weight: 700;
+  cursor: pointer;
+}
+.authoring-panel .graph-territory-point[aria-pressed="true"] {
+  border-color: #9de6b2; background: linear-gradient(#5ab78929, #174a34e8); color: #c9ffda;
+}
+.authoring-panel .graph-territory-point:hover, .authoring-panel .graph-territory-point:focus-visible {
+  outline: 3px solid #f0da9d; outline-offset: -4px;
+}
 .graph-node-drag { flex: 0 0 34px; display: flex; align-items: center; gap: 9px; padding: 4px 12px; background: #344048; cursor: grab; touch-action: none; user-select: none; }
 .graph-node-drag:active { cursor: grabbing; }
 .graph-node-drag:focus-visible { outline: 2px solid #e4a06c; outline-offset: -2px; }

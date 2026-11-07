@@ -142,6 +142,13 @@
           initialNodeId: string(actor.initialNodeId ?? "", "初期位置ID", 160), goal: string(actor.goal ?? "", "目的", 3000) };
         check(["pc", "npc", "enemy"].includes(item.kind), "人物区分が不正です。");
         check(!item.initialNodeId || ids.has(item.initialNodeId), "人物の初期位置が見つかりません。");
+        if (actor.territoryNodeIds !== undefined) {
+          const territory = actor.territoryNodeIds;
+          check(item.kind === "enemy" && Array.isArray(territory) && territory.length <= ids.size
+            && territory.every(id => ids.has(id)) && new Set(territory).size === territory.length,
+          "縄張りは敵・モンスターに、重複しない既存の場所を指定してください。");
+          if (territory.length) { item.territoryNodeIds = [...territory]; }
+        }
         return item;
       });
       check(new Set(map.actors.map(actor => actor.id)).size === map.actors.length, "人物IDが重複しています。");
@@ -260,6 +267,10 @@
       map.actors.forEach(actor => {
         const place = map.points.find(p => p.id === actor.initialNodeId);
         lines.push(actor.name + "（" + actor.kind + (actor.species ? "・" + actor.species : "") + "） / 初期位置：" + (place ? place.name : "未配置") + " / 目的：" + (actor.goal || "未定"));
+        if (actor.territoryNodeIds?.length) {
+          const names = actor.territoryNodeIds.map(id => map.points.find(p => p.id === id).name);
+          lines.push("縄張り：" + names.join("、") + "。自発移動の範囲。人の追跡中は縄張り外も移動できる。");
+        }
       });
     }
     lines.push("### 移動ルート・見積もり",
@@ -295,6 +306,7 @@
       "roughnessは通りにくさの段階。新しい入力には「" + routeRoughnessLevels.map(level => level.name).join("」「") + "」のいずれか、未定なら空文字を使う。街道・森・急斜面などは段階の例。どんな地形でも、路面や足場、通れるが危険・遅い理由などはnotes（描写）へ自由に記す。既存の自由記述は元の情報を保持する。",
       "既存接続のfromPort・toPortは同じ地点につながる限り維持する。新しい接続で未指定の端子はアプリが初回だけ決める。",
       "敵・NPCは開始前の人数・種族・初期位置・目的の案として個体ごとに記す。卓中の現在地や行動、勝敗を確定しない。既存個体のIDを保ち、新しいIDは重複しない文字列にする。",
+      "敵のterritoryNodeIdsは、主KPが設定した自発移動範囲の場所ID配列。依頼がない限り維持し、未設定なら追加しない。人の追跡中は縄張りによる制限を外すが、道の接続や通行条件は適用する。",
       "回答は説明やコードフェンスを付けず、JSONオブジェクトのみ。schemaはhoshimichi.scene-map-proposal/1、mapは下記の構造を保つ。map.idを変更しない。",
       fence(JSON.stringify({ schema: "hoshimichi.scene-map-proposal/1", map }, null, 2), "json")].join("\n\n");
   }

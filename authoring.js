@@ -9,7 +9,7 @@
   let graphZoom = 1, graphLinkFrom = null, graphLinkMode = false;
   const graphViewMargin = 120;
 
-  let graphRouteDetailsOpen = false, graphActorEditorId = null;
+  let graphRouteDetailsOpen = false, graphActorEditorId = null, graphTerritory = null;
   let pendingProposal = null;
   let statusText = "", statusError = false;
   let pendingRecovery = null, recovering = false;
@@ -70,7 +70,7 @@
     if (!store.scenarios.length) { store.scenarios.push(C.newScenario(uid())); }
     mapId = store.maps.some(m => m.id === mapId) ? mapId : store.maps[0].id;
     scenarioId = store.scenarios.some(s => s.id === scenarioId) ? scenarioId : store.scenarios[0].id;
-    undo = []; redo = []; selectedPoint = null; selectedRoute = null; gesture = null; graphLinkFrom = null; pendingProposal = null;
+    undo = []; redo = []; selectedPoint = null; selectedRoute = null; gesture = null; graphLinkFrom = null; graphTerritory = null; pendingProposal = null;
   }
   function refreshSelectors() {
     [["map-drafts", store.maps, mapId], ["scenario-drafts", store.scenarios, scenarioId]].forEach(([id, entries, selected]) => {
@@ -234,7 +234,13 @@
   function renderGraphMap(panel) {
     panel.classList.add("graph-editor-panel");
     const layout = el("div", null, { class: "graph-editor-layout" });
-    layout.addEventListener("keydown", graphDeleteKey);
+    layout.addEventListener("keydown", event => {
+      if (event.key === "Escape" && graphTerritory) {
+        event.preventDefault();
+        finishGraphTerritory();
+      } else { graphDeleteKey(event); }
+    });
+    if (!graphTerritoryActor()) { graphTerritory = null; }
     graphRouteDetailsOpen = false;
     graphActorEditorId = null;
     const sidebar = el("aside", null, { class: "graph-sidebar", "aria-label": "シナリオと登場人物" });
@@ -261,10 +267,12 @@
     tools.append(zoomSlider, zoomText);
     button(tools, "+", () => graphSetZoom(graphZoom + .2), { title: "拡大", "aria-label": "拡大", class: "secondary-button authoring-icon" });
     button(tools, "接続モード", () => {
+      graphTerritory = null;
       graphLinkMode = !graphLinkMode;
       graphLinkFrom = null;
       drawGraph();
     }, { id: "graph-link-mode", "aria-pressed": String(graphLinkMode) });
+    button(tools, "縄張り設定を終了", finishGraphTerritory, { id: "graph-territory-done", hidden: true });
     button(tools, "AI用依頼をコピー", () => { C.validateMap(map()); copy(C.sceneMapPrompt(map())); });
     main.append(tools);
     const stage = el("div", null, { class: "graph-stage" });
@@ -280,7 +288,7 @@
     viewport.addEventListener("pointerup", graphPanUp);
     viewport.addEventListener("pointercancel", cancelGesture);
     surface.addEventListener("dblclick", event => {
-      if (!unlocked() || event.target !== surface) { return; }
+      if (!unlocked() || graphTerritory || event.target !== surface) { return; }
       addGraphPointAt(event.clientX, event.clientY);
     });
     viewport.addEventListener("wheel", graphWheel, { passive: false });
@@ -350,7 +358,7 @@
   function graphWheel(event) {
     if (!unlocked() || !event.deltaY) { return; }
     const node = event.target.closest(".graph-node");
-    if (node) {
+    if (node && !graphTerritory) {
       event.preventDefault();
       const body = node.querySelector(".graph-node-body");
       const textarea = event.target.closest("textarea");
@@ -480,7 +488,39 @@
       bindGraphActorDrag(entry, actor, true);
     }
   }
+  function graphTerritoryActor() {
+    return graphTerritory?.mapId === mapId
+      ? map().actors?.find(actor => actor.id === graphTerritory.actorId && actor.kind === "enemy") : null;
+  }
+  function startGraphTerritory(actor) {
+    graphTerritory = { mapId, actorId: actor.id };
+    graphLinkMode = false;
+    graphLinkFrom = null;
+    closeGraphActorEditor();
+    drawGraph();
+    byId("graph-territory-done").focus({ preventScroll: true });
+  }
+  function finishGraphTerritory() {
+    const actor = graphTerritoryActor();
+    graphTerritory = null;
+    drawGraph();
+    if (actor) { byId("graph-actor-list-" + actor.id)?.focus({ preventScroll: true }); }
+  }
+  function toggleGraphTerritoryPoint(pointId) {
+    const actor = graphTerritoryActor();
+    if (!actor) { return; }
+    changeMap(() => {
+      const ids = new Set(actor.territoryNodeIds);
+      if (ids.has(pointId)) { ids.delete(pointId); } else { ids.add(pointId); }
+      if (ids.size) { actor.territoryNodeIds = [...ids]; } else { delete actor.territoryNodeIds; }
+    });
+    byId("graph-territory-point-" + pointId)?.focus({ preventScroll: true });
+  }
   function openGraphActorEditor(id) {
+    if (graphTerritory) {
+      graphTerritory = null;
+      drawGraph();
+    }
     selectedPoint = null;
     selectedRoute = null;
     graphLinkFrom = null;
@@ -514,7 +554,10 @@
     });
     panel.append(heading);
     const update = (key, value) => {
-      changeMap(m => { m.actors.find(item => item.id === actor.id)[key] = value; });
+      changeMap(() => {
+        actor[key] = value;
+        if (key === "kind" && value !== "enemy") { delete actor.territoryNodeIds; }
+      });
       title.textContent = graphActorLabel(actor);
       syncGraphActorListEntry(actor);
       positionGraphEditors();
@@ -522,10 +565,21 @@
     field(panel, "名前", "graph-actor-name-" + i, actor.name, value => update("name", value), { max: 200 });
     field(panel, "区分", "graph-actor-kind-" + i, actor.kind, value => update("kind", value),
       { choices: [["pc", "PC"], ["npc", "NPC"], ["enemy", "敵・モンスター"]] });
+    byId("graph-actor-kind-" + i).addEventListener("change", () => {
+      if (unlocked()) {
+        renderGraphActorEditor();
+        byId("graph-actor-kind-" + i)?.focus({ preventScroll: true });
+      }
+    });
     field(panel, "種族・分類", "graph-actor-species-" + i, actor.species, value => update("species", value), { max: 200 });
     field(panel, "初期位置", "graph-actor-place-" + i, actor.initialNodeId, value => update("initialNodeId", value),
       { choices: [["", "未配置"], ...map().points.map(point => [point.id, point.name])] });
     field(panel, "目的・行動の軸", "graph-actor-goal-" + i, actor.goal, value => update("goal", value), { area: true, max: 3000 });
+    if (actor.kind === "enemy") {
+      const count = actor.territoryNodeIds?.length || 0;
+      button(panel, "縄張りを設定（" + (count ? count + "か所" : "未設定") + "）", () => startGraphTerritory(actor));
+      panel.append(el("p", "自発移動の範囲。人を追跡中は縄張りの外へも移動できます。", { class: "map-coordinate" }));
+    }
     button(panel, "削除", () => {
       if (!window.confirm("「" + actor.name + "」を初期配置から削除しますか？")) { return; }
       closeGraphActorEditor();
@@ -660,7 +714,7 @@
     renderGraphRoute();
   }
   function selectGraphRoute(id, openDetails) {
-    if (!unlocked()) { return; }
+    if (!unlocked() || graphTerritory) { return; }
     closeGraphActorEditor();
     if (selectedRoute !== id || openDetails) { graphRouteDetailsOpen = openDetails; }
     selectedRoute = id;
@@ -687,6 +741,10 @@
       m.routes = m.routes.filter(r => r.from !== id && r.to !== id);
       for (const actor of m.actors) {
         if (actor.initialNodeId === id) { actor.initialNodeId = ""; }
+        if (actor.territoryNodeIds?.includes(id)) {
+          actor.territoryNodeIds = actor.territoryNodeIds.filter(pointId => pointId !== id);
+          if (!actor.territoryNodeIds.length) { delete actor.territoryNodeIds; }
+        }
       }
     });
     renderGraphActors();
@@ -696,7 +754,7 @@
   function graphDeleteKey(event) {
     if (event.key !== "Delete" || event.repeat || event.isComposing || gesture || !unlocked()
         || event.target.closest("input, textarea, select, [contenteditable], dialog")) { return; }
-    if (!selectedRoute && !selectedPoint) { return; }
+    if (graphTerritory || (!selectedRoute && !selectedPoint)) { return; }
     event.preventDefault();
     if (selectedRoute) { deleteGraphRoute(selectedRoute); }
     else { deleteGraphPoint(selectedPoint); }
@@ -979,6 +1037,9 @@
     const size = C.graphSize;
     layoutGraphViewport();
     byId("graph-link-mode").setAttribute("aria-pressed", String(graphLinkMode));
+    const territoryActor = graphTerritoryActor();
+    const territoryNodes = new Set(territoryActor?.territoryNodeIds);
+    byId("graph-territory-done").hidden = !territoryActor;
     surface.replaceChildren();
     const svg = svgElement("svg", { id: "graph-links", width: size.width, height: size.height, viewBox: `0 0 ${size.width} ${size.height}`, "aria-label": "地点間のルート" });
     surface.append(svg); drawGraphEdges();
@@ -1039,6 +1100,17 @@
       node.append(body);
       const tags = renderGraphActorTags(point);
       if (tags) { node.append(tags); }
+      if (territoryActor) {
+        header.inert = true;
+        body.inert = true;
+        if (tags) { tags.inert = true; }
+        const included = territoryNodes.has(point.id);
+        node.classList.toggle("is-territory", included);
+        button(node, included ? "✓ 縄張り" : "＋ 縄張り", () => toggleGraphTerritoryPoint(point.id), {
+          id: "graph-territory-point-" + point.id, class: "graph-territory-point",
+          "aria-label": (point.name || "名称未設定の場所") + "を縄張りにする", "aria-pressed": String(included)
+        });
+      }
       node.addEventListener("click", event => {
         if (event.target.closest("button, input, textarea, select, label, .graph-node-drag")) { return; }
         selectGraphPoint(point.id);
@@ -1048,7 +1120,9 @@
     });
     positionGraphEditors();
     const origin = map().points.find(p => p.id === graphLinkFrom?.pointId);
-    byId("graph-status").textContent = origin ? "接続元：" + origin.name + "（" + C.graphPorts[graphLinkFrom.portId].label + "）" :
+    byId("graph-status").textContent = territoryActor
+      ? "縄張り：" + graphActorLabel(territoryActor) + " ／ " + territoryNodes.size + "か所。場所をクリックして切替。"
+      : origin ? "接続元：" + origin.name + "（" + C.graphPorts[graphLinkFrom.portId].label + "）" :
       "場所 " + map().points.length + " / 接続 " + map().routes.length + " / 登場人物 " + map().actors.length;
     byId("map-undo").disabled = !undo.length; byId("map-redo").disabled = !redo.length;
   }
